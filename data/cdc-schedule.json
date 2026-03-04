@@ -1,0 +1,294 @@
+{
+  "lastUpdated": "2025-01-01",
+  "source": "CDC Recommended Immunization Schedule for Adults and Children",
+  "schedules": [
+    {
+      "vaccine": "Influenza",
+      "aliases": ["Flu", "Flu Shot"],
+      "ageGroups": [
+        {
+          "label": "6 months and older",
+          "minAgeMonths": 6,
+          "maxAgeMonths": null,
+          "frequency": "annual",
+          "intervalMonths": 12,
+          "doses": null,
+          "notes": "Annual influenza vaccine recommended for everyone 6 months and older"
+        }
+      ]
+    },
+    {
+      "vaccine": "COVID-19",
+      "aliases": ["COVID", "Coronavirus"],
+      "ageGroups": [
+        {
+          "label": "6 months and older",
+          "minAgeMonths": 6,
+          "maxAgeMonths": null,
+          "frequency": "annual",
+          "intervalMonths": 12,
+          "doses": null,
+          "notes": "Updated COVID-19 vaccine recommended annually"
+        }
+      ]
+    },
+    {
+      "vaccine": "Tdap",
+      "aliases": ["Td", "Tetanus", "Tetanus/Diphtheria/Pertussis"],
+      "ageGroups": [
+        {
+          "label": "Children 11-12 years",
+          "minAgeMonths": 132,
+          "maxAgeMonths": 155,
+          "frequency": "once",
+          "intervalMonths": null,
+          "doses": 1,
+          "notes": "One dose of Tdap recommended at 11-12 years"
+        },
+        {
+          "label": "Adults",
+          "minAgeMonths": 216,
+          "maxAgeMonths": null,
+          "frequency": "booster",
+          "intervalMonths": 120,
+          "doses": null,
+          "notes": "Td booster every 10 years; Tdap once if not previously received"
+        }
+      ]
+    },
+    {
+      "vaccine": "MMR",
+      "aliases": ["Measles", "Mumps", "Rubella", "Measles/Mumps/Rubella"],
+      "ageGroups": [
+        {
+          "label": "Children 12-15 months",
+          "minAgeMonths": 12,
+          "maxAgeMonths": 18,
+          "frequency": "series",
+          "intervalMonths": null,
+          "doses": 1,
+          "notes": "First dose at 12-15 months"
+        },
+        {
+          "label": "Children 4-6 years",
+          "minAgeMonths": 48,
+          "maxAgeMonths": 83,
+          "frequency": "series",
+          "intervalMonths": null,
+          "doses": 2,
+          "notes": "Second dose at 4-6 years"
+        },
+        {
+          "label": "Adults born after 1957",
+          "minAgeMonths": 216,
+          "maxAgeMonths": null,
+          "frequency": "series",
+          "intervalMonths": null,
+          "doses": 2,
+          "notes": "2 doses if no evidence of immunity"
+        }
+      ]
+    },
+    {
+      "vaccine": "Varicella",
+      "aliases": ["Chickenpox", "Varivax"],
+      "ageGroups": [
+        {
+          "label": "Children 12-15 months",
+          "minAgeMonths": 12,
+          "maxAgeMonths": 83,
+          "frequency": "series",
+          "intervalMonths": null,
+          "doses": 2,
+          "notes": "2 doses: first at 12-15 months, second at 4-6 years"
+        },
+        {
+          "label": "Unvaccinated adults",
+          "minAgeMonths": 216,
+          "maxAgeMonths": null,
+          "frequency": "series",
+          "intervalMonths": null,
+          "doses": 2,
+          "notes": "2 doses separated by 4-8 weeks for adults with no evidence of immunity"
+        }
+      ]
+    },
+    {
+      "vaccine": "HPV",
+      "aliases": ["Human Papillomavirus", "Gardasil"],
+      "ageGroups": [
+        {
+          "label": "11-12 years (routine)",
+          "minAgeMonths": 108,
+          "maxAgeMonths": 155,
+          "frequency": "series",
+          "intervalMonths": null,
+          "doses": 2,
+          "notes": "2-dose series recommended starting at age 11-12"
+        },
+        {
+          "label": "15-26 years (catch-up)",
+          "minAgeMonths": 180,
+          "maxAgeMonths": 323,
+          "frequency": "series",
+          "intervalMonths": null,
+          "doses": 3,
+          "notes": "3-dose series for those starting at age 15 or older"
+        }
+      ]
+    },
+    {
+      "vaccine": "Hepatitis B",
+      "aliases": ["Hep B", "HBV"],
+      "ageGroups": [
+        {
+          "label": "Infants",
+          "minAgeMonths": 0,
+          "maxAgeMonths": 18,
+          "frequency": "series",
+          "intervalMonths": null,
+          "doses": 3,
+          "notes": "3-dose series: birth, 1-2 months, 6-18 months"
+        },
+        {
+          "label": "Unvaccinated adults",
+          "minAgeMonths": 216,
+          "maxAgeMonths": null,
+          "frequency": "series",
+          "intervalMonths": null,
+          "doses": 3,
+          "notes": "3-dose series or 2-dose Heplisav-B series"
+        }
+      ]
+    },
+    {
+      "vaccine": "Hepatitis A",
+      "aliases": ["Hep A", "HAV"],
+      "ageGroups": [
+        {
+          "label": "Children 12-23 months",
+          "minAgeMonths": 12,
+          "maxAgeMonths": 23,
+          "frequency": "series",
+          "intervalMonths": null,
+          "doses": 2,
+          "notes": "2-dose series at 12-23 months"
+        },
+        {
+          "label": "Unvaccinated adults at risk",
+          "minAgeMonths": 216,
+          "maxAgeMonths": null,
+          "frequency": "series",
+          "intervalMonths": null,
+          "doses": 2,
+          "notes": "2-dose series for at-risk adults"
+        }
+      ]
+    },
+    {
+      "vaccine": "Pneumococcal (PCV15/PCV20)",
+      "aliases": ["Pneumonia", "Prevnar", "PCV", "PPSV23"],
+      "ageGroups": [
+        {
+          "label": "Adults 65+",
+          "minAgeMonths": 780,
+          "maxAgeMonths": null,
+          "frequency": "once",
+          "intervalMonths": null,
+          "doses": 1,
+          "notes": "PCV20 once, or PCV15 followed by PPSV23"
+        }
+      ]
+    },
+    {
+      "vaccine": "Shingrix",
+      "aliases": ["Shingles", "Zoster", "RZV"],
+      "ageGroups": [
+        {
+          "label": "Adults 50+",
+          "minAgeMonths": 600,
+          "maxAgeMonths": null,
+          "frequency": "series",
+          "intervalMonths": null,
+          "doses": 2,
+          "notes": "2-dose series: doses given 2-6 months apart"
+        }
+      ]
+    },
+    {
+      "vaccine": "RSV",
+      "aliases": ["Respiratory Syncytial Virus", "Abrysvo", "Arexvy"],
+      "ageGroups": [
+        {
+          "label": "Adults 60+",
+          "minAgeMonths": 720,
+          "maxAgeMonths": null,
+          "frequency": "once",
+          "intervalMonths": null,
+          "doses": 1,
+          "notes": "Shared clinical decision-making recommended for adults 60+"
+        }
+      ]
+    },
+    {
+      "vaccine": "Meningococcal ACWY",
+      "aliases": ["Meningitis", "MenACWY", "MCV4"],
+      "ageGroups": [
+        {
+          "label": "Adolescents 11-12 years",
+          "minAgeMonths": 132,
+          "maxAgeMonths": 155,
+          "frequency": "series",
+          "intervalMonths": null,
+          "doses": 2,
+          "notes": "First dose at 11-12 years; booster at 16 years"
+        }
+      ]
+    },
+    {
+      "vaccine": "DTaP",
+      "aliases": ["Diphtheria", "Pertussis", "Whooping Cough"],
+      "ageGroups": [
+        {
+          "label": "Infants and children (primary series)",
+          "minAgeMonths": 2,
+          "maxAgeMonths": 83,
+          "frequency": "series",
+          "intervalMonths": null,
+          "doses": 5,
+          "notes": "5-dose series at 2, 4, 6, 15-18 months, and 4-6 years"
+        }
+      ]
+    },
+    {
+      "vaccine": "Hib",
+      "aliases": ["Haemophilus influenzae type b"],
+      "ageGroups": [
+        {
+          "label": "Infants",
+          "minAgeMonths": 2,
+          "maxAgeMonths": 59,
+          "frequency": "series",
+          "intervalMonths": null,
+          "doses": 4,
+          "notes": "3-4 dose series depending on brand, starting at 2 months"
+        }
+      ]
+    },
+    {
+      "vaccine": "Polio (IPV)",
+      "aliases": ["Inactivated Poliovirus", "Polio"],
+      "ageGroups": [
+        {
+          "label": "Children",
+          "minAgeMonths": 2,
+          "maxAgeMonths": 83,
+          "frequency": "series",
+          "intervalMonths": null,
+          "doses": 4,
+          "notes": "4-dose series at 2, 4, 6-18 months, and 4-6 years"
+        }
+      ]
+    }
+  ]
+}

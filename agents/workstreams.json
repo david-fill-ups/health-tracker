@@ -1,0 +1,170 @@
+{
+  "_comment": "Dependency map for the Ralph loop orchestrator. Each workstream lists which phases/workstreams must complete before it can start.",
+  "phases": [
+    {
+      "phase": 0,
+      "name": "scaffolding",
+      "status": "complete",
+      "description": "Project bootstrap, Prisma schema + migration, auth, lib utilities, env config, CDC data, seed file, app shell pages, server functions, WebCal + CDC cron API routes",
+      "blockedBy": [],
+      "outputDir": "health-tracker/",
+      "keyFiles": [
+        "prisma/schema.prisma",
+        "auth.config.ts",
+        "auth.ts",
+        "middleware.ts",
+        "src/lib/prisma.ts",
+        "src/lib/permissions.ts",
+        "src/lib/cdc.ts",
+        "src/lib/calendar.ts",
+        "src/types/index.ts",
+        "src/server/profiles.ts",
+        "src/server/facilities.ts",
+        "src/server/doctors.ts",
+        "src/server/visits.ts",
+        "src/server/medications.ts",
+        "src/server/conditions.ts",
+        "src/server/vaccinations.ts",
+        "src/app/(app)/layout.tsx",
+        "src/app/api/calendar/[profileId]/route.ts",
+        "src/app/api/cdc/refresh/route.ts",
+        "data/cdc-schedule.json"
+      ]
+    }
+  ],
+  "workstreams": [
+    {
+      "id": "A",
+      "name": "core-api",
+      "status": "pending",
+      "description": "CRUD API routes for Profiles, Facilities, Locations, Doctors. Also owns src/types/index.ts Zod schemas.",
+      "blockedBy": [0],
+      "priority": 1,
+      "estimatedFiles": 12,
+      "targetFiles": [
+        "src/app/api/profiles/route.ts",
+        "src/app/api/profiles/[id]/route.ts",
+        "src/app/api/facilities/route.ts",
+        "src/app/api/facilities/[id]/route.ts",
+        "src/app/api/locations/route.ts",
+        "src/app/api/locations/[id]/route.ts",
+        "src/app/api/doctors/route.ts",
+        "src/app/api/doctors/[id]/route.ts"
+      ],
+      "notes": "Use assertProfileAccess from src/lib/permissions.ts. All routes must check session. Use server functions from src/server/* as the data layer — do not call prisma directly from routes."
+    },
+    {
+      "id": "B",
+      "name": "visits-medications-conditions-api",
+      "status": "pending",
+      "description": "CRUD API routes for Visits, Medications, MedicationLogs, and Conditions.",
+      "blockedBy": [0],
+      "priority": 1,
+      "estimatedFiles": 10,
+      "targetFiles": [
+        "src/app/api/visits/route.ts",
+        "src/app/api/visits/[id]/route.ts",
+        "src/app/api/medications/route.ts",
+        "src/app/api/medications/[id]/route.ts",
+        "src/app/api/medications/[id]/logs/route.ts",
+        "src/app/api/conditions/route.ts",
+        "src/app/api/conditions/[id]/route.ts"
+      ],
+      "notes": "Medication logs support injection tracking (injectionSite, weight, dosage, unit). dueMonth format is YYYY-MM string."
+    },
+    {
+      "id": "C",
+      "name": "vaccinations-api",
+      "status": "pending",
+      "description": "CRUD API routes for Vaccinations. Also adds GET /api/vaccinations/recommendations endpoint.",
+      "blockedBy": [0],
+      "priority": 1,
+      "estimatedFiles": 4,
+      "targetFiles": [
+        "src/app/api/vaccinations/route.ts",
+        "src/app/api/vaccinations/[id]/route.ts",
+        "src/app/api/vaccinations/recommendations/route.ts"
+      ],
+      "notes": "Recommendations route calls getVaccinationRecommendations from src/server/vaccinations.ts. Calendar and CDC cron routes are already implemented in Phase 0."
+    },
+    {
+      "id": "D",
+      "name": "ui-shell-dashboard-profiles",
+      "status": "pending",
+      "description": "Profile switcher, dashboard widgets (real data), full Profiles CRUD UI.",
+      "blockedBy": [0, "A"],
+      "priority": 2,
+      "estimatedFiles": 14,
+      "targetFiles": [
+        "src/components/layout/ProfileSwitcher.tsx",
+        "src/components/dashboard/UpcomingVisits.tsx",
+        "src/components/dashboard/NeedToSchedule.tsx",
+        "src/components/dashboard/UpcomingDoses.tsx",
+        "src/components/dashboard/VaccinationStatus.tsx",
+        "src/components/profiles/ProfileCard.tsx",
+        "src/components/profiles/ProfileForm.tsx",
+        "src/app/(app)/profiles/new/page.tsx",
+        "src/app/(app)/profiles/[id]/page.tsx",
+        "src/app/(app)/profiles/[id]/edit/page.tsx"
+      ],
+      "notes": "Profile switcher reads activeProfileId from ProfileProvider context (already in src/components/layout/ProfileProvider.tsx). Dashboard widgets fetch from /api/* with the activeProfileId query param. Profile page shows calendarToken with a copy-to-clipboard button and a regenerate option."
+    },
+    {
+      "id": "E",
+      "name": "ui-healthcare-team-visits",
+      "status": "pending",
+      "description": "Healthcare Team page with Facility/Doctor CRUD, Visits list + CRUD forms.",
+      "blockedBy": [0, "A", "B"],
+      "priority": 3,
+      "estimatedFiles": 14,
+      "targetFiles": [
+        "src/components/healthcare-team/FacilityCard.tsx",
+        "src/components/healthcare-team/FacilityForm.tsx",
+        "src/components/healthcare-team/DoctorCard.tsx",
+        "src/components/healthcare-team/DoctorForm.tsx",
+        "src/components/visits/VisitCard.tsx",
+        "src/components/visits/VisitForm.tsx",
+        "src/app/(app)/healthcare-team/page.tsx",
+        "src/app/(app)/visits/new/page.tsx",
+        "src/app/(app)/visits/[id]/page.tsx",
+        "src/app/(app)/visits/[id]/edit/page.tsx"
+      ],
+      "notes": "Healthcare Team page groups active/inactive facilities and doctors. Visits page has status filter (PENDING, SCHEDULED, COMPLETED, CANCELLED). VisitForm has a date picker and a dueMonth field (type=month input)."
+    },
+    {
+      "id": "F",
+      "name": "ui-medications-conditions-vaccinations",
+      "status": "pending",
+      "description": "Medications, Conditions, and Vaccinations CRUD UI + CDC compliance view.",
+      "blockedBy": [0, "B", "C"],
+      "priority": 3,
+      "estimatedFiles": 16,
+      "targetFiles": [
+        "src/components/medications/MedicationCard.tsx",
+        "src/components/medications/MedicationForm.tsx",
+        "src/components/medications/MedicationLogForm.tsx",
+        "src/components/vaccinations/VaccinationCard.tsx",
+        "src/components/vaccinations/CdcComplianceRow.tsx",
+        "src/app/(app)/medications/new/page.tsx",
+        "src/app/(app)/medications/[id]/page.tsx",
+        "src/app/(app)/medications/[id]/log/page.tsx",
+        "src/app/(app)/conditions/new/page.tsx",
+        "src/app/(app)/vaccinations/new/page.tsx",
+        "src/app/(app)/vaccinations/page.tsx"
+      ],
+      "notes": "MedicationLogForm captures: date, dosage, unit, injectionSite (dropdown), weight (lbs). Vaccination page shows two sections: recorded vaccinations and CDC compliance table. CdcComplianceRow uses color-coded status badges: green=up_to_date, amber=due, red=overdue, gray=not_applicable."
+    }
+  ],
+  "parallelExecutionGroups": [
+    {
+      "group": 1,
+      "canRunInParallel": ["A", "B", "C"],
+      "note": "All three API workstreams depend only on Phase 0 and can run fully in parallel"
+    },
+    {
+      "group": 2,
+      "canRunInParallel": ["D", "E", "F"],
+      "note": "UI workstreams depend on Phase 0 + specific API workstreams. D can start when A is done. E can start when A+B are done. F can start when B+C are done. In practice, spin up all three together once A, B, C are done."
+    }
+  ]
+}

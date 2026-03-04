@@ -1,0 +1,301 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Auth (NextAuth / Auth.js Prisma Adapter) ─────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  profiles      Profile[]
+  profileAccess ProfileAccess[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Profiles ─────────────────────────────────────────────────────────────────
+
+enum Sex {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum ProfilePermission {
+  OWNER
+  WRITE
+  READ_ONLY
+}
+
+model Profile {
+  id            String   @id @default(cuid())
+  userId        String
+  name          String
+  birthYear     Int
+  sex           Sex
+  state         String?
+  notes         String?
+  calendarToken String   @unique @default(cuid())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  owner        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  access       ProfileAccess[]
+  visits       Visit[]
+  conditions   Condition[]
+  vaccinations Vaccination[]
+  medications  Medication[]
+  facilities   Facility[]
+  doctors      Doctor[]
+}
+
+model ProfileAccess {
+  id         String            @id @default(cuid())
+  profileId  String
+  userId     String
+  permission ProfilePermission @default(OWNER)
+  createdAt  DateTime          @default(now())
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, userId])
+}
+
+// ─── Healthcare Team ──────────────────────────────────────────────────────────
+
+enum FacilityType {
+  CLINIC
+  HOSPITAL
+  LAB
+  PHARMACY
+  SUPPLIER
+  URGENT_CARE
+  OTHER
+}
+
+model Facility {
+  id         String       @id @default(cuid())
+  profileId  String
+  name       String
+  type       FacilityType
+  websiteUrl String?
+  portalUrl  String?
+  phone      String?
+  active     Boolean      @default(true)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  profile      Profile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  locations    Location[]
+  doctors      Doctor[]
+  visits       Visit[]
+  vaccinations Vaccination[]
+}
+
+model Location {
+  id         String   @id @default(cuid())
+  facilityId String
+  name       String
+  address1   String?
+  address2   String?
+  city       String?
+  state      String?
+  zip        String?
+  phone      String?
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  facility Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  visits   Visit[]
+}
+
+model Doctor {
+  id         String   @id @default(cuid())
+  profileId  String
+  name       String
+  specialty  String?
+  facilityId String?
+  websiteUrl String?
+  portalUrl  String?
+  phone      String?
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  profile     Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  facility    Facility?    @relation(fields: [facilityId], references: [id])
+  visits      Visit[]
+  medications Medication[]
+}
+
+// ─── Visits / Appointments ────────────────────────────────────────────────────
+
+enum VisitType {
+  ROUTINE
+  LAB
+  SPECIALIST
+  URGENT
+  TELEHEALTH
+  PROCEDURE
+  OTHER
+}
+
+enum VisitStatus {
+  PENDING
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+model Visit {
+  id         String      @id @default(cuid())
+  profileId  String
+  doctorId   String?
+  facilityId String?
+  locationId String?
+  date       DateTime?
+  dueMonth   String?
+  type       VisitType   @default(ROUTINE)
+  notes      String?
+  status     VisitStatus @default(PENDING)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  profile  Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  doctor   Doctor?   @relation(fields: [doctorId], references: [id])
+  facility Facility? @relation(fields: [facilityId], references: [id])
+  location Location? @relation(fields: [locationId], references: [id])
+}
+
+// ─── Medications ──────────────────────────────────────────────────────────────
+
+model Medication {
+  id                  String    @id @default(cuid())
+  profileId           String
+  name                String
+  prescribingDoctorId String?
+  startDate           DateTime?
+  endDate             DateTime?
+  instructions        String?
+  active              Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  profile           Profile         @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  prescribingDoctor Doctor?         @relation(fields: [prescribingDoctorId], references: [id])
+  logs              MedicationLog[]
+}
+
+model MedicationLog {
+  id            String   @id @default(cuid())
+  medicationId  String
+  date          DateTime
+  dosage        Float?
+  unit          String?
+  injectionSite String?
+  weight        Float?
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+}
+
+// ─── Conditions ───────────────────────────────────────────────────────────────
+
+enum ConditionStatus {
+  ACTIVE
+  RESOLVED
+  MONITORING
+}
+
+model Condition {
+  id            String          @id @default(cuid())
+  profileId     String
+  name          String
+  diagnosisDate DateTime?
+  status        ConditionStatus @default(ACTIVE)
+  notes         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+// ─── Vaccinations ─────────────────────────────────────────────────────────────
+
+model Vaccination {
+  id         String    @id @default(cuid())
+  profileId  String
+  name       String
+  date       DateTime
+  facilityId String?
+  lotNumber  String?
+  notes      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  profile  Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  facility Facility? @relation(fields: [facilityId], references: [id])
+}
+
+// ─── CDC Schedule ─────────────────────────────────────────────────────────────
+
+model CdcScheduleVersion {
+  id          String   @id @default(cuid())
+  version     String
+  lastUpdated DateTime
+  data        Json
+  createdAt   DateTime @default(now())
+
+  @@index([lastUpdated])
+}
