@@ -22,6 +22,7 @@ model User {
   sessions      Session[]
   profiles      Profile[]
   profileAccess ProfileAccess[]
+  auditLogs     AuditLog[]
 }
 
 model Account {
@@ -298,4 +299,24 @@ model CdcScheduleVersion {
   createdAt   DateTime @default(now())
 
   @@index([lastUpdated])
+}
+
+// ─── Audit Log ────────────────────────────────────────────────────────────────
+// Immutable record of all create / update / delete operations on health data.
+// Provides accountability for who changed what and when.
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  profileId  String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([profileId, createdAt])
 }

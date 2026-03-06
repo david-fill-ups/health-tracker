@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { assertProfileAccess } from "@/lib/permissions";
+import { logAudit } from "@/lib/audit";
 import { generateRecommendations } from "@/lib/cdc";
 
 export async function getVaccinationsForProfile(userId: string, profileId: string) {
@@ -25,8 +26,7 @@ export async function getVaccinationRecommendations(userId: string, profileId: s
     select: { name: true, date: true },
   });
 
-  // Build a map of vaccine name → dates
-  const byName = new Map<string, Date[]>();
+  const byName = new Map();
   for (const v of vaccinations) {
     const key = v.name.toLowerCase();
     const existing = byName.get(key) ?? [];
@@ -51,5 +51,54 @@ export async function createVaccination(
   input: CreateVaccinationInput
 ) {
   await assertProfileAccess(userId, profileId, "OWNER");
-  return prisma.vaccination.create({ data: { ...input, profileId } });
+  const { name, date, facilityId, lotNumber, notes } = input;
+  const vaccination = await prisma.vaccination.create({ data: { name, date, facilityId, lotNumber, notes, profileId } });
+  await logAudit(userId, profileId, "CREATE_VACCINATION", "Vaccination", vaccination.id, { name: vaccination.name });
+  return vaccination;
+}
+
+export interface UpdateVaccinationInput {
+  name?: string;
+  date?: Date;
+  facilityId?: string | null;
+  lotNumber?: string | null;
+  notes?: string | null;
+}
+
+export async function updateVaccination(
+  userId: string,
+  id: string,
+  input: UpdateVaccinationInput
+) {
+  const vaccination = await prisma.vaccination.findUnique({
+    where: { id },
+    select: { profileId: true },
+  });
+  if (!vaccination) throw new Error("Vaccination not found");
+  await assertProfileAccess(userId, vaccination.profileId, "WRITE");
+  const { name, date, facilityId, lotNumber, notes } = input;
+  const updated = await prisma.vaccination.update({ where: { id }, data: { name, date, facilityId, lotNumber, notes } });
+  await logAudit(userId, vaccination.profileId, "UPDATE_VACCINATION", "Vaccination", id);
+  return updated;
+}
+
+export async function deleteVaccination(userId: string, id: string) {
+  const vaccination = await prisma.vaccination.findUnique({
+    where: { id },
+    select: { profileId: true },
+  });
+  if (!vaccination) throw new Error("Vaccination not found");
+  await assertProfileAccess(userId, vaccination.profileId, "OWNER");
+  await logAudit(userId, vaccination.profileId, "DELETE_VACCINATION", "Vaccination", id);
+  await prisma.vaccination.delete({ where: { id } });
+}
+
+export async function getVaccinationById(userId: string, id: string) {
+  const vaccination = await prisma.vaccination.findUnique({
+    where: { id },
+    include: { facility: true },
+  });
+  if (!vaccination) throw new Error("Vaccination not found");
+  await assertProfileAccess(userId, vaccination.profileId);
+  return vaccination;
 }

@@ -15,13 +15,16 @@ import type {
   MedicationLog,
   Condition,
   Vaccination,
+} from "@/generated/prisma/client";
+
+import type {
   ProfilePermission,
   FacilityType,
   VisitType,
   VisitStatus,
   ConditionStatus,
   Sex,
-} from "@/generated/prisma";
+} from "@/generated/prisma/enums";
 
 // Re-export Prisma types for convenience
 export type {

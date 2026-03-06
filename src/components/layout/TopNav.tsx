@@ -1,5 +1,6 @@
 import { signOut } from "@/auth";
 import Image from "next/image";
+import { ProfileSwitcher } from "./ProfileSwitcher";
 
 interface User {
   name?: string | null;
@@ -11,8 +12,7 @@ export function TopNav({ user }: { user: User }) {
   return (
     <header className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6">
       <div className="flex items-center gap-2">
-        {/* Profile switcher placeholder — implemented by Agent D */}
-        <span className="text-sm text-gray-500">Select a profile</span>
+        <ProfileSwitcher />
       </div>
       <div className="flex items-center gap-3">
         {user.image && (

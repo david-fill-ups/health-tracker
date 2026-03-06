@@ -1,6 +1,7 @@
 import { signIn } from "@/auth";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { AboutModal } from "./AboutModal";
 
 export const metadata = {
   title: "Sign In — Health Tracker",
@@ -38,6 +39,8 @@ export default async function LoginPage() {
         <p className="mt-6 text-center text-xs text-gray-400">
           Personal use only. Your data is private and never shared.
         </p>
+
+        <AboutModal />
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { prisma } from "./prisma";
-import type { ProfilePermission } from "@/generated/prisma";
+import type { ProfilePermission } from "@/generated/prisma/enums";
 
 type PermissionLevel = "READ_ONLY" | "WRITE" | "OWNER";
 

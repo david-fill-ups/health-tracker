@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { assertProfileAccess } from "@/lib/permissions";
-import type { VisitStatus, VisitType } from "@/generated/prisma";
+import { logAudit } from "@/lib/audit";
+import type { VisitStatus, VisitType } from "@/generated/prisma/enums";
 
 export async function getVisitsForProfile(userId: string, profileId: string) {
   await assertProfileAccess(userId, profileId);
@@ -31,9 +32,20 @@ export interface CreateVisitInput {
   status?: VisitStatus;
 }
 
+export async function getVisitById(userId: string, profileId: string, visitId: string) {
+  await assertProfileAccess(userId, profileId);
+  return prisma.visit.findUnique({
+    where: { id: visitId, profileId },
+    include: { doctor: true, facility: true, location: true },
+  });
+}
+
 export async function createVisit(userId: string, profileId: string, input: CreateVisitInput) {
   await assertProfileAccess(userId, profileId, "OWNER");
-  return prisma.visit.create({ data: { ...input, profileId } });
+  const { doctorId, facilityId, locationId, date, dueMonth, type, notes, status } = input;
+  const visit = await prisma.visit.create({ data: { doctorId, facilityId, locationId, date, dueMonth, type, notes, status, profileId } });
+  await logAudit(userId, profileId, "CREATE_VISIT", "Visit", visit.id, { type: visit.type });
+  return visit;
 }
 
 export async function updateVisit(
@@ -43,10 +55,14 @@ export async function updateVisit(
   input: Partial<CreateVisitInput>
 ) {
   await assertProfileAccess(userId, profileId, "OWNER");
-  return prisma.visit.update({ where: { id: visitId, profileId }, data: input });
+  const { doctorId, facilityId, locationId, date, dueMonth, type, notes, status } = input;
+  const visit = await prisma.visit.update({ where: { id: visitId, profileId }, data: { doctorId, facilityId, locationId, date, dueMonth, type, notes, status } });
+  await logAudit(userId, profileId, "UPDATE_VISIT", "Visit", visitId);
+  return visit;
 }
 
 export async function deleteVisit(userId: string, profileId: string, visitId: string) {
   await assertProfileAccess(userId, profileId, "OWNER");
+  await logAudit(userId, profileId, "DELETE_VISIT", "Visit", visitId);
   return prisma.visit.delete({ where: { id: visitId, profileId } });
 }

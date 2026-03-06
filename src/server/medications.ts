@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { assertProfileAccess } from "@/lib/permissions";
+import { assertProfileAccess, PermissionError } from "@/lib/permissions";
+import { logAudit } from "@/lib/audit";
 
 export async function getMedicationsForProfile(userId: string, profileId: string) {
   await assertProfileAccess(userId, profileId);
@@ -31,13 +32,28 @@ export interface CreateMedicationInput {
   active?: boolean;
 }
 
+export async function getMedicationById(
+  userId: string,
+  profileId: string,
+  medicationId: string
+) {
+  await assertProfileAccess(userId, profileId);
+  return prisma.medication.findUnique({
+    where: { id: medicationId, profileId },
+    include: { prescribingDoctor: true, logs: { orderBy: { date: "desc" }, take: 20 } },
+  });
+}
+
 export async function createMedication(
   userId: string,
   profileId: string,
   input: CreateMedicationInput
 ) {
   await assertProfileAccess(userId, profileId, "OWNER");
-  return prisma.medication.create({ data: { ...input, profileId } });
+  const { name, prescribingDoctorId, startDate, endDate, instructions, active } = input;
+  const medication = await prisma.medication.create({ data: { name, prescribingDoctorId, startDate, endDate, instructions, active, profileId } });
+  await logAudit(userId, profileId, "CREATE_MEDICATION", "Medication", medication.id, { name: medication.name });
+  return medication;
 }
 
 export interface CreateLogInput {
@@ -49,6 +65,29 @@ export interface CreateLogInput {
   notes?: string;
 }
 
+export async function updateMedication(
+  userId: string,
+  profileId: string,
+  medicationId: string,
+  input: Partial<CreateMedicationInput>
+) {
+  await assertProfileAccess(userId, profileId, "OWNER");
+  const { name, prescribingDoctorId, startDate, endDate, instructions, active } = input;
+  const medication = await prisma.medication.update({ where: { id: medicationId, profileId }, data: { name, prescribingDoctorId, startDate, endDate, instructions, active } });
+  await logAudit(userId, profileId, "UPDATE_MEDICATION", "Medication", medicationId);
+  return medication;
+}
+
+export async function deleteMedication(
+  userId: string,
+  profileId: string,
+  medicationId: string
+) {
+  await assertProfileAccess(userId, profileId, "OWNER");
+  await logAudit(userId, profileId, "DELETE_MEDICATION", "Medication", medicationId);
+  return prisma.medication.delete({ where: { id: medicationId, profileId } });
+}
+
 export async function createMedicationLog(
   userId: string,
   profileId: string,
@@ -56,7 +95,17 @@ export async function createMedicationLog(
   input: CreateLogInput
 ) {
   await assertProfileAccess(userId, profileId, "OWNER");
-  return prisma.medicationLog.create({
-    data: { ...input, medicationId },
+  // Verify the medication belongs to the asserted profile — prevents cross-profile
+  // log injection if an attacker knows a medicationId from another profile.
+  const medication = await prisma.medication.findUnique({
+    where: { id: medicationId, profileId },
+    select: { id: true },
   });
+  if (!medication) throw new PermissionError("FORBIDDEN", 403);
+  const { date, dosage, unit, injectionSite, weight, notes } = input;
+  const log = await prisma.medicationLog.create({
+    data: { date, dosage, unit, injectionSite, weight, notes, medicationId },
+  });
+  await logAudit(userId, profileId, "CREATE_MEDICATION_LOG", "MedicationLog", log.id, { medicationId });
+  return log;
 }

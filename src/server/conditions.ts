@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { assertProfileAccess } from "@/lib/permissions";
-import type { ConditionStatus } from "@/generated/prisma";
+import { logAudit } from "@/lib/audit";
+import type { ConditionStatus } from "@/generated/prisma/enums";
 
 export async function getConditionsForProfile(userId: string, profileId: string) {
   await assertProfileAccess(userId, profileId);
@@ -23,7 +24,19 @@ export async function createCondition(
   input: CreateConditionInput
 ) {
   await assertProfileAccess(userId, profileId, "OWNER");
-  return prisma.condition.create({ data: { ...input, profileId } });
+  const { name, diagnosisDate, status, notes } = input;
+  const condition = await prisma.condition.create({ data: { name, diagnosisDate, status, notes, profileId } });
+  await logAudit(userId, profileId, "CREATE_CONDITION", "Condition", condition.id, { name: condition.name });
+  return condition;
+}
+
+export async function getConditionById(
+  userId: string,
+  profileId: string,
+  conditionId: string
+) {
+  await assertProfileAccess(userId, profileId);
+  return prisma.condition.findUnique({ where: { id: conditionId, profileId } });
 }
 
 export async function updateCondition(
@@ -33,5 +46,18 @@ export async function updateCondition(
   input: Partial<CreateConditionInput>
 ) {
   await assertProfileAccess(userId, profileId, "OWNER");
-  return prisma.condition.update({ where: { id: conditionId, profileId }, data: input });
+  const { name, diagnosisDate, status, notes } = input;
+  const condition = await prisma.condition.update({ where: { id: conditionId, profileId }, data: { name, diagnosisDate, status, notes } });
+  await logAudit(userId, profileId, "UPDATE_CONDITION", "Condition", conditionId);
+  return condition;
+}
+
+export async function deleteCondition(
+  userId: string,
+  profileId: string,
+  conditionId: string
+) {
+  await assertProfileAccess(userId, profileId, "OWNER");
+  await logAudit(userId, profileId, "DELETE_CONDITION", "Condition", conditionId);
+  return prisma.condition.delete({ where: { id: conditionId, profileId } });
 }

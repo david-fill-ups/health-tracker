@@ -1,5 +1,5 @@
-import ical, { ICalCalendarMethod } from "ical-generator";
-import type { Visit, Doctor, Facility } from "@/generated/prisma";
+import ical, { ICalCalendarMethod, ICalEventStatus } from "ical-generator";
+import type { Visit, Doctor, Facility } from "@/generated/prisma/client";
 
 type VisitWithRelations = Visit & {
   doctor: Doctor | null;
@@ -33,7 +33,7 @@ export function generateCalendarFeed(
       end: new Date(visit.date.getTime() + 60 * 60 * 1000), // Default 1h duration
       summary,
       description: visit.notes ?? undefined,
-      status: visit.status === "CANCELLED" ? "CANCELLED" : "CONFIRMED",
+      status: visit.status === "CANCELLED" ? ICalEventStatus.CANCELLED : ICalEventStatus.CONFIRMED,
     });
   }
 

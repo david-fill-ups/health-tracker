@@ -36,9 +36,11 @@
     {
       "id": "A",
       "name": "core-api",
-      "status": "pending",
+      "status": "complete",
       "description": "CRUD API routes for Profiles, Facilities, Locations, Doctors. Also owns src/types/index.ts Zod schemas.",
-      "blockedBy": [0],
+      "blockedBy": [
+        0
+      ],
       "priority": 1,
       "estimatedFiles": 12,
       "targetFiles": [
@@ -51,14 +53,16 @@
         "src/app/api/doctors/route.ts",
         "src/app/api/doctors/[id]/route.ts"
       ],
-      "notes": "Use assertProfileAccess from src/lib/permissions.ts. All routes must check session. Use server functions from src/server/* as the data layer — do not call prisma directly from routes."
+      "notes": "Use assertProfileAccess from src/lib/permissions.ts. All routes must check session. Use server functions from src/server/* as the data layer â€” do not call prisma directly from routes."
     },
     {
       "id": "B",
       "name": "visits-medications-conditions-api",
-      "status": "pending",
+      "status": "complete",
       "description": "CRUD API routes for Visits, Medications, MedicationLogs, and Conditions.",
-      "blockedBy": [0],
+      "blockedBy": [
+        0
+      ],
       "priority": 1,
       "estimatedFiles": 10,
       "targetFiles": [
@@ -75,9 +79,11 @@
     {
       "id": "C",
       "name": "vaccinations-api",
-      "status": "pending",
+      "status": "complete",
       "description": "CRUD API routes for Vaccinations. Also adds GET /api/vaccinations/recommendations endpoint.",
-      "blockedBy": [0],
+      "blockedBy": [
+        0
+      ],
       "priority": 1,
       "estimatedFiles": 4,
       "targetFiles": [
@@ -90,9 +96,12 @@
     {
       "id": "D",
       "name": "ui-shell-dashboard-profiles",
-      "status": "pending",
+      "status": "complete",
       "description": "Profile switcher, dashboard widgets (real data), full Profiles CRUD UI.",
-      "blockedBy": [0, "A"],
+      "blockedBy": [
+        0,
+        "A"
+      ],
       "priority": 2,
       "estimatedFiles": 14,
       "targetFiles": [
@@ -112,9 +121,13 @@
     {
       "id": "E",
       "name": "ui-healthcare-team-visits",
-      "status": "pending",
+      "status": "complete",
       "description": "Healthcare Team page with Facility/Doctor CRUD, Visits list + CRUD forms.",
-      "blockedBy": [0, "A", "B"],
+      "blockedBy": [
+        0,
+        "A",
+        "B"
+      ],
       "priority": 3,
       "estimatedFiles": 14,
       "targetFiles": [
@@ -134,9 +147,13 @@
     {
       "id": "F",
       "name": "ui-medications-conditions-vaccinations",
-      "status": "pending",
+      "status": "complete",
       "description": "Medications, Conditions, and Vaccinations CRUD UI + CDC compliance view.",
-      "blockedBy": [0, "B", "C"],
+      "blockedBy": [
+        0,
+        "B",
+        "C"
+      ],
       "priority": 3,
       "estimatedFiles": 16,
       "targetFiles": [
@@ -153,17 +170,49 @@
         "src/app/(app)/vaccinations/page.tsx"
       ],
       "notes": "MedicationLogForm captures: date, dosage, unit, injectionSite (dropdown), weight (lbs). Vaccination page shows two sections: recorded vaccinations and CDC compliance table. CdcComplianceRow uses color-coded status badges: green=up_to_date, amber=due, red=overdue, gray=not_applicable."
+    },
+    {
+      "id": "G",
+      "name": "integration-build-validation",
+      "status": "complete",
+      "description": "Final integration agent: audited all files from agents A-F, fixed TypeScript errors, and validated npm run build passes cleanly (41 routes, 0 errors).",
+      "blockedBy": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
+      "priority": 4,
+      "fixes": [
+        "Fixed metadata type incompatibility in src/lib/audit.ts (cast Record<string,unknown> to any for Prisma JSON field)",
+        "Confirmed all @/generated/prisma/* import subpaths correct (/client for models, /enums for enum types)",
+        "Confirmed PermissionError caught consistently in all API routes",
+        "Confirmed async params pattern (Promise<{ id: string }>) used in all [id] route files",
+        "Confirmed AuditLog model in schema (added by agents beyond original spec)",
+        "Confirmed @upstash/ratelimit installed and middleware falls back gracefully without env vars",
+        "Build result: 41 routes compiled, TypeScript clean, 0 errors"
+      ]
     }
   ],
   "parallelExecutionGroups": [
     {
       "group": 1,
-      "canRunInParallel": ["A", "B", "C"],
+      "canRunInParallel": [
+        "A",
+        "B",
+        "C"
+      ],
       "note": "All three API workstreams depend only on Phase 0 and can run fully in parallel"
     },
     {
       "group": 2,
-      "canRunInParallel": ["D", "E", "F"],
+      "canRunInParallel": [
+        "D",
+        "E",
+        "F"
+      ],
       "note": "UI workstreams depend on Phase 0 + specific API workstreams. D can start when A is done. E can start when A+B are done. F can start when B+C are done. In practice, spin up all three together once A, B, C are done."
     }
   ]
