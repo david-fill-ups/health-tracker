@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { PermissionError } from "@/lib/permissions";
 import { getLocationsForFacility, createLocation } from "@/server/locations";
+import { parseBody, CreateLocationSchema } from "@/lib/validation";
 
 export async function GET(req: Request) {
   const session = await auth();
@@ -26,7 +27,9 @@ export async function POST(req: Request) {
     const facilityId = searchParams.get("facilityId");
     if (!facilityId) return NextResponse.json({ error: "facilityId query param required" }, { status: 400 });
     const body = await req.json();
-    const data = await createLocation(session.user.id, facilityId, body);
+    const parsed = parseBody(CreateLocationSchema, body);
+    if (!parsed.ok) return parsed.response;
+    const data = await createLocation(session.user.id, facilityId, parsed.data);
     return NextResponse.json(data, { status: 201 });
   } catch (e) {
     if (e instanceof PermissionError) return NextResponse.json({ error: e.message }, { status: e.statusCode });

@@ -16,6 +16,7 @@ interface MedicationLog {
 interface Medication {
   id: string;
   name: string;
+  dosage: string | null;
   active: boolean;
   startDate: string | null;
   endDate: string | null;
@@ -71,7 +72,12 @@ export default function MedicationDetailPage({
           ← Back to Medications
         </a>
         <div className="mt-2 flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-gray-900">{medication.name}</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {medication.name}
+            {medication.dosage && (
+              <span className="ml-2 text-xl font-normal text-gray-500">{medication.dosage}</span>
+            )}
+          </h1>
           {medication.active ? (
             <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
               Active

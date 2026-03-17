@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { PermissionError } from "@/lib/permissions";
 import { getVisitById, updateVisit, deleteVisit } from "@/server/visits";
+import { parseBody, UpdateVisitSchema } from "@/lib/validation";
 
 type Params = Promise<{ id: string }>;
 
@@ -47,10 +48,11 @@ export async function PUT(req: Request, { params }: { params: Params }) {
   }
 
   try {
-    const input = await req.json();
-    if (input.date) input.date = new Date(input.date);
+    const body = await req.json();
+    const parsed = parseBody(UpdateVisitSchema, body);
+    if (!parsed.ok) return parsed.response;
 
-    const visit = await updateVisit(session.user.id, profileId, id, input);
+    const visit = await updateVisit(session.user.id, profileId, id, parsed.data);
     return NextResponse.json(visit);
   } catch (err) {
     if (err instanceof PermissionError) {

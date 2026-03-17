@@ -9,128 +9,95 @@ export function AboutModal() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="mt-6 w-full text-center text-xs text-indigo-500 hover:text-indigo-700 hover:underline focus:outline-none"
+        className="text-gray-400 hover:text-gray-600 text-xs transition-colors"
       >
         About this project
       </button>
 
       {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={() => setOpen(false)}
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
-            className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">About this project</h2>
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setOpen(false)}
+          />
+          <div className="relative bg-white border border-gray-200 rounded-xl p-6 max-w-2xl w-full mx-4 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between gap-4">
+              <h2 className="text-base font-semibold text-gray-900">About this project</h2>
               <button
                 onClick={() => setOpen(false)}
-                className="text-gray-400 hover:text-gray-600 focus:outline-none"
+                className="text-gray-400 hover:text-gray-600 transition-colors text-lg leading-none mt-0.5"
                 aria-label="Close"
               >
                 ✕
               </button>
             </div>
 
-            {/* What is this */}
-            <section className="mb-6">
-              <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">
-                What is this?
-              </h3>
-              <p className="text-sm leading-relaxed text-gray-700">
+            <div className="space-y-2">
+              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide">What is this?</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
                 A personal health management app for tracking medical records across multiple
                 family profiles. Log doctor visits, medications with dosage history, vaccinations,
                 and health conditions — all organized per person.
               </p>
-              <p className="mt-3 text-sm leading-relaxed text-gray-700">
+              <p className="text-sm text-gray-600 leading-relaxed">
                 Each account can hold multiple profiles (e.g., yourself, a spouse, a child).
                 Profiles can be shared with other users at different permission levels —
                 Owner, Write, or Read-Only — so the whole family stays on the same page.
               </p>
-              <p className="mt-3 text-sm leading-relaxed text-gray-700">
+              <p className="text-sm text-gray-600 leading-relaxed">
                 Every profile generates a private WebCal feed you can subscribe to in
                 Google Calendar, Apple Calendar, or Outlook. Upcoming appointments and
                 medication reminders show up automatically alongside the rest of your schedule.
               </p>
-            </section>
+            </div>
 
-            <hr className="my-4 border-gray-100" />
-
-            {/* Tech stack */}
-            <section className="mb-6">
-              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-500">
-                Tech stack &amp; hosting
-              </h3>
-              <div className="space-y-3">
+            <div className="space-y-3">
+              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide">Tech stack &amp; hosting</h3>
+              <ul className="space-y-2">
                 {[
-                  {
-                    name: "Next.js",
-                    desc: "The React framework powering the app — handles routing, server-side rendering, and API endpoints.",
-                  },
-                  {
-                    name: "TypeScript",
-                    desc: "Typed JavaScript. Catches bugs at compile time rather than at runtime.",
-                  },
-                  {
-                    name: "Tailwind CSS",
-                    desc: "Utility-first CSS framework used for all styling — no separate stylesheet files.",
-                  },
-                  {
-                    name: "Prisma ORM",
-                    desc: "Handles all database reads and writes. Lets you work with the database using TypeScript instead of raw SQL.",
-                  },
-                  {
-                    name: "PostgreSQL",
-                    desc: "The relational database storing all user data — profiles, visits, medications, vaccinations, etc.",
-                  },
-                  {
-                    name: "NextAuth v5",
-                    desc: "Authentication library managing the Google sign-in flow and user sessions.",
-                  },
-                  {
-                    name: "Vercel",
-                    desc: "Hosting platform where the app is deployed. Handles CI/CD — every push to main goes live automatically.",
-                  },
+                  { name: "Next.js", desc: "The React framework powering the app — handles routing, server-side rendering, and API endpoints." },
+                  { name: "TypeScript", desc: "Typed JavaScript. Catches bugs at compile time rather than at runtime." },
+                  { name: "Tailwind CSS", desc: "Utility-first CSS framework used for all styling — no separate stylesheet files." },
+                  { name: "Prisma ORM", desc: "Handles all database reads and writes. Lets you work with the database using TypeScript instead of raw SQL." },
+                  { name: "PostgreSQL", desc: "The relational database storing all user data — profiles, visits, medications, vaccinations, etc." },
+                  { name: "NextAuth v5", desc: "Authentication library managing the Google sign-in flow and user sessions." },
+                  { name: "Vercel", desc: "Hosting platform where the app is deployed. Handles CI/CD — every push to main goes live automatically." },
                 ].map(({ name, desc }) => (
-                  <div key={name}>
-                    <span className="text-sm font-medium text-gray-900">{name}</span>
-                    <p className="text-sm text-gray-500">{desc}</p>
-                  </div>
+                  <li key={name} className="grid grid-cols-[8rem_1fr] gap-3 items-baseline">
+                    <span className="text-xs font-medium text-gray-800 text-right">{name}</span>
+                    <p className="text-xs text-gray-500 leading-relaxed text-left">{desc}</p>
+                  </li>
                 ))}
-              </div>
-            </section>
+              </ul>
+            </div>
 
-            <hr className="my-4 border-gray-100" />
-
-            {/* Access */}
-            <section>
-              <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">
-                Want access?
-              </h3>
-              <p className="text-sm text-gray-700">
+            <div className="space-y-1">
+              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide">Want access?</h3>
+              <p className="text-sm text-gray-600">
                 Email{" "}
                 <a
                   href="mailto:phillipsdavidpaul@gmail.com"
-                  className="text-indigo-500 hover:underline"
+                  className="text-indigo-500 hover:text-indigo-600 transition-colors"
                 >
                   phillipsdavidpaul@gmail.com
                 </a>{" "}
                 to be added as a tester.
               </p>
-              <p className="mt-3">
-                <a
-                  href="https://www.linkedin.com/in/davidpaulphillips/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-indigo-500 hover:underline"
-                >
-                  Connect on LinkedIn
-                </a>
-              </p>
-            </section>
+            </div>
+
+            <div className="pt-3 border-t border-gray-100">
+              <a
+                href="https://www.linkedin.com/in/davidpaulphillips/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm text-indigo-500 hover:text-indigo-600 transition-colors"
+              >
+                <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                </svg>
+                Connect on LinkedIn
+              </a>
+            </div>
           </div>
         </div>
       )}

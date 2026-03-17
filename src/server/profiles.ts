@@ -44,25 +44,30 @@ export async function getProfileById(userId: string, profileId: string) {
 
 export interface CreateProfileInput {
   name: string;
-  birthYear: number;
+  birthDate: Date;
   sex: Sex;
   state?: string;
   notes?: string;
 }
 
-export async function createProfile(userId: string, input: CreateProfileInput) {
+export async function createProfile(
+  userId: string,
+  input: CreateProfileInput,
+  options: { isOwnerProfile?: boolean } = {}
+) {
   const { randomBytes } = await import("crypto");
   const profile = await prisma.profile.create({
     data: {
       // Explicitly enumerate allowed fields — prevents mass assignment of system
-      // fields (calendarToken, userId, createdAt, etc.) from the raw request body.
+      // fields (calendarToken, userId, isOwnerProfile, createdAt, etc.) from the raw request body.
       name: input.name,
-      birthYear: input.birthYear,
+      birthDate: input.birthDate,
       sex: input.sex,
       state: input.state,
       notes: input.notes,
       calendarToken: randomBytes(20).toString("hex"),
       userId,
+      isOwnerProfile: options.isOwnerProfile ?? false,
       access: {
         create: { userId, permission: "OWNER" },
       },
@@ -80,10 +85,10 @@ export async function updateProfile(
   await assertProfileAccess(userId, profileId, "OWNER");
   // Explicitly enumerate allowed fields — prevents mass assignment of system
   // fields (userId, calendarToken, etc.) from the raw request body.
-  const { name, birthYear, sex, state, notes } = input;
+  const { name, birthDate, sex, state, notes } = input;
   const profile = await prisma.profile.update({
     where: { id: profileId },
-    data: { name, birthYear, sex, state, notes },
+    data: { name, birthDate, sex, state, notes },
   });
   await logAudit(userId, profileId, "UPDATE_PROFILE", "Profile", profileId);
   return profile;

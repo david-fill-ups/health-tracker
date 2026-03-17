@@ -175,33 +175,54 @@ export function VisitForm({ profileId, initial, onSuccess, onCancel }: Props) {
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {/* Date */}
+        {/* Status */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Appointment Date
-          </label>
-          <input
-            type="datetime-local"
-            value={form.date}
-            onChange={(e) => set("date", e.target.value)}
+          <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <select
+            value={form.status}
+            onChange={(e) => {
+              const newStatus = e.target.value as VisitStatus;
+              setForm((f) => ({
+                ...f,
+                status: newStatus,
+                date: newStatus === "PENDING" ? "" : f.date,
+                dueMonth: newStatus !== "PENDING" ? "" : f.dueMonth,
+              }));
+            }}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+          >
+            {VISIT_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {VISIT_STATUS_LABELS[s]}
+              </option>
+            ))}
+          </select>
         </div>
 
-        {/* Due Month (shown when date is empty) */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Due Month{" "}
-            <span className="text-gray-400 font-normal">(if not yet scheduled)</span>
-          </label>
-          <input
-            type="month"
-            value={form.dueMonth}
-            onChange={(e) => set("dueMonth", e.target.value)}
-            disabled={!!form.date}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-400"
-          />
-        </div>
+        {/* Date or Due Month based on status */}
+        {form.status === "PENDING" ? (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Due Month</label>
+            <input
+              type="month"
+              value={form.dueMonth}
+              onChange={(e) => set("dueMonth", e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+        ) : (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Appointment Date
+            </label>
+            <input
+              type="datetime-local"
+              value={form.date}
+              onChange={(e) => set("date", e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+        )}
 
         {/* Type */}
         <div>
@@ -214,22 +235,6 @@ export function VisitForm({ profileId, initial, onSuccess, onCancel }: Props) {
             {VISIT_TYPES.map((t) => (
               <option key={t} value={t}>
                 {VISIT_TYPE_LABELS[t]}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Status */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-          <select
-            value={form.status}
-            onChange={(e) => set("status", e.target.value as VisitStatus)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            {VISIT_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {VISIT_STATUS_LABELS[s]}
               </option>
             ))}
           </select>

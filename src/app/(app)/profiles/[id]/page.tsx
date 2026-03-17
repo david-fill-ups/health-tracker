@@ -3,6 +3,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { getProfileById, regenerateCalendarToken } from "@/server/profiles";
 import { CopyButton } from "@/components/profiles/CopyButton";
+import { SharingSection } from "@/components/profiles/SharingSection";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -44,8 +45,8 @@ export default async function ProfileDetailPage({ params }: Props) {
             <p className="mt-1 text-gray-800">{profile.name}</p>
           </div>
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Birth Year</p>
-            <p className="mt-1 text-gray-800">{profile.birthYear}</p>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Date of Birth</p>
+            <p className="mt-1 text-gray-800">{new Date(profile.birthDate).toLocaleDateString()}</p>
           </div>
           <div>
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Sex</p>
@@ -80,6 +81,8 @@ export default async function ProfileDetailPage({ params }: Props) {
             </button>
           </form>
         </div>
+
+        <SharingSection profileId={id} currentUserId={session.user.id} />
 
         <div className="border-t border-gray-100 pt-4 flex gap-3">
           <Link

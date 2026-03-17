@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { PermissionError } from "@/lib/permissions";
 import { updateLocation, deleteLocation } from "@/server/locations";
+import { parseBody, UpdateLocationSchema } from "@/lib/validation";
 import { prisma } from "@/lib/prisma";
 
 type Params = { params: Promise<{ id: string }> };
@@ -34,7 +35,9 @@ export async function PUT(req: Request, { params }: Params) {
     const facilityId = searchParams.get("facilityId");
     if (!facilityId) return NextResponse.json({ error: "facilityId query param required" }, { status: 400 });
     const body = await req.json();
-    const data = await updateLocation(session.user.id, facilityId, id, body);
+    const parsed = parseBody(UpdateLocationSchema, body);
+    if (!parsed.ok) return parsed.response;
+    const data = await updateLocation(session.user.id, facilityId, id, parsed.data);
     return NextResponse.json(data);
   } catch (e) {
     if (e instanceof PermissionError) return NextResponse.json({ error: e.message }, { status: e.statusCode });

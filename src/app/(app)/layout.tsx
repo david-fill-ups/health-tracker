@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopNav } from "@/components/layout/TopNav";
 import { ProfileProvider } from "@/components/layout/ProfileProvider";
@@ -10,7 +11,12 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const session = await auth();
-  if (!session?.user) redirect("/login");
+  if (!session?.user?.id) redirect("/login");
+
+  const profileCount = await prisma.profileAccess.count({
+    where: { userId: session.user.id },
+  });
+  if (profileCount === 0) redirect("/onboarding");
 
   return (
     <ProfileProvider>

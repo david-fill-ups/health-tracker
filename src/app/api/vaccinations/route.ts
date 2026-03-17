@@ -5,6 +5,7 @@ import {
   getVaccinationsForProfile,
   createVaccination,
 } from "@/server/vaccinations";
+import { parseBody, CreateVaccinationSchema } from "@/lib/validation";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -35,24 +36,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await req.json();
-  const { profileId, name, date, facilityId, lotNumber, notes } = body;
-
-  if (!profileId || !name || !date) {
-    return NextResponse.json(
-      { error: "profileId, name, and date are required" },
-      { status: 400 }
-    );
-  }
-
   try {
-    const vaccination = await createVaccination(session.user.id, profileId, {
-      name,
-      date: new Date(date),
-      facilityId,
-      lotNumber,
-      notes,
-    });
+    const body = await req.json();
+    const parsed = parseBody(CreateVaccinationSchema, body);
+    if (!parsed.ok) return parsed.response;
+    const { profileId, ...input } = parsed.data;
+
+    const vaccination = await createVaccination(session.user.id, profileId, input);
     return NextResponse.json(vaccination, { status: 201 });
   } catch (err) {
     if (err instanceof PermissionError) {

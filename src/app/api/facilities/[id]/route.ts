@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { PermissionError } from "@/lib/permissions";
 import { updateFacility, deleteFacility } from "@/server/facilities";
+import { parseBody, UpdateFacilitySchema } from "@/lib/validation";
 import { prisma } from "@/lib/prisma";
 
 type Params = { params: Promise<{ id: string }> };
@@ -37,7 +38,9 @@ export async function PUT(req: Request, { params }: Params) {
     const profileId = searchParams.get("profileId");
     if (!profileId) return NextResponse.json({ error: "profileId query param required" }, { status: 400 });
     const body = await req.json();
-    const data = await updateFacility(session.user.id, profileId, id, body);
+    const parsed = parseBody(UpdateFacilitySchema, body);
+    if (!parsed.ok) return parsed.response;
+    const data = await updateFacility(session.user.id, profileId, id, parsed.data);
     return NextResponse.json(data);
   } catch (e) {
     if (e instanceof PermissionError) return NextResponse.json({ error: e.message }, { status: e.statusCode });

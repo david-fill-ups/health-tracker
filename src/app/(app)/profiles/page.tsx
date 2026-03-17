@@ -8,7 +8,7 @@ import { ProfileCard } from "@/components/profiles/ProfileCard";
 interface Profile {
   id: string;
   name: string;
-  birthYear: number;
+  birthDate: string;
   sex: string;
   state: string | null;
   calendarToken: string;

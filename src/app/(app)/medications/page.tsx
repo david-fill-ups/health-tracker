@@ -16,6 +16,7 @@ interface MedicationLog {
 interface Medication {
   id: string;
   name: string;
+  dosage: string | null;
   prescribingDoctorId: string | null;
   startDate: string | null;
   endDate: string | null;

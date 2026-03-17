@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { PermissionError } from "@/lib/permissions";
 import { getProfilesForUser, createProfile } from "@/server/profiles";
+import { parseBody, CreateProfileSchema } from "@/lib/validation";
 
 export async function GET() {
   const session = await auth();
@@ -20,7 +21,9 @@ export async function POST(req: Request) {
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const body = await req.json();
-    const data = await createProfile(session.user.id, body);
+    const parsed = parseBody(CreateProfileSchema, body);
+    if (!parsed.ok) return parsed.response;
+    const data = await createProfile(session.user.id, parsed.data);
     return NextResponse.json(data, { status: 201 });
   } catch (e) {
     if (e instanceof PermissionError) return NextResponse.json({ error: e.message }, { status: e.statusCode });

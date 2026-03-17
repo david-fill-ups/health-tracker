@@ -1,5 +1,6 @@
 import { signOut } from "@/auth";
 import Image from "next/image";
+import Link from "next/link";
 import { ProfileSwitcher } from "./ProfileSwitcher";
 
 interface User {
@@ -15,16 +16,18 @@ export function TopNav({ user }: { user: User }) {
         <ProfileSwitcher />
       </div>
       <div className="flex items-center gap-3">
-        {user.image && (
-          <Image
-            src={user.image}
-            alt={user.name ?? "User"}
-            width={32}
-            height={32}
-            className="rounded-full"
-          />
-        )}
-        <span className="text-sm font-medium text-gray-700">{user.name}</span>
+        <Link href="/account" className="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-gray-100 transition-colors">
+          {user.image && (
+            <Image
+              src={user.image}
+              alt={user.name ?? "User"}
+              width={32}
+              height={32}
+              className="rounded-full"
+            />
+          )}
+          <span className="text-sm font-medium text-gray-700">{user.name}</span>
+        </Link>
         <form
           action={async () => {
             "use server";

@@ -20,4 +20,30 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       return session;
     },
   },
+  events: {
+    async createUser({ user }) {
+      if (!user.email || !user.id) return;
+      await prisma.auditLog.create({
+        data: {
+          userId: user.id,
+          action: "CREATE",
+          entityType: "User",
+          entityId: user.id,
+          metadata: { email: user.email },
+        },
+      });
+      const pending = await prisma.profileInvitation.findMany({
+        where: { email: user.email },
+      });
+      if (pending.length === 0) return;
+      await prisma.$transaction([
+        ...pending.map((inv) =>
+          prisma.profileAccess.create({
+            data: { profileId: inv.profileId, userId: user.id!, permission: inv.permission },
+          })
+        ),
+        prisma.profileInvitation.deleteMany({ where: { email: user.email! } }),
+      ]);
+    },
+  },
 });

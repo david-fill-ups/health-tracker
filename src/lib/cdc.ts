@@ -74,9 +74,9 @@ export function getVaccinationStatus(
     if (!lastDose) {
       return {
         vaccine: vaccine.vaccine,
-        status: "due",
+        status: "overdue",
         lastDoseDate: null,
-        nextDueDate: now,
+        nextDueDate: null,
         notes: ageGroup.notes,
       };
     }
@@ -107,9 +107,9 @@ export function getVaccinationStatus(
     }
     return {
       vaccine: vaccine.vaccine,
-      status: "due",
+      status: vaccinationDates.length === 0 ? "overdue" : "due",
       lastDoseDate: lastDose,
-      nextDueDate: now,
+      nextDueDate: vaccinationDates.length === 0 ? null : now,
       notes: `${vaccinationDates.length}/${requiredDoses} doses completed. ${ageGroup.notes}`,
     };
   }
@@ -127,9 +127,9 @@ export function getVaccinationStatus(
 
   return {
     vaccine: vaccine.vaccine,
-    status: "due",
+    status: "overdue",
     lastDoseDate: null,
-    nextDueDate: now,
+    nextDueDate: null,
     notes: ageGroup.notes,
   };
 }
@@ -137,15 +137,17 @@ export function getVaccinationStatus(
 /**
  * Generates full vaccination recommendations for a profile.
  *
- * @param profileBirthYear - Profile's birth year
+ * @param birthDate - Profile's full date of birth
  * @param vaccinationsByName - Map of vaccine name (lowercased) → array of dose dates
  */
 export function generateRecommendations(
-  profileBirthYear: number,
+  birthDate: Date,
   vaccinationsByName: Map<string, Date[]>
 ): VaccinationRecommendation[] {
   const now = new Date();
-  const ageMonths = (now.getFullYear() - profileBirthYear) * 12 + now.getMonth();
+  const ageMonths =
+    (now.getFullYear() - birthDate.getFullYear()) * 12 +
+    (now.getMonth() - birthDate.getMonth());
 
   return schedule.schedules.map((vaccineSchedule) => {
     // Check all name variants (vaccine + aliases)

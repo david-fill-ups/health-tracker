@@ -1,14 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useProfile } from "@/components/layout/ProfileProvider";
 import { CopyButton } from "./CopyButton";
 
 interface Profile {
   id: string;
   name: string;
-  birthYear: number;
+  birthDate: string;
   sex: string;
   state: string | null;
   calendarToken: string;
@@ -26,16 +25,7 @@ export function ProfileCard({
   profile: Profile;
   isActive: boolean;
 }) {
-  const router = useRouter();
-  const [deleting, setDeleting] = useState(false);
-
-  async function handleDelete() {
-    if (!confirm(`Delete profile "${profile.name}"? This cannot be undone.`)) return;
-    setDeleting(true);
-    await fetch(`/api/profiles/${profile.id}`, { method: "DELETE" });
-    router.refresh();
-  }
-
+  const { setActiveProfileId } = useProfile();
   const calUrl = calendarUrl(profile.id, profile.calendarToken);
 
   return (
@@ -48,7 +38,7 @@ export function ProfileCard({
         <div>
           <h3 className="text-base font-semibold text-gray-900">{profile.name}</h3>
           <p className="mt-0.5 text-sm text-gray-500">
-            Born {profile.birthYear} &middot;{" "}
+            Born {new Date(profile.birthDate).toLocaleDateString()} &middot;{" "}
             {profile.sex.replace(/_/g, " ").toLowerCase()}{" "}
             {profile.state && <>&middot; {profile.state}</>}
           </p>
@@ -76,11 +66,11 @@ export function ProfileCard({
           Edit
         </Link>
         <button
-          onClick={handleDelete}
-          disabled={deleting}
-          className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+          onClick={() => setActiveProfileId(profile.id)}
+          disabled={isActive}
+          className="rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-50 disabled:text-gray-400 border-indigo-200 text-indigo-600 hover:bg-indigo-50"
         >
-          {deleting ? "Deleting…" : "Delete"}
+          {isActive ? "Active" : "Switch to this"}
         </button>
       </div>
     </div>

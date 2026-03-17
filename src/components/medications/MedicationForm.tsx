@@ -13,6 +13,7 @@ interface MedicationFormProps {
   /** When provided, the form operates in edit mode */
   initialValues?: {
     name: string;
+    dosage: string | null;
     prescribingDoctorId: string | null;
     startDate: string | null;
     endDate: string | null;
@@ -29,6 +30,7 @@ export function MedicationForm({ profileId, initialValues, medicationId }: Medic
   const [error, setError] = useState<string | null>(null);
 
   const [name, setName] = useState(initialValues?.name ?? "");
+  const [dosage, setDosage] = useState(initialValues?.dosage ?? "");
   const [prescribingDoctorId, setPrescribingDoctorId] = useState(
     initialValues?.prescribingDoctorId ?? ""
   );
@@ -52,6 +54,7 @@ export function MedicationForm({ profileId, initialValues, medicationId }: Medic
     const body = {
       profileId,
       name,
+      dosage: dosage || null,
       prescribingDoctorId: prescribingDoctorId || null,
       startDate: startDate || null,
       endDate: endDate || null,
@@ -103,7 +106,18 @@ export function MedicationForm({ profileId, initialValues, medicationId }: Medic
           value={name}
           onChange={(e) => setName(e.target.value)}
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          placeholder="e.g. Metformin 500mg"
+          placeholder="e.g. Metformin"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Dosage</label>
+        <input
+          type="text"
+          value={dosage}
+          onChange={(e) => setDosage(e.target.value)}
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          placeholder="e.g. 500mg, 10mg/0.5mL"
         />
       </div>
 

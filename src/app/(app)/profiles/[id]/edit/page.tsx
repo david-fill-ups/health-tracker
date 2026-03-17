@@ -20,7 +20,7 @@ export default async function EditProfilePage({ params }: Props) {
   const formProfile = {
     id: profile.id,
     name: profile.name,
-    birthYear: profile.birthYear,
+    birthDate: profile.birthDate.toISOString().slice(0, 10),
     sex: profile.sex as string,
     state: profile.state ?? "",
     notes: profile.notes ?? "",

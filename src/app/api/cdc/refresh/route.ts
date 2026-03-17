@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { timingSafeEqual } from "crypto";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -13,7 +14,18 @@ export async function GET(req: Request) {
   const authHeader = req.headers.get("authorization");
   const expectedToken = process.env.CRON_SECRET;
 
-  if (!expectedToken || authHeader !== `Bearer ${expectedToken}`) {
+  if (!expectedToken) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const provided = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : "";
+  let authorized = false;
+  try {
+    authorized = timingSafeEqual(Buffer.from(provided), Buffer.from(expectedToken));
+  } catch {
+    authorized = false;
+  }
+  if (!authorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

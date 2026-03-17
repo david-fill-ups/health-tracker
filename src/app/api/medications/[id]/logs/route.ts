@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { PermissionError } from "@/lib/permissions";
 import { getMedicationLogs, createMedicationLog } from "@/server/medications";
+import { parseBody, CreateMedicationLogSchema } from "@/lib/validation";
 
 type Params = Promise<{ id: string }>;
 
@@ -40,15 +41,9 @@ export async function POST(req: Request, { params }: { params: Params }) {
 
   try {
     const body = await req.json();
-    const { profileId, ...input } = body;
-    if (!profileId) {
-      return NextResponse.json({ error: "profileId required" }, { status: 400 });
-    }
-    if (!input.date) {
-      return NextResponse.json({ error: "date required" }, { status: 400 });
-    }
-
-    input.date = new Date(input.date);
+    const parsed = parseBody(CreateMedicationLogSchema, body);
+    if (!parsed.ok) return parsed.response;
+    const { profileId, ...input } = parsed.data;
 
     const log = await createMedicationLog(session.user.id, profileId, medicationId, input);
     return NextResponse.json(log, { status: 201 });

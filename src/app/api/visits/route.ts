@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { PermissionError } from "@/lib/permissions";
 import { getVisitsForProfile, createVisit } from "@/server/visits";
+import { parseBody, CreateVisitSchema } from "@/lib/validation";
 
 export async function GET(req: Request) {
   const session = await auth();
@@ -35,13 +36,9 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { profileId, ...input } = body;
-    if (!profileId) {
-      return NextResponse.json({ error: "profileId required" }, { status: 400 });
-    }
-
-    // Coerce date strings to Date objects
-    if (input.date) input.date = new Date(input.date);
+    const parsed = parseBody(CreateVisitSchema, body);
+    if (!parsed.ok) return parsed.response;
+    const { profileId, ...input } = parsed.data;
 
     const visit = await createVisit(session.user.id, profileId, input);
     return NextResponse.json(visit, { status: 201 });

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { PermissionError } from "@/lib/permissions";
 import { getConditionsForProfile, createCondition } from "@/server/conditions";
+import { parseBody, CreateConditionSchema } from "@/lib/validation";
 
 export async function GET(req: Request) {
   const session = await auth();
@@ -35,12 +36,9 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { profileId, ...input } = body;
-    if (!profileId) {
-      return NextResponse.json({ error: "profileId required" }, { status: 400 });
-    }
-
-    if (input.diagnosisDate) input.diagnosisDate = new Date(input.diagnosisDate);
+    const parsed = parseBody(CreateConditionSchema, body);
+    if (!parsed.ok) return parsed.response;
+    const { profileId, ...input } = parsed.data;
 
     const condition = await createCondition(session.user.id, profileId, input);
     return NextResponse.json(condition, { status: 201 });

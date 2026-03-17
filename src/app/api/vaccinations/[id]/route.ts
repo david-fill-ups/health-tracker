@@ -6,6 +6,7 @@ import {
   updateVaccination,
   deleteVaccination,
 } from "@/server/vaccinations";
+import { parseBody, UpdateVaccinationSchema } from "@/lib/validation";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -39,17 +40,13 @@ export async function PUT(req: NextRequest, { params }: Params) {
   }
 
   const { id } = await params;
-  const body = await req.json();
-  const { name, date, facilityId, lotNumber, notes } = body;
 
   try {
-    const vaccination = await updateVaccination(session.user.id, id, {
-      ...(name !== undefined && { name }),
-      ...(date !== undefined && { date: new Date(date) }),
-      ...(facilityId !== undefined && { facilityId }),
-      ...(lotNumber !== undefined && { lotNumber }),
-      ...(notes !== undefined && { notes }),
-    });
+    const body = await req.json();
+    const parsed = parseBody(UpdateVaccinationSchema, body);
+    if (!parsed.ok) return parsed.response;
+
+    const vaccination = await updateVaccination(session.user.id, id, parsed.data);
     return NextResponse.json(vaccination);
   } catch (err) {
     if (err instanceof PermissionError) {

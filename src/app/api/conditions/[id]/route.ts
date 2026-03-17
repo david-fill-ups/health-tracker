@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { PermissionError } from "@/lib/permissions";
 import { getConditionById, updateCondition, deleteCondition } from "@/server/conditions";
+import { parseBody, UpdateConditionSchema } from "@/lib/validation";
 
 type Params = Promise<{ id: string }>;
 
@@ -47,10 +48,11 @@ export async function PUT(req: Request, { params }: { params: Params }) {
   }
 
   try {
-    const input = await req.json();
-    if (input.diagnosisDate) input.diagnosisDate = new Date(input.diagnosisDate);
+    const body = await req.json();
+    const parsed = parseBody(UpdateConditionSchema, body);
+    if (!parsed.ok) return parsed.response;
 
-    const condition = await updateCondition(session.user.id, profileId, id, input);
+    const condition = await updateCondition(session.user.id, profileId, id, parsed.data);
     return NextResponse.json(condition);
   } catch (err) {
     if (err instanceof PermissionError) {

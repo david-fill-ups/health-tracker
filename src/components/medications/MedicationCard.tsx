@@ -12,6 +12,7 @@ interface MedicationLog {
 interface Medication {
   id: string;
   name: string;
+  dosage: string | null;
   prescribingDoctorId: string | null;
   startDate: string | null;
   endDate: string | null;
@@ -48,7 +49,12 @@ export function MedicationCard({ medication, profileId, onDeactivate }: Medicati
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-semibold text-gray-900 text-lg">{medication.name}</h3>
+            <h3 className="font-semibold text-gray-900 text-lg">
+              {medication.name}
+              {medication.dosage && (
+                <span className="ml-1.5 text-base font-normal text-gray-500">{medication.dosage}</span>
+              )}
+            </h3>
             {medication.active ? (
               <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
                 Active

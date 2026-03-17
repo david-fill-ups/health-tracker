@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { PermissionError } from "@/lib/permissions";
 import { getProfileById, updateProfile, deleteProfile } from "@/server/profiles";
+import { parseBody, UpdateProfileSchema } from "@/lib/validation";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -25,7 +26,9 @@ export async function PUT(req: Request, { params }: Params) {
   try {
     const { id } = await params;
     const body = await req.json();
-    const data = await updateProfile(session.user.id, id, body);
+    const parsed = parseBody(UpdateProfileSchema, body);
+    if (!parsed.ok) return parsed.response;
+    const data = await updateProfile(session.user.id, id, parsed.data);
     return NextResponse.json(data);
   } catch (e) {
     if (e instanceof PermissionError) return NextResponse.json({ error: e.message }, { status: e.statusCode });

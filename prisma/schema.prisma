@@ -18,11 +18,12 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
-  profiles      Profile[]
-  profileAccess ProfileAccess[]
-  auditLogs     AuditLog[]
+  accounts         Account[]
+  sessions         Session[]
+  profiles         Profile[]
+  profileAccess    ProfileAccess[]
+  sentInvitations  ProfileInvitation[] @relation("SentInvitations")
+  auditLogs        AuditLog[]
 }
 
 model Account {
@@ -42,6 +43,7 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Session {
@@ -51,6 +53,8 @@ model Session {
   expires      DateTime
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model VerificationToken {
@@ -77,19 +81,21 @@ enum ProfilePermission {
 }
 
 model Profile {
-  id            String   @id @default(cuid())
-  userId        String
-  name          String
-  birthYear     Int
-  sex           Sex
-  state         String?
-  notes         String?
-  calendarToken String   @unique @default(cuid())
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String   @id @default(cuid())
+  userId         String
+  isOwnerProfile Boolean  @default(false)
+  name           String
+  birthDate      DateTime
+  sex            Sex
+  state          String?
+  notes          String?
+  calendarToken  String   @unique @default(cuid())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  owner        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  owner        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   access       ProfileAccess[]
+  invitations  ProfileInvitation[]
   visits       Visit[]
   conditions   Condition[]
   vaccinations Vaccination[]
@@ -109,6 +115,21 @@ model ProfileAccess {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([profileId, userId])
+}
+
+model ProfileInvitation {
+  id         String            @id @default(cuid())
+  profileId  String
+  email      String
+  permission ProfilePermission @default(READ_ONLY)
+  invitedBy  String
+  createdAt  DateTime          @default(now())
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  inviter User    @relation("SentInvitations", fields: [invitedBy], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, email])
+  @@index([email])
 }
 
 // ─── Healthcare Team ──────────────────────────────────────────────────────────
@@ -140,6 +161,8 @@ model Facility {
   doctors      Doctor[]
   visits       Visit[]
   vaccinations Vaccination[]
+
+  @@index([profileId])
 }
 
 model Location {
@@ -158,6 +181,8 @@ model Location {
 
   facility Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
   visits   Visit[]
+
+  @@index([facilityId])
 }
 
 model Doctor {
@@ -177,6 +202,9 @@ model Doctor {
   facility    Facility?    @relation(fields: [facilityId], references: [id])
   visits      Visit[]
   medications Medication[]
+
+  @@index([profileId])
+  @@index([facilityId])
 }
 
 // ─── Visits / Appointments ────────────────────────────────────────────────────
@@ -216,6 +244,11 @@ model Visit {
   doctor   Doctor?   @relation(fields: [doctorId], references: [id])
   facility Facility? @relation(fields: [facilityId], references: [id])
   location Location? @relation(fields: [locationId], references: [id])
+
+  @@index([profileId])
+  @@index([doctorId])
+  @@index([facilityId])
+  @@index([locationId])
 }
 
 // ─── Medications ──────────────────────────────────────────────────────────────
@@ -224,6 +257,7 @@ model Medication {
   id                  String    @id @default(cuid())
   profileId           String
   name                String
+  dosage              String?
   prescribingDoctorId String?
   startDate           DateTime?
   endDate             DateTime?
@@ -235,6 +269,9 @@ model Medication {
   profile           Profile         @relation(fields: [profileId], references: [id], onDelete: Cascade)
   prescribingDoctor Doctor?         @relation(fields: [prescribingDoctorId], references: [id])
   logs              MedicationLog[]
+
+  @@index([profileId])
+  @@index([prescribingDoctorId])
 }
 
 model MedicationLog {
@@ -249,6 +286,8 @@ model MedicationLog {
   createdAt     DateTime @default(now())
 
   medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+
+  @@index([medicationId])
 }
 
 // ─── Conditions ───────────────────────────────────────────────────────────────
@@ -270,6 +309,8 @@ model Condition {
   updatedAt     DateTime        @updatedAt
 
   profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
 }
 
 // ─── Vaccinations ─────────────────────────────────────────────────────────────
@@ -287,6 +328,9 @@ model Vaccination {
 
   profile  Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
   facility Facility? @relation(fields: [facilityId], references: [id])
+
+  @@index([profileId])
+  @@index([facilityId])
 }
 
 // ─── CDC Schedule ─────────────────────────────────────────────────────────────

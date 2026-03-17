@@ -17,7 +17,7 @@ export async function getVaccinationRecommendations(userId: string, profileId: s
 
   const profile = await prisma.profile.findUnique({
     where: { id: profileId },
-    select: { birthYear: true },
+    select: { birthDate: true },
   });
   if (!profile) throw new Error("Profile not found");
 
@@ -34,7 +34,7 @@ export async function getVaccinationRecommendations(userId: string, profileId: s
     byName.set(key, existing);
   }
 
-  return generateRecommendations(profile.birthYear, byName);
+  return generateRecommendations(profile.birthDate, byName);
 }
 
 export interface CreateVaccinationInput {
