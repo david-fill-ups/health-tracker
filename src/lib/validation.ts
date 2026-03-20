@@ -87,6 +87,14 @@ export const UpdateVaccinationSchema = z.object({
 
 // ── Visit ──────────────────────────────────────────────────────────────────────
 
+export const COMMON_VISIT_SPECIALTIES = [
+  "PCP", "Urology", "Dental", "Optometry", "Radiology", "Urgent Care",
+  "Orthopedic Surgery", "MRI", "Physical Therapy", "Sleep Specialist",
+  "Endocrinology", "Gastroenterology", "Otolaryngology", "Nuclear Medicine",
+  "Chiropractic", "Allergist", "Fertility", "Psychotherapist",
+  "Telehealth", "Emergency Dept", "Blood Donation", "Workplace",
+] as const;
+
 export const CreateVisitSchema = z.object({
   profileId: id,
   doctorId: z.string().min(1).optional(),
@@ -95,7 +103,10 @@ export const CreateVisitSchema = z.object({
   date: optDate,
   dueMonth: z.string().regex(/^\d{4}-\d{2}$/).optional(),
   type: VisitTypeEnum.optional(),
+  reason: z.string().max(500).optional(),
+  specialty: z.string().max(255).optional(),
   notes: z.string().max(5000).optional(),
+  documentUrl: z.string().url().max(500).optional(),
   status: VisitStatusEnum.optional(),
 });
 
@@ -106,6 +117,8 @@ export const UpdateVisitSchema = CreateVisitSchema.omit({ profileId: true }).par
 export const CreateMedicationSchema = z.object({
   profileId: id,
   name: name255,
+  dosage: optStr255,
+  frequency: z.string().max(255).optional(),
   prescribingDoctorId: z.string().min(1).optional(),
   startDate: optDate,
   endDate: optDate,
@@ -161,6 +174,7 @@ export const CreateDoctorSchema = z.object({
   websiteUrl: optStr500,
   portalUrl: optStr500,
   phone: optPhone,
+  notes: z.string().max(2000).optional(),
   active: z.boolean().optional(),
 });
 
@@ -191,3 +205,52 @@ export const ProfileAccessSchema = z.object({
 export const UpdateProfileAccessSchema = z.object({
   permission: PermissionEnum,
 });
+
+// ── Allergy ────────────────────────────────────────────────────────────────────
+
+export const CreateAllergySchema = z.object({
+  profileId: id,
+  allergen: name255,
+  category: optStr255,
+  diagnosisDate: optDate,
+  whealSize: z.number().nonnegative().optional(),
+  notes: z.string().max(2000).optional(),
+});
+
+export const UpdateAllergySchema = CreateAllergySchema.omit({ profileId: true }).partial();
+
+// ── Portal ─────────────────────────────────────────────────────────────────────
+
+export const CreatePortalSchema = z.object({
+  profileId: id,
+  name: name255,
+  organization: optStr255,
+  url: z.string().url().max(500),
+  facilityId: z.string().min(1).optional(),
+  notes: z.string().max(2000).optional(),
+});
+
+export const UpdatePortalSchema = CreatePortalSchema.omit({ profileId: true }).partial();
+
+// ── Health Metric ──────────────────────────────────────────────────────────────
+
+export const COMMON_METRIC_TYPES = [
+  "Weight",
+  "Blood Pressure Systolic",
+  "Blood Pressure Diastolic",
+  "Blood Sugar (Fasting)",
+  "Blood Sugar (Post-meal)",
+  "Heart Rate",
+  "Blood Oxygen (SpO2)",
+] as const;
+
+export const CreateHealthMetricSchema = z.object({
+  profileId: id,
+  metricType: z.string().min(1).max(100),
+  value: z.number(),
+  unit: z.string().min(1).max(50),
+  measuredAt: z.coerce.date(),
+  notes: z.string().max(1000).optional(),
+});
+
+export const UpdateHealthMetricSchema = CreateHealthMetricSchema.omit({ profileId: true }).partial();

@@ -1,36 +1,126 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Health Tracker
 
-## Getting Started
+A personal health management app for tracking medical visits, medications, vaccinations, and health conditions across multiple family members (profiles).
 
-First, run the development server:
+## Features
+
+- **Profiles** — manage multiple health profiles (family members); share read/write access with others
+- **Visits** — track scheduled, completed, and pending appointments with doctors and facilities
+- **Medications** — log active/inactive medications with dose history and per-dose notes
+- **Conditions** — track diagnoses with status (Active / Monitoring / Resolved)
+- **Vaccinations** — record vaccinations and compare against CDC recommended schedule
+- **Healthcare Team** — manage doctors and facilities; link locations to facilities
+- **Calendar feed** — subscribe to upcoming appointments via webcal/iCal in any calendar app
+- **Import / Export** — full profile data export to JSON; re-import with append, skip-duplicates, or replace modes
+- **Audit log** — immutable log of all create/update/delete operations
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 16 App Router |
+| Language | TypeScript |
+| Styling | Tailwind CSS v4 |
+| Database | PostgreSQL (Neon) via Prisma |
+| Auth | NextAuth.js v5 — Google OAuth |
+| Validation | Zod v4 |
+| Rate limiting | Upstash Redis (optional) |
+| Tests | Vitest |
+
+## Setup
+
+### 1. Clone and install
+
+```bash
+git clone <repo>
+cd health-tracker
+npm install
+```
+
+### 2. Environment variables
+
+Copy `.env.example` to `.env.local` and fill in your values:
+
+```bash
+cp .env.example .env.local
+```
+
+Required variables:
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | Neon pooled connection string (for Prisma queries) |
+| `DIRECT_URL` | Neon direct connection string (for migrations) |
+| `AUTH_SECRET` | Random secret for NextAuth — generate with `openssl rand -base64 32` |
+| `AUTH_URL` | Your app's base URL (e.g., `http://localhost:3000`) |
+| `AUTH_GOOGLE_ID` | Google OAuth client ID |
+| `AUTH_GOOGLE_SECRET` | Google OAuth client secret |
+
+Optional:
+
+| Variable | Description |
+|----------|-------------|
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis URL for rate limiting |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis token |
+| `CRON_SECRET` | Secret for the `/api/cdc/refresh` cron endpoint |
+
+### 3. Database
+
+```bash
+npx prisma migrate deploy   # apply migrations
+npx prisma generate         # generate Prisma client
+```
+
+### 4. Run locally
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm test` | Run Vitest unit tests |
+| `npm run build` | Run migrations, tests, and production build |
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+  app/
+    (app)/          # Authenticated app pages (dashboard, visits, medications, …)
+    api/            # REST API route handlers
+  components/       # React UI components
+  lib/              # Pure utilities (cdc.ts, format.ts, validation.ts, …)
+  server/           # Server-side data access functions (permissions enforced here)
+prisma/
+  schema.prisma     # Database schema
+data/
+  cdc-schedule.json # CDC vaccination schedule (update via /api/cdc/refresh)
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## API Overview
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+All endpoints require authentication. Profile-scoped endpoints require a `profileId` query parameter.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Method | Path | Description |
+|--------|------|-------------|
+| GET/POST | `/api/profiles` | List / create profiles |
+| GET/PUT/DELETE | `/api/profiles/[id]` | Get / update / delete profile |
+| GET | `/api/profiles/[id]/export` | Export full profile data as JSON |
+| POST | `/api/profiles/[id]/import` | Import profile data (modes: append, skip_duplicates, replace) |
+| GET/POST | `/api/visits` | List / create visits |
+| GET/PUT/DELETE | `/api/visits/[id]` | Get / update / delete visit |
+| GET/POST | `/api/medications` | List / create medications |
+| GET/PUT/DELETE | `/api/medications/[id]` | Get / update / delete medication |
+| POST | `/api/medications/[id]/logs` | Log a medication dose |
+| GET/POST | `/api/conditions` | List / create conditions |
+| GET/PUT/DELETE | `/api/conditions/[id]` | Get / update / delete condition |
+| GET/POST | `/api/vaccinations` | List / create vaccinations |
+| GET | `/api/vaccinations/recommendations` | CDC compliance recommendations for a profile |
+| GET | `/api/calendar/[profileId]` | iCal calendar feed (authenticated via token) |
+| POST | `/api/cdc/refresh` | Refresh CDC schedule data (requires `CRON_SECRET`) |

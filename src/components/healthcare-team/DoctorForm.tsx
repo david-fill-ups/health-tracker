@@ -14,6 +14,7 @@ interface DoctorFormData {
   websiteUrl: string;
   portalUrl: string;
   phone: string;
+  notes: string;
   active: boolean;
 }
 
@@ -37,6 +38,7 @@ export function DoctorForm({ profileId, facilities, initial, onSuccess, onCancel
     websiteUrl: initial?.websiteUrl ?? "",
     portalUrl: initial?.portalUrl ?? "",
     phone: initial?.phone ?? "",
+    notes: initial?.notes ?? "",
     active: initial?.active ?? true,
   });
   const [saving, setSaving] = useState(false);
@@ -58,6 +60,7 @@ export function DoctorForm({ profileId, facilities, initial, onSuccess, onCancel
       websiteUrl: form.websiteUrl || undefined,
       portalUrl: form.portalUrl || undefined,
       phone: form.phone || undefined,
+      notes: form.notes || undefined,
       active: form.active,
     };
 
@@ -172,6 +175,16 @@ export function DoctorForm({ profileId, facilities, initial, onSuccess, onCancel
             value={form.portalUrl}
             onChange={(e) => set("portalUrl", e.target.value)}
             placeholder="https://"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+
+        <div className="sm:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+          <textarea
+            value={form.notes}
+            onChange={(e) => set("notes", e.target.value)}
+            rows={2}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>

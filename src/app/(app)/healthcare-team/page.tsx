@@ -28,6 +28,7 @@ interface Doctor {
   websiteUrl?: string | null;
   portalUrl?: string | null;
   phone?: string | null;
+  notes?: string | null;
   active: boolean;
 }
 
@@ -61,6 +62,7 @@ type DoctorEditTarget = {
   websiteUrl: string;
   portalUrl: string;
   phone: string;
+  notes: string;
   active: boolean;
 };
 
@@ -140,6 +142,7 @@ export default function HealthcareTeamPage() {
       websiteUrl: doctor.websiteUrl ?? "",
       portalUrl: doctor.portalUrl ?? "",
       phone: doctor.phone ?? "",
+      notes: doctor.notes ?? "",
       active: doctor.active,
     });
     setShowDoctorForm(true);

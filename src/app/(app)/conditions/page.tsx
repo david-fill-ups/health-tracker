@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import type { ConditionStatus } from "@/generated/prisma/enums";
 
@@ -57,12 +58,12 @@ function ConditionCard({
           )}
         </div>
         <div className="flex gap-2 shrink-0">
-          <a
+          <Link
             href={`/conditions/${condition.id}/edit`}
             className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
           >
             Edit
-          </a>
+          </Link>
           <button
             onClick={handleDelete}
             className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
@@ -104,12 +105,12 @@ export default function ConditionsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Conditions</h1>
-        <a
+        <Link
           href="/conditions/new"
           className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
         >
           + New Condition
-        </a>
+        </Link>
       </div>
 
       {!activeProfileId && (
@@ -167,7 +168,7 @@ function Section({
     <section>
       <h2 className="mb-3 text-lg font-semibold text-gray-700">{title}</h2>
       {conditions.length === 0 ? (
-        <p className="text-sm text-gray-400 italic">{emptyText}</p>
+        <p className="text-sm text-gray-500">{emptyText}</p>
       ) : (
         <div className="space-y-3">
           {conditions.map((c) => (

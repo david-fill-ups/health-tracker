@@ -93,15 +93,18 @@ model Profile {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  owner        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  access       ProfileAccess[]
-  invitations  ProfileInvitation[]
-  visits       Visit[]
-  conditions   Condition[]
-  vaccinations Vaccination[]
-  medications  Medication[]
-  facilities   Facility[]
-  doctors      Doctor[]
+  owner         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  access        ProfileAccess[]
+  invitations   ProfileInvitation[]
+  visits        Visit[]
+  conditions    Condition[]
+  vaccinations  Vaccination[]
+  medications   Medication[]
+  facilities    Facility[]
+  doctors       Doctor[]
+  allergies     Allergy[]
+  portals       Portal[]
+  healthMetrics HealthMetric[]
 }
 
 model ProfileAccess {
@@ -161,6 +164,7 @@ model Facility {
   doctors      Doctor[]
   visits       Visit[]
   vaccinations Vaccination[]
+  portals      Portal[]
 
   @@index([profileId])
 }
@@ -194,6 +198,7 @@ model Doctor {
   websiteUrl String?
   portalUrl  String?
   phone      String?
+  notes      String?
   active     Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -232,11 +237,14 @@ model Visit {
   doctorId   String?
   facilityId String?
   locationId String?
-  date       DateTime?
-  dueMonth   String?
-  type       VisitType   @default(ROUTINE)
-  notes      String?
-  status     VisitStatus @default(PENDING)
+  date        DateTime?
+  dueMonth    String?
+  type        VisitType   @default(ROUTINE)
+  reason      String?
+  specialty   String?
+  notes       String?
+  documentUrl String?
+  status      VisitStatus @default(PENDING)
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 
@@ -258,6 +266,7 @@ model Medication {
   profileId           String
   name                String
   dosage              String?
+  frequency           String?
   prescribingDoctorId String?
   startDate           DateTime?
   endDate             DateTime?
@@ -343,6 +352,64 @@ model CdcScheduleVersion {
   createdAt   DateTime @default(now())
 
   @@index([lastUpdated])
+}
+
+// ─── Allergies ────────────────────────────────────────────────────────────────
+
+model Allergy {
+  id            String    @id @default(cuid())
+  profileId     String
+  allergen      String
+  category      String?
+  diagnosisDate DateTime?
+  whealSize     Float?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
+
+// ─── Portals ──────────────────────────────────────────────────────────────────
+
+model Portal {
+  id           String   @id @default(cuid())
+  profileId    String
+  name         String
+  organization String?
+  url          String
+  facilityId   String?
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile  Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  facility Facility? @relation(fields: [facilityId], references: [id])
+
+  @@index([profileId])
+  @@index([facilityId])
+}
+
+// ─── Health Metrics ───────────────────────────────────────────────────────────
+
+model HealthMetric {
+  id         String   @id @default(cuid())
+  profileId  String
+  metricType String
+  value      Float
+  unit       String
+  measuredAt DateTime
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([profileId, metricType])
+  @@index([profileId, measuredAt])
 }
 
 // ─── Audit Log ────────────────────────────────────────────────────────────────

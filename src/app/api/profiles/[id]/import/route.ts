@@ -16,6 +16,9 @@ interface ImportCounts {
   medicationLogs: number;
   conditions: number;
   vaccinations: number;
+  allergies: number;
+  portals: number;
+  healthMetrics: number;
 }
 
 function isoDatePart(iso: string | null | undefined): string | null {
@@ -36,6 +39,11 @@ export async function POST(req: Request, { params }: Params) {
 
     await assertProfileAccess(userId, profileId, "OWNER");
 
+    const contentLength = Number(req.headers.get("content-length") ?? 0);
+    if (contentLength > 1_000_000) {
+      return NextResponse.json({ error: "Payload too large (max 1 MB)" }, { status: 413 });
+    }
+
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== "object") {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
@@ -54,15 +62,20 @@ export async function POST(req: Request, { params }: Params) {
     const imported: ImportCounts = {
       facilities: 0, locations: 0, doctors: 0, visits: 0,
       medications: 0, medicationLogs: 0, conditions: 0, vaccinations: 0,
+      allergies: 0, portals: 0, healthMetrics: 0,
     };
     const skipped: ImportCounts = {
       facilities: 0, locations: 0, doctors: 0, visits: 0,
       medications: 0, medicationLogs: 0, conditions: 0, vaccinations: 0,
+      allergies: 0, portals: 0, healthMetrics: 0,
     };
 
     await prisma.$transaction(async (tx) => {
       // ── Replace mode: delete all existing records in reverse FK order ──
       if (mode === "replace") {
+        await tx.healthMetric.deleteMany({ where: { profileId } });
+        await tx.portal.deleteMany({ where: { profileId } });
+        await tx.allergy.deleteMany({ where: { profileId } });
         await tx.medicationLog.deleteMany({ where: { medication: { profileId } } });
         await tx.vaccination.deleteMany({ where: { profileId } });
         await tx.visit.deleteMany({ where: { profileId } });
@@ -180,6 +193,7 @@ export async function POST(req: Request, { params }: Params) {
             websiteUrl: d.websiteUrl ?? undefined,
             portalUrl: d.portalUrl ?? undefined,
             phone: d.phone ?? undefined,
+            notes: d.notes ?? undefined,
             active: d.active ?? true,
           },
         });
@@ -239,7 +253,10 @@ export async function POST(req: Request, { params }: Params) {
             dueMonth: v.dueMonth ?? undefined,
             type: v.type ?? undefined,
             status: v.status ?? undefined,
+            reason: v.reason ?? undefined,
+            specialty: v.specialty ?? undefined,
             notes: v.notes ?? undefined,
+            documentUrl: v.documentUrl ?? undefined,
             doctorId: v.doctorId ? (idMap.get(v.doctorId) ?? undefined) : undefined,
             facilityId: v.facilityId ? (idMap.get(v.facilityId) ?? undefined) : undefined,
             locationId: v.locationId ? (idMap.get(v.locationId) ?? undefined) : undefined,
@@ -279,6 +296,7 @@ export async function POST(req: Request, { params }: Params) {
                 profileId,
                 name: m.name,
                 dosage: m.dosage ?? undefined,
+                frequency: m.frequency ?? undefined,
                 prescribingDoctorId: m.prescribingDoctorId
                   ? (idMap.get(m.prescribingDoctorId) ?? undefined)
                   : undefined,
@@ -297,6 +315,7 @@ export async function POST(req: Request, { params }: Params) {
               profileId,
               name: m.name,
               dosage: m.dosage ?? undefined,
+              frequency: m.frequency ?? undefined,
               prescribingDoctorId: m.prescribingDoctorId
                 ? (idMap.get(m.prescribingDoctorId) ?? undefined)
                 : undefined,
@@ -382,6 +401,92 @@ export async function POST(req: Request, { params }: Params) {
           },
         });
         imported.vaccinations++;
+      }
+
+      // ── Allergies ──
+      for (const a of (data.allergies ?? [])) {
+        if (mode === "skip_duplicates") {
+          const existing = await tx.allergy.findFirst({
+            where: { profileId, allergen: { equals: a.allergen, mode: "insensitive" } },
+            select: { id: true },
+          });
+          if (existing) {
+            skipped.allergies++;
+            continue;
+          }
+        }
+
+        await tx.allergy.create({
+          data: {
+            profileId,
+            allergen: a.allergen,
+            category: a.category ?? undefined,
+            diagnosisDate: a.diagnosisDate ? new Date(a.diagnosisDate) : undefined,
+            whealSize: a.whealSize ?? undefined,
+            notes: a.notes ?? undefined,
+          },
+        });
+        imported.allergies++;
+      }
+
+      // ── Portals ──
+      for (const p of (data.portals ?? [])) {
+        if (mode === "skip_duplicates") {
+          const existing = await tx.portal.findFirst({
+            where: { profileId, name: { equals: p.name, mode: "insensitive" } },
+            select: { id: true },
+          });
+          if (existing) {
+            skipped.portals++;
+            continue;
+          }
+        }
+
+        await tx.portal.create({
+          data: {
+            profileId,
+            name: p.name,
+            organization: p.organization ?? undefined,
+            url: p.url,
+            facilityId: p.facilityId ? (idMap.get(p.facilityId) ?? undefined) : undefined,
+            notes: p.notes ?? undefined,
+          },
+        });
+        imported.portals++;
+      }
+
+      // ── Health Metrics ──
+      for (const m of (data.healthMetrics ?? [])) {
+        if (mode === "skip_duplicates") {
+          const measuredAtDate = new Date(m.measuredAt);
+          const existing = await tx.healthMetric.findFirst({
+            where: {
+              profileId,
+              metricType: m.metricType,
+              measuredAt: {
+                gte: new Date(measuredAtDate.getTime() - 60_000),
+                lte: new Date(measuredAtDate.getTime() + 60_000),
+              },
+            },
+            select: { id: true },
+          });
+          if (existing) {
+            skipped.healthMetrics++;
+            continue;
+          }
+        }
+
+        await tx.healthMetric.create({
+          data: {
+            profileId,
+            metricType: m.metricType,
+            value: m.value,
+            unit: m.unit,
+            measuredAt: new Date(m.measuredAt),
+            notes: m.notes ?? undefined,
+          },
+        });
+        imported.healthMetrics++;
       }
     });
 

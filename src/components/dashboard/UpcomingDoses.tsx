@@ -61,7 +61,13 @@ export function UpcomingDoses({ activeProfileId }: { activeProfileId: string | n
         </Link>
       </div>
 
-      {loading && <p className="text-sm text-gray-400">Loading…</p>}
+      {loading && (
+        <div className="space-y-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-4 animate-pulse rounded bg-gray-100" />
+          ))}
+        </div>
+      )}
 
       {!loading && meds.length === 0 && (
         <p className="text-sm text-gray-500">No active medications.</p>
@@ -76,7 +82,7 @@ export function UpcomingDoses({ activeProfileId }: { activeProfileId: string | n
                 <div>
                   <p className="text-sm font-medium text-gray-800">{m.name}</p>
                   {m.instructions && (
-                    <p className="text-xs text-gray-500 line-clamp-1">{m.instructions}</p>
+                    <p className="text-xs text-gray-500 line-clamp-2" title={m.instructions}>{m.instructions}</p>
                   )}
                 </div>
                 <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${color}`}>

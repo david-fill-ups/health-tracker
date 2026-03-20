@@ -75,7 +75,7 @@ export async function updateVaccination(
     select: { profileId: true },
   });
   if (!vaccination) throw new Error("Vaccination not found");
-  await assertProfileAccess(userId, vaccination.profileId, "WRITE");
+  await assertProfileAccess(userId, vaccination.profileId, "OWNER");
   const { name, date, facilityId, lotNumber, notes } = input;
   const updated = await prisma.vaccination.update({ where: { id }, data: { name, date, facilityId, lotNumber, notes } });
   await logAudit(userId, vaccination.profileId, "UPDATE_VACCINATION", "Vaccination", id);

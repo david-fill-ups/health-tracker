@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import { useProfile } from "@/components/layout/ProfileProvider";
+import { formatDate, formatDateTime } from "@/lib/format";
 
 interface MedicationLog {
   id: string;
@@ -24,14 +25,6 @@ interface Medication {
   prescribingDoctor?: { name: string } | null;
 }
 
-function fmt(dateStr: string | null) {
-  if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleDateString();
-}
-
-function fmtDateTime(dateStr: string) {
-  return new Date(dateStr).toLocaleString();
-}
 
 export default function MedicationDetailPage({
   params,
@@ -99,12 +92,12 @@ export default function MedicationDetailPage({
         )}
         <p>
           <span className="font-medium text-gray-600">Start date:</span>{" "}
-          {fmt(medication.startDate)}
+          {formatDate(medication.startDate)}
         </p>
         {medication.endDate && (
           <p>
             <span className="font-medium text-gray-600">End date:</span>{" "}
-            {fmt(medication.endDate)}
+            {formatDate(medication.endDate)}
           </p>
         )}
         {medication.instructions && (
@@ -119,6 +112,12 @@ export default function MedicationDetailPage({
             className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700"
           >
             Log dose
+          </a>
+          <a
+            href={`/medications/${id}/edit`}
+            className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Edit
           </a>
         </div>
       </div>
@@ -142,7 +141,7 @@ export default function MedicationDetailPage({
               <tbody className="divide-y divide-gray-100">
                 {logs.map((log) => (
                   <tr key={log.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 whitespace-nowrap">{fmtDateTime(log.date)}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{formatDateTime(log.date)}</td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       {log.dosage != null ? `${log.dosage} ${log.unit ?? ""}` : "—"}
                     </td>

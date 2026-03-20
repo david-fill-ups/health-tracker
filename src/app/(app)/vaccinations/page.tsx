@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { VaccinationCard } from "@/components/vaccinations/VaccinationCard";
 import { CdcComplianceRow } from "@/components/vaccinations/CdcComplianceRow";
@@ -63,12 +64,12 @@ export default function VaccinationsPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Vaccinations</h1>
-        <a
+        <Link
           href="/vaccinations/new"
           className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
         >
           + Record Vaccination
-        </a>
+        </Link>
       </div>
 
       {!activeProfileId && (
@@ -83,7 +84,7 @@ export default function VaccinationsPage() {
           <section>
             <h2 className="mb-3 text-lg font-semibold text-gray-700">Recorded Vaccinations</h2>
             {sortedVaccinations.length === 0 ? (
-              <p className="text-sm text-gray-400 italic">No vaccinations recorded yet.</p>
+              <p className="text-sm text-gray-500">No vaccinations recorded yet.</p>
             ) : (
               <div className="space-y-3">
                 {sortedVaccinations.map((v) => (
@@ -115,9 +116,9 @@ export default function VaccinationsPage() {
             </div>
 
             {filteredRecs.length === 0 ? (
-              <p className="text-sm text-gray-400 italic">
+              <p className="text-sm text-gray-500">
                 {filter === "all"
-                  ? "No CDC schedule data available."
+                  ? "No CDC schedule data available for this age group."
                   : `No vaccines are currently ${filter}.`}
               </p>
             ) : (

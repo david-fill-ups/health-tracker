@@ -6,7 +6,7 @@ export async function getMedicationsForProfile(userId: string, profileId: string
   await assertProfileAccess(userId, profileId);
   return prisma.medication.findMany({
     where: { profileId },
-    include: { prescribingDoctor: true, logs: { orderBy: { date: "desc" }, take: 10 } },
+    include: { prescribingDoctor: true, logs: { orderBy: { date: "desc" }, take: 1 } },
     orderBy: [{ active: "desc" }, { name: "asc" }],
   });
 }
@@ -26,6 +26,7 @@ export async function getMedicationLogs(
 export interface CreateMedicationInput {
   name: string;
   dosage?: string;
+  frequency?: string;
   prescribingDoctorId?: string;
   startDate?: Date;
   endDate?: Date;
@@ -51,8 +52,8 @@ export async function createMedication(
   input: CreateMedicationInput
 ) {
   await assertProfileAccess(userId, profileId, "OWNER");
-  const { name, dosage, prescribingDoctorId, startDate, endDate, instructions, active } = input;
-  const medication = await prisma.medication.create({ data: { name, dosage, prescribingDoctorId, startDate, endDate, instructions, active, profileId } });
+  const { name, dosage, frequency, prescribingDoctorId, startDate, endDate, instructions, active } = input;
+  const medication = await prisma.medication.create({ data: { name, dosage, frequency, prescribingDoctorId, startDate, endDate, instructions, active, profileId } });
   await logAudit(userId, profileId, "CREATE_MEDICATION", "Medication", medication.id, { name: medication.name });
   return medication;
 }
@@ -73,8 +74,8 @@ export async function updateMedication(
   input: Partial<CreateMedicationInput>
 ) {
   await assertProfileAccess(userId, profileId, "OWNER");
-  const { name, dosage, prescribingDoctorId, startDate, endDate, instructions, active } = input;
-  const medication = await prisma.medication.update({ where: { id: medicationId, profileId }, data: { name, dosage, prescribingDoctorId, startDate, endDate, instructions, active } });
+  const { name, dosage, frequency, prescribingDoctorId, startDate, endDate, instructions, active } = input;
+  const medication = await prisma.medication.update({ where: { id: medicationId, profileId }, data: { name, dosage, frequency, prescribingDoctorId, startDate, endDate, instructions, active } });
   await logAudit(userId, profileId, "UPDATE_MEDICATION", "Medication", medicationId);
   return medication;
 }

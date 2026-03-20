@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { VisitType, VisitStatus } from "@/generated/prisma/enums";
+import { COMMON_VISIT_SPECIALTIES } from "@/lib/validation";
 
 const VISIT_TYPES: VisitType[] = [
   "ROUTINE",
@@ -56,11 +57,16 @@ interface VisitFormData {
   doctorId: string;
   facilityId: string;
   locationId: string;
+  reason: string;
+  specialty: string;
   notes: string;
+  documentUrl: string;
 }
 
 export interface VisitInitial extends Partial<VisitFormData> {
   id: string;
+  reason?: string;
+  specialty?: string;
 }
 
 interface Props {
@@ -79,7 +85,10 @@ export function VisitForm({ profileId, initial, onSuccess, onCancel }: Props) {
     doctorId: initial?.doctorId ?? "",
     facilityId: initial?.facilityId ?? "",
     locationId: initial?.locationId ?? "",
+    reason: initial?.reason ?? "",
+    specialty: initial?.specialty ?? "",
     notes: initial?.notes ?? "",
+    documentUrl: initial?.documentUrl ?? "",
   });
 
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -130,7 +139,10 @@ export function VisitForm({ profileId, initial, onSuccess, onCancel }: Props) {
       doctorId: form.doctorId || undefined,
       facilityId: form.facilityId || undefined,
       locationId: form.locationId || undefined,
+      reason: form.reason || undefined,
+      specialty: form.specialty || undefined,
       notes: form.notes || undefined,
+      documentUrl: form.documentUrl || undefined,
     };
 
     if (form.date) {
@@ -240,6 +252,36 @@ export function VisitForm({ profileId, initial, onSuccess, onCancel }: Props) {
           </select>
         </div>
 
+        {/* Reason */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Reason for Visit</label>
+          <input
+            type="text"
+            value={form.reason}
+            onChange={(e) => set("reason", e.target.value)}
+            placeholder="e.g. Annual physical, Follow-up, Vaccination"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+
+        {/* Specialty */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Office / Specialty</label>
+          <input
+            type="text"
+            list="specialty-suggestions"
+            value={form.specialty}
+            onChange={(e) => set("specialty", e.target.value)}
+            placeholder="e.g. Dental, PCP, Radiology"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <datalist id="specialty-suggestions">
+            {COMMON_VISIT_SPECIALTIES.map((s) => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
+        </div>
+
         {/* Doctor */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Doctor</label>
@@ -291,6 +333,9 @@ export function VisitForm({ profileId, initial, onSuccess, onCancel }: Props) {
               </option>
             ))}
           </select>
+          {!form.facilityId && (
+            <p className="mt-1 text-xs text-gray-400">Select a facility first</p>
+          )}
         </div>
 
         {/* Notes */}
@@ -302,6 +347,19 @@ export function VisitForm({ profileId, initial, onSuccess, onCancel }: Props) {
             rows={3}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
+        </div>
+
+        {/* Document URL */}
+        <div className="sm:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Document URL</label>
+          <input
+            type="url"
+            value={form.documentUrl}
+            onChange={(e) => set("documentUrl", e.target.value)}
+            placeholder="https://drive.google.com/drive/folders/..."
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <p className="mt-1 text-xs text-gray-400">Link to Google Drive folder or document for this visit</p>
         </div>
       </div>
 

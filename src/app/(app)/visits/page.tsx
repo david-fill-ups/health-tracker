@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { VisitCard, type Visit } from "@/components/visits/VisitCard";
@@ -67,12 +68,12 @@ export default function VisitsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Visits & Appointments</h1>
-        <a
+        <Link
           href="/visits/new"
           className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
         >
           + New Visit
-        </a>
+        </Link>
       </div>
 
       {/* Status filter tabs */}
@@ -127,7 +128,7 @@ export default function VisitsPage() {
           )}
 
           {filtered.length === 0 && (
-            <p className="text-sm text-gray-400">No visits found.</p>
+            <p className="text-sm text-gray-500">No visits found.</p>
           )}
         </>
       )}

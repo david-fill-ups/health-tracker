@@ -8,6 +8,9 @@ import { getDoctorsForProfile } from "@/server/doctors";
 import { getVisitsForProfile } from "@/server/visits";
 import { getConditionsForProfile } from "@/server/conditions";
 import { getVaccinationsForProfile } from "@/server/vaccinations";
+import { getAllergiesForProfile } from "@/server/allergies";
+import { getPortalsForProfile } from "@/server/portals";
+import { getHealthMetricsForProfile } from "@/server/health-metrics";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -19,7 +22,7 @@ export async function GET(_req: Request, { params }: Params) {
     const { id } = await params;
     const userId = session.user.id;
 
-    const [profile, facilities, doctors, visits, conditions, vaccinations] =
+    const [profile, facilities, doctors, visits, conditions, vaccinations, allergies, portals, healthMetrics] =
       await Promise.all([
         getProfileById(userId, id),
         getFacilitiesForProfile(userId, id),
@@ -27,6 +30,9 @@ export async function GET(_req: Request, { params }: Params) {
         getVisitsForProfile(userId, id),
         getConditionsForProfile(userId, id),
         getVaccinationsForProfile(userId, id),
+        getAllergiesForProfile(userId, id),
+        getPortalsForProfile(userId, id),
+        getHealthMetricsForProfile(userId, id),
       ]);
 
     // getMedicationsForProfile only fetches the last 10 logs — fetch all logs for a complete export
@@ -77,6 +83,7 @@ export async function GET(_req: Request, { params }: Params) {
         websiteUrl: d.websiteUrl ?? null,
         portalUrl: d.portalUrl ?? null,
         phone: d.phone ?? null,
+        notes: d.notes ?? null,
         active: d.active,
       })),
       visits: visits.map((v) => ({
@@ -84,7 +91,10 @@ export async function GET(_req: Request, { params }: Params) {
         dueMonth: v.dueMonth ?? null,
         type: v.type ?? null,
         status: v.status ?? null,
+        reason: v.reason ?? null,
+        specialty: v.specialty ?? null,
         notes: v.notes ?? null,
+        documentUrl: v.documentUrl ?? null,
         doctorId: v.doctorId ?? null,
         facilityId: v.facilityId ?? null,
         locationId: v.locationId ?? null,
@@ -92,6 +102,7 @@ export async function GET(_req: Request, { params }: Params) {
       medications: medications.map((m) => ({
         name: m.name,
         dosage: m.dosage ?? null,
+        frequency: m.frequency ?? null,
         prescribingDoctorId: m.prescribingDoctorId ?? null,
         startDate: m.startDate?.toISOString() ?? null,
         endDate: m.endDate?.toISOString() ?? null,
@@ -118,6 +129,27 @@ export async function GET(_req: Request, { params }: Params) {
         facilityId: v.facilityId ?? null,
         lotNumber: v.lotNumber ?? null,
         notes: v.notes ?? null,
+      })),
+      allergies: allergies.map((a) => ({
+        allergen: a.allergen,
+        category: a.category ?? null,
+        diagnosisDate: a.diagnosisDate?.toISOString() ?? null,
+        whealSize: a.whealSize ?? null,
+        notes: a.notes ?? null,
+      })),
+      portals: portals.map((p) => ({
+        name: p.name,
+        organization: p.organization ?? null,
+        url: p.url,
+        facilityId: p.facilityId ?? null,
+        notes: p.notes ?? null,
+      })),
+      healthMetrics: healthMetrics.map((m) => ({
+        metricType: m.metricType,
+        value: m.value,
+        unit: m.unit,
+        measuredAt: m.measuredAt.toISOString(),
+        notes: m.notes ?? null,
       })),
     };
 

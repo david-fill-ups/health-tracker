@@ -10,7 +10,7 @@ interface Profile {
   birthDate: string;
   sex: string;
   state: string | null;
-  calendarToken: string;
+  calendarToken?: string;
 }
 
 function calendarUrl(profileId: string, token: string) {
@@ -26,7 +26,9 @@ export function ProfileCard({
   isActive: boolean;
 }) {
   const { setActiveProfileId } = useProfile();
-  const calUrl = calendarUrl(profile.id, profile.calendarToken);
+  const calUrl = profile.calendarToken
+    ? calendarUrl(profile.id, profile.calendarToken)
+    : null;
 
   return (
     <div
@@ -50,21 +52,25 @@ export function ProfileCard({
         )}
       </div>
 
-      <div className="mt-4 rounded-lg bg-gray-50 p-3">
-        <p className="mb-1 text-xs font-medium text-gray-500">Calendar subscription</p>
-        <div className="flex items-center gap-2">
-          <code className="flex-1 truncate text-xs text-gray-600">{calUrl}</code>
-          <CopyButton text={calUrl} />
+      {calUrl && (
+        <div className="mt-4 rounded-lg bg-gray-50 p-3">
+          <p className="mb-1 text-xs font-medium text-gray-500">Calendar subscription</p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 truncate text-xs text-gray-600">{calUrl}</code>
+            <CopyButton text={calUrl} />
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="mt-4 flex items-center gap-2">
-        <Link
-          href={`/profiles/${profile.id}/edit`}
-          className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-        >
-          Edit
-        </Link>
+        {calUrl && (
+          <Link
+            href={`/profiles/${profile.id}/edit`}
+            className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Edit
+          </Link>
+        )}
         <button
           onClick={() => setActiveProfileId(profile.id)}
           disabled={isActive}

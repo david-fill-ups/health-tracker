@@ -8,7 +8,7 @@ import { logAudit } from "@/lib/audit";
 import type { ProfilePermission } from "@/generated/prisma/enums";
 
 export async function getProfileAccessDetails(userId: string, profileId: string) {
-  await assertProfileAccess(userId, profileId, "READ_ONLY");
+  await assertProfileAccess(userId, profileId, "OWNER");
 
   const [members, pending] = await Promise.all([
     prisma.profileAccess.findMany({

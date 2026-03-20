@@ -13,6 +13,25 @@ const securityHeaders = [
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
   // Enable browser XSS auditor (legacy browsers)
   { key: "X-XSS-Protection", value: "1; mode=block" },
+  // Content Security Policy
+  // script-src allows 'unsafe-inline' because Next.js inlines hydration scripts.
+  // object-src, base-uri, and form-action are the highest-value restrictions.
+  {
+    key: "Content-Security-Policy",
+    value: [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' https://lh3.googleusercontent.com data: blob:",
+      "font-src 'self'",
+      "connect-src 'self'",
+      "frame-src 'none'",
+      "frame-ancestors 'none'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join("; "),
+  },
 ];
 
 const nextConfig: NextConfig = {

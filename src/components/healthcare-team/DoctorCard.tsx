@@ -15,6 +15,7 @@ interface Doctor {
   phone?: string | null;
   websiteUrl?: string | null;
   portalUrl?: string | null;
+  notes?: string | null;
   active: boolean;
 }
 
@@ -80,6 +81,9 @@ export function DoctorCard({ doctor, onEdit, onDelete }: Props) {
               </a>
             )}
           </div>
+          {doctor.notes && (
+            <p className="mt-1.5 text-sm text-gray-500 italic">{doctor.notes}</p>
+          )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button

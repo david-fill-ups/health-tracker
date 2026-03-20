@@ -18,7 +18,8 @@ export async function GET(req: Request) {
 
   try {
     const medications = await getMedicationsForProfile(session.user.id, profileId);
-    return NextResponse.json(medications);
+    const result = medications.map(({ logs, ...m }) => ({ ...m, recentLog: logs[0] ?? null }));
+    return NextResponse.json(result);
   } catch (err) {
     if (err instanceof PermissionError) {
       return NextResponse.json({ error: err.message }, { status: err.statusCode });

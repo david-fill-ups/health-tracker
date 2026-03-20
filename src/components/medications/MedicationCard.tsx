@@ -13,6 +13,7 @@ interface Medication {
   id: string;
   name: string;
   dosage: string | null;
+  frequency: string | null;
   prescribingDoctorId: string | null;
   startDate: string | null;
   endDate: string | null;
@@ -36,6 +37,7 @@ export function MedicationCard({ medication, profileId, onDeactivate }: Medicati
   const log = medication.recentLog;
 
   async function handleDeactivate() {
+    if (!confirm("Deactivate this medication?")) return;
     await fetch(`/api/medications/${medication.id}?profileId=${profileId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -70,6 +72,10 @@ export function MedicationCard({ medication, profileId, onDeactivate }: Medicati
             <p className="mt-1 text-sm text-gray-500">
               Prescribed by {medication.prescribingDoctor.name}
             </p>
+          )}
+
+          {medication.frequency && (
+            <p className="mt-0.5 text-sm text-gray-500">{medication.frequency}</p>
           )}
 
           <div className="mt-1 flex gap-4 text-xs text-gray-400">

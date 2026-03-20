@@ -3,6 +3,7 @@ import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import { authConfig } from "../auth.config";
+import { logAudit } from "@/lib/audit";
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -44,6 +45,15 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         ),
         prisma.profileInvitation.deleteMany({ where: { email: user.email! } }),
       ]);
+      await Promise.all(
+        pending.map((inv) =>
+          logAudit(user.id!, inv.profileId, "SHARE_PROFILE", "ProfileAccess", undefined, {
+            grantedTo: user.email,
+            permission: inv.permission,
+            via: "invitation",
+          })
+        )
+      );
     },
   },
 });

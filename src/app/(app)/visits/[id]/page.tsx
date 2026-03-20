@@ -36,7 +36,10 @@ interface Visit {
   dueMonth?: string | null;
   type: VisitType;
   status: VisitStatus;
+  reason?: string | null;
+  specialty?: string | null;
   notes?: string | null;
+  documentUrl?: string | null;
   doctor?: { id: string; name: string; specialty?: string | null } | null;
   facility?: { id: string; name: string } | null;
   location?: { id: string; name: string; address1?: string | null; city?: string | null; state?: string | null } | null;
@@ -137,6 +140,18 @@ export default function VisitDetailPage() {
 
         {/* Details grid */}
         <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 border-t border-gray-100 pt-4">
+          {visit.reason && (
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400">Reason for Visit</dt>
+              <dd className="mt-0.5 text-sm text-gray-700">{visit.reason}</dd>
+            </div>
+          )}
+          {visit.specialty && (
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400">Office / Specialty</dt>
+              <dd className="mt-0.5 text-sm text-gray-700">{visit.specialty}</dd>
+            </div>
+          )}
           {visit.doctor && (
             <div>
               <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400">Doctor</dt>
@@ -169,6 +184,21 @@ export default function VisitDetailPage() {
             <div className="sm:col-span-2">
               <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400">Notes</dt>
               <dd className="mt-0.5 text-sm text-gray-700 whitespace-pre-wrap">{visit.notes}</dd>
+            </div>
+          )}
+          {visit.documentUrl && (
+            <div className="sm:col-span-2">
+              <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400">Documents</dt>
+              <dd className="mt-1">
+                <a
+                  href={visit.documentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+                >
+                  Open Documents ↗
+                </a>
+              </dd>
             </div>
           )}
         </dl>

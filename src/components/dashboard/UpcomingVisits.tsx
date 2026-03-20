@@ -52,7 +52,13 @@ export function UpcomingVisits({ activeProfileId }: { activeProfileId: string | 
         </Link>
       </div>
 
-      {loading && <p className="text-sm text-gray-400">Loading…</p>}
+      {loading && (
+        <div className="space-y-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-4 animate-pulse rounded bg-gray-100" />
+          ))}
+        </div>
+      )}
 
       {!loading && visits.length === 0 && (
         <p className="text-sm text-gray-500">No upcoming appointments.</p>

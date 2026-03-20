@@ -28,7 +28,10 @@ export interface CreateVisitInput {
   date?: Date;
   dueMonth?: string;
   type?: VisitType;
+  reason?: string;
+  specialty?: string;
   notes?: string;
+  documentUrl?: string;
   status?: VisitStatus;
 }
 
@@ -42,8 +45,8 @@ export async function getVisitById(userId: string, profileId: string, visitId: s
 
 export async function createVisit(userId: string, profileId: string, input: CreateVisitInput) {
   await assertProfileAccess(userId, profileId, "OWNER");
-  const { doctorId, facilityId, locationId, date, dueMonth, type, notes, status } = input;
-  const visit = await prisma.visit.create({ data: { doctorId, facilityId, locationId, date, dueMonth, type, notes, status, profileId } });
+  const { doctorId, facilityId, locationId, date, dueMonth, type, reason, specialty, notes, documentUrl, status } = input;
+  const visit = await prisma.visit.create({ data: { doctorId, facilityId, locationId, date, dueMonth, type, reason, specialty, notes, documentUrl, status, profileId } });
   await logAudit(userId, profileId, "CREATE_VISIT", "Visit", visit.id, { type: visit.type });
   return visit;
 }
@@ -55,8 +58,8 @@ export async function updateVisit(
   input: Partial<CreateVisitInput>
 ) {
   await assertProfileAccess(userId, profileId, "OWNER");
-  const { doctorId, facilityId, locationId, date, dueMonth, type, notes, status } = input;
-  const visit = await prisma.visit.update({ where: { id: visitId, profileId }, data: { doctorId, facilityId, locationId, date, dueMonth, type, notes, status } });
+  const { doctorId, facilityId, locationId, date, dueMonth, type, reason, specialty, notes, documentUrl, status } = input;
+  const visit = await prisma.visit.update({ where: { id: visitId, profileId }, data: { doctorId, facilityId, locationId, date, dueMonth, type, reason, specialty, notes, documentUrl, status } });
   await logAudit(userId, profileId, "UPDATE_VISIT", "Visit", visitId);
   return visit;
 }

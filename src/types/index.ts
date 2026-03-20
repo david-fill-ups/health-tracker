@@ -15,6 +15,9 @@ import type {
   MedicationLog,
   Condition,
   Vaccination,
+  Allergy,
+  Portal,
+  HealthMetric,
 } from "@/generated/prisma/client";
 
 import type {
@@ -38,6 +41,9 @@ export type {
   MedicationLog,
   Condition,
   Vaccination,
+  Allergy,
+  Portal,
+  HealthMetric,
   ProfilePermission,
   FacilityType,
   VisitType,
@@ -66,6 +72,10 @@ export type MedicationWithLogs = Medication & {
 export type FacilityWithLocations = Facility & {
   locations: Location[];
   doctors: Doctor[];
+};
+
+export type PortalWithFacility = Portal & {
+  facility: { id: string; name: string } | null;
 };
 
 // ─── API response envelope ────────────────────────────────────────────────────

@@ -59,7 +59,11 @@ export function VaccinationStatus({ activeProfileId }: { activeProfileId: string
       )}
 
       {activeProfileId && loading && (
-        <p className="text-sm text-gray-400">Loading…</p>
+        <div className="space-y-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-4 animate-pulse rounded bg-gray-100" />
+          ))}
+        </div>
       )}
 
       {activeProfileId && !loading && actionable.length === 0 && recs.length > 0 && (

@@ -11,7 +11,7 @@ interface Profile {
   birthDate: string;
   sex: string;
   state: string | null;
-  calendarToken: string;
+  calendarToken?: string;
 }
 
 export default function ProfilesPage() {

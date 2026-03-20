@@ -193,6 +193,62 @@ describe("getVaccinationStatus — age outside groups", () => {
   });
 });
 
+// ── getVaccinationStatus — null fallbacks ────────────────────────────────────
+
+describe("getVaccinationStatus — null fallbacks", () => {
+  it("annual with null intervalMonths defaults to 12-month interval", () => {
+    const vaccine: CdcVaccineSchedule = {
+      vaccine: "TestAnnual",
+      aliases: [],
+      ageGroups: [
+        {
+          label: "Adults",
+          minAgeMonths: 0,
+          maxAgeMonths: null,
+          frequency: "annual",
+          intervalMonths: null, // should default to 12
+          doses: null,
+          notes: "Annual",
+        },
+      ],
+    };
+    // Dosed 300 days ago — within 360-day interval with >30 days remaining → up_to_date
+    // (CDC uses 30-day months: 12 * 30 = 360 days; due window is last 30 days)
+    const threehundredDaysAgo = new Date(Date.now() - 300 * 24 * 60 * 60 * 1000);
+    expect(getVaccinationStatus(vaccine, 300, [threehundredDaysAgo]).status).toBe("up_to_date");
+
+    // Dosed 370 days ago — beyond 360-day interval → overdue
+    const threehundredseventyDaysAgo = new Date(Date.now() - 370 * 24 * 60 * 60 * 1000);
+    expect(getVaccinationStatus(vaccine, 300, [threehundredseventyDaysAgo]).status).toBe("overdue");
+  });
+
+  it("series with null doses defaults to 1 required dose", () => {
+    const vaccine: CdcVaccineSchedule = {
+      vaccine: "TestSeries",
+      aliases: [],
+      ageGroups: [
+        {
+          label: "Adults",
+          minAgeMonths: 0,
+          maxAgeMonths: null,
+          frequency: "series",
+          intervalMonths: null,
+          doses: null, // should default to 1
+          notes: "Single dose",
+        },
+      ],
+    };
+    expect(getVaccinationStatus(vaccine, 300, []).status).toBe("overdue");
+    expect(getVaccinationStatus(vaccine, 300, [daysAgo(30)]).status).toBe("up_to_date");
+  });
+
+  it("very old last-dose date (5 years ago) returns overdue for annual", () => {
+    const fiveYearsAgo = new Date();
+    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+    expect(getVaccinationStatus(annualVaccine, 300, [fiveYearsAgo]).status).toBe("overdue");
+  });
+});
+
 // ── generateRecommendations ──────────────────────────────────────────────────
 
 describe("generateRecommendations", () => {
@@ -242,13 +298,15 @@ describe("generateRecommendations", () => {
     const vacMap = new Map<string, Date[]>([["influenza", [daysAgo(30)]]]);
 
     const results = generateRecommendations(birthDate, vacMap);
-    const fluResult = results.find((r) => r.vaccine.toLowerCase().includes("flu") || r.vaccine === "Flu");
-    // If the real schedule has Flu, the alias should have resolved
+    const fluResult = results.find((r) => r.vaccine.toLowerCase().includes("flu"));
     if (fluResult) {
+      // Alias was resolved: the recently-recorded "influenza" dose should make it up_to_date
       expect(fluResult.status).toBe("up_to_date");
+      expect(fluResult.lastDoseDate).not.toBeNull();
+    } else {
+      // No flu entry in the loaded schedule — alias test is not applicable; pass gracefully
+      expect(results.length).toBeGreaterThan(0);
     }
-    // Test always passes if no flu entry in real schedule (schedule-agnostic)
-    expect(true).toBe(true);
   });
 
   it("returns one recommendation per schedule entry", () => {

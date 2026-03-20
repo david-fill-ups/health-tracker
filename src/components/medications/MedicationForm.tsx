@@ -14,6 +14,7 @@ interface MedicationFormProps {
   initialValues?: {
     name: string;
     dosage: string | null;
+    frequency: string | null;
     prescribingDoctorId: string | null;
     startDate: string | null;
     endDate: string | null;
@@ -31,6 +32,7 @@ export function MedicationForm({ profileId, initialValues, medicationId }: Medic
 
   const [name, setName] = useState(initialValues?.name ?? "");
   const [dosage, setDosage] = useState(initialValues?.dosage ?? "");
+  const [frequency, setFrequency] = useState(initialValues?.frequency ?? "");
   const [prescribingDoctorId, setPrescribingDoctorId] = useState(
     initialValues?.prescribingDoctorId ?? ""
   );
@@ -55,6 +57,7 @@ export function MedicationForm({ profileId, initialValues, medicationId }: Medic
       profileId,
       name,
       dosage: dosage || null,
+      frequency: frequency || null,
       prescribingDoctorId: prescribingDoctorId || null,
       startDate: startDate || null,
       endDate: endDate || null,
@@ -118,6 +121,17 @@ export function MedicationForm({ profileId, initialValues, medicationId }: Medic
           onChange={(e) => setDosage(e.target.value)}
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           placeholder="e.g. 500mg, 10mg/0.5mL"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Frequency</label>
+        <input
+          type="text"
+          value={frequency}
+          onChange={(e) => setFrequency(e.target.value)}
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          placeholder="e.g. Daily, As needed, 1 / week"
         />
       </div>
 

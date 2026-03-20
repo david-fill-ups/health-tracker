@@ -27,6 +27,12 @@ import {
   UpdateLocationSchema,
   ProfileAccessSchema,
   UpdateProfileAccessSchema,
+  CreateAllergySchema,
+  UpdateAllergySchema,
+  CreatePortalSchema,
+  UpdatePortalSchema,
+  CreateHealthMetricSchema,
+  UpdateHealthMetricSchema,
 } from "./validation";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -92,6 +98,9 @@ export function buildOpenApiSpec(): AnyObj {
       { name: "Doctors", description: "Healthcare providers" },
       { name: "Facilities", description: "Clinics, hospitals, labs, and pharmacies" },
       { name: "Locations", description: "Physical locations attached to facilities" },
+      { name: "Allergies", description: "Allergy records (allergen, category, wheal size)" },
+      { name: "Portals", description: "Patient and resupply portal catalog" },
+      { name: "Health Metrics", description: "Standalone health measurements (weight, blood sugar, etc.)" },
       { name: "Import / Export", description: "JSON data portability for health profiles" },
       { name: "Calendar", description: "iCal feed for upcoming visits" },
       { name: "Account", description: "Account management" },
@@ -773,6 +782,222 @@ export function buildOpenApiSpec(): AnyObj {
         },
       },
 
+      // ─── Allergies ────────────────────────────────────────────────────────────
+
+      "/api/allergies": {
+        get: {
+          operationId: "listAllergies",
+          summary: "List allergies",
+          description: "Returns all allergy records for a profile, ordered alphabetically by allergen. Requires at least READ_ONLY access.",
+          tags: ["Allergies"],
+          parameters: [queryParam("profileId", "Profile ID", true)],
+          responses: {
+            "200": resp("Array of allergy records"),
+            "400": resp("Missing profileId"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+        post: {
+          operationId: "createAllergy",
+          summary: "Record allergy",
+          description: "Adds an allergy record to a profile. Requires OWNER access.",
+          tags: ["Allergies"],
+          requestBody: jsonBody(CreateAllergySchema),
+          responses: {
+            "201": resp("Created allergy"),
+            "400": resp("Validation error"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+      },
+
+      "/api/allergies/{id}": {
+        parameters: [strPathParam("id", "Allergy ID")],
+        get: {
+          operationId: "getAllergy",
+          summary: "Get allergy",
+          description: "Returns a single allergy record.",
+          tags: ["Allergies"],
+          responses: {
+            "200": resp("Allergy record"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+            "404": resp("Not found"),
+          },
+        },
+        put: {
+          operationId: "updateAllergy",
+          summary: "Update allergy",
+          description: "Updates an allergy record. Requires OWNER access.",
+          tags: ["Allergies"],
+          requestBody: jsonBody(UpdateAllergySchema),
+          responses: {
+            "200": resp("Updated allergy"),
+            "400": resp("Validation error"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+        delete: {
+          operationId: "deleteAllergy",
+          summary: "Delete allergy",
+          description: "Permanently deletes an allergy record. Requires OWNER access.",
+          tags: ["Allergies"],
+          responses: {
+            "204": resp("No content"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+      },
+
+      // ─── Portals ──────────────────────────────────────────────────────────────
+
+      "/api/portals": {
+        get: {
+          operationId: "listPortals",
+          summary: "List portals",
+          description: "Returns all patient portal entries for a profile, ordered by name. Includes optional linked facility. Requires at least READ_ONLY access.",
+          tags: ["Portals"],
+          parameters: [queryParam("profileId", "Profile ID", true)],
+          responses: {
+            "200": resp("Array of portal records with optional facility"),
+            "400": resp("Missing profileId"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+        post: {
+          operationId: "createPortal",
+          summary: "Add portal",
+          description: "Adds a patient portal entry to a profile. Requires OWNER access.",
+          tags: ["Portals"],
+          requestBody: jsonBody(CreatePortalSchema),
+          responses: {
+            "201": resp("Created portal"),
+            "400": resp("Validation error"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+      },
+
+      "/api/portals/{id}": {
+        parameters: [strPathParam("id", "Portal ID")],
+        get: {
+          operationId: "getPortal",
+          summary: "Get portal",
+          description: "Returns a single portal record with linked facility.",
+          tags: ["Portals"],
+          responses: {
+            "200": resp("Portal record"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+            "404": resp("Not found"),
+          },
+        },
+        put: {
+          operationId: "updatePortal",
+          summary: "Update portal",
+          description: "Updates a portal entry. Requires OWNER access.",
+          tags: ["Portals"],
+          requestBody: jsonBody(UpdatePortalSchema),
+          responses: {
+            "200": resp("Updated portal"),
+            "400": resp("Validation error"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+        delete: {
+          operationId: "deletePortal",
+          summary: "Delete portal",
+          description: "Permanently deletes a portal entry. Requires OWNER access.",
+          tags: ["Portals"],
+          responses: {
+            "204": resp("No content"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+      },
+
+      // ─── Health Metrics ───────────────────────────────────────────────────────
+
+      "/api/health-metrics": {
+        get: {
+          operationId: "listHealthMetrics",
+          summary: "List health metrics",
+          description: "Returns health metric entries for a profile, ordered by measuredAt descending. Supports optional metricType filter. Requires at least READ_ONLY access.",
+          tags: ["Health Metrics"],
+          parameters: [
+            queryParam("profileId", "Profile ID", true),
+            queryParam("metricType", "Filter by metric type (e.g. Weight, Heart Rate)"),
+          ],
+          responses: {
+            "200": resp("Array of health metric entries"),
+            "400": resp("Missing profileId"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+        post: {
+          operationId: "createHealthMetric",
+          summary: "Log health metric",
+          description: "Records a health metric measurement. Requires OWNER access.",
+          tags: ["Health Metrics"],
+          requestBody: jsonBody(CreateHealthMetricSchema),
+          responses: {
+            "201": resp("Created health metric"),
+            "400": resp("Validation error"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+      },
+
+      "/api/health-metrics/{id}": {
+        parameters: [strPathParam("id", "Health Metric ID")],
+        get: {
+          operationId: "getHealthMetric",
+          summary: "Get health metric",
+          description: "Returns a single health metric entry.",
+          tags: ["Health Metrics"],
+          responses: {
+            "200": resp("Health metric entry"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+            "404": resp("Not found"),
+          },
+        },
+        put: {
+          operationId: "updateHealthMetric",
+          summary: "Update health metric",
+          description: "Updates a health metric entry. Requires OWNER access.",
+          tags: ["Health Metrics"],
+          requestBody: jsonBody(UpdateHealthMetricSchema),
+          responses: {
+            "200": resp("Updated health metric"),
+            "400": resp("Validation error"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+        delete: {
+          operationId: "deleteHealthMetric",
+          summary: "Delete health metric",
+          description: "Permanently deletes a health metric entry. Requires OWNER access.",
+          tags: ["Health Metrics"],
+          responses: {
+            "204": resp("No content"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+      },
+
       // ─── Import / Export ──────────────────────────────────────────────────────
 
       "/api/profiles/{id}/export": {
@@ -800,6 +1025,9 @@ export function buildOpenApiSpec(): AnyObj {
                       vaccinations: { type: "array" },
                       doctors: { type: "array" },
                       facilities: { type: "array" },
+                      allergies: { type: "array" },
+                      portals: { type: "array" },
+                      healthMetrics: { type: "array" },
                     },
                   },
                 },

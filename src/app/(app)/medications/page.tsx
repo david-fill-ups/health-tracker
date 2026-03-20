@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { MedicationCard } from "@/components/medications/MedicationCard";
 
@@ -55,12 +56,12 @@ export default function MedicationsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Medications</h1>
-        <a
+        <Link
           href="/medications/new"
           className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
         >
           + New Medication
-        </a>
+        </Link>
       </div>
 
       {!activeProfileId && (
@@ -75,7 +76,7 @@ export default function MedicationsPage() {
           <section>
             <h2 className="mb-3 text-lg font-semibold text-gray-700">Active</h2>
             {active.length === 0 ? (
-              <p className="text-sm text-gray-400 italic">No active medications.</p>
+              <p className="text-sm text-gray-500">No active medications.</p>
             ) : (
               <div className="space-y-3">
                 {active.map((m) => (

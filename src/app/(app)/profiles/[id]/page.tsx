@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { getProfileById, regenerateCalendarToken } from "@/server/profiles";
 import { CopyButton } from "@/components/profiles/CopyButton";
 import { SharingSection } from "@/components/profiles/SharingSection";
+import { ProfileActions } from "@/components/profiles/ProfileActions";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -18,7 +19,9 @@ export default async function ProfileDetailPage({ params }: Props) {
   if (!profile) notFound();
 
   const host = process.env.NEXTAUTH_URL ?? "localhost:3000";
-  const calUrl = `webcal://${host.replace(/^https?:\/\//, "")}/api/calendar/${id}?token=${profile.calendarToken}`;
+  const calUrl = profile.calendarToken
+    ? `webcal://${host.replace(/^https?:\/\//, "")}/api/calendar/${id}?token=${profile.calendarToken}`
+    : null;
 
   async function handleRegenerate() {
     "use server";
@@ -66,21 +69,23 @@ export default async function ProfileDetailPage({ params }: Props) {
           )}
         </div>
 
-        <div className="border-t border-gray-100 pt-5">
-          <p className="mb-2 text-sm font-medium text-gray-700">Calendar Subscription</p>
-          <div className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
-            <code className="flex-1 truncate text-xs text-gray-600">{calUrl}</code>
-            <CopyButton text={calUrl} />
+        {calUrl && (
+          <div className="border-t border-gray-100 pt-5">
+            <p className="mb-2 text-sm font-medium text-gray-700">Calendar Subscription</p>
+            <div className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
+              <code className="flex-1 truncate text-xs text-gray-600">{calUrl}</code>
+              <CopyButton text={calUrl} />
+            </div>
+            <form action={handleRegenerate} className="mt-2">
+              <button
+                type="submit"
+                className="text-xs text-gray-500 hover:text-red-600 transition-colors"
+              >
+                Regenerate token
+              </button>
+            </form>
           </div>
-          <form action={handleRegenerate} className="mt-2">
-            <button
-              type="submit"
-              className="text-xs text-gray-500 hover:text-red-600 transition-colors"
-            >
-              Regenerate token
-            </button>
-          </form>
-        </div>
+        )}
 
         <SharingSection profileId={id} currentUserId={session.user.id} />
 
@@ -98,6 +103,8 @@ export default async function ProfileDetailPage({ params }: Props) {
             Back
           </Link>
         </div>
+
+        <ProfileActions profileId={id} profileName={profile.name} />
       </div>
     </div>
   );

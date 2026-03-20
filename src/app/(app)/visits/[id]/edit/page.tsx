@@ -15,7 +15,10 @@ interface VisitRaw {
   doctorId?: string | null;
   facilityId?: string | null;
   locationId?: string | null;
+  reason?: string | null;
+  specialty?: string | null;
   notes?: string | null;
+  documentUrl?: string | null;
 }
 
 export default function EditVisitPage() {
@@ -50,7 +53,10 @@ export default function EditVisitPage() {
             doctorId: v.doctorId ?? "",
             facilityId: v.facilityId ?? "",
             locationId: v.locationId ?? "",
+            reason: v.reason ?? "",
+            specialty: v.specialty ?? "",
             notes: v.notes ?? "",
+            documentUrl: v.documentUrl ?? "",
           });
         }
       })
