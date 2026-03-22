@@ -22,7 +22,6 @@ import type {
 
 import type {
   ProfilePermission,
-  FacilityType,
   VisitType,
   VisitStatus,
   ConditionStatus,
@@ -45,7 +44,6 @@ export type {
   Portal,
   HealthMetric,
   ProfilePermission,
-  FacilityType,
   VisitType,
   VisitStatus,
   ConditionStatus,
