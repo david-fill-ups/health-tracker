@@ -421,12 +421,12 @@ describe("UpdateFacilitySchema", () => {
     expect(UpdateFacilitySchema.safeParse({ name: "City Clinic" }).success).toBe(true);
   });
 
-  it("rejects invalid type value", () => {
-    expect(UpdateFacilitySchema.safeParse({ type: "GYM" }).success).toBe(false);
+  it("accepts any non-empty type string", () => {
+    expect(UpdateFacilitySchema.safeParse({ type: "GYM" }).success).toBe(true);
   });
 
-  it("accepts valid type value", () => {
-    expect(UpdateFacilitySchema.safeParse({ type: "HOSPITAL" }).success).toBe(true);
+  it("rejects empty type string", () => {
+    expect(UpdateFacilitySchema.safeParse({ type: "" }).success).toBe(false);
   });
 });
 
