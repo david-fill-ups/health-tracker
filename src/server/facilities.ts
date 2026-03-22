@@ -4,8 +4,6 @@
 import { prisma } from "@/lib/prisma";
 import { assertProfileAccess } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
-import type { FacilityType } from "@/generated/prisma/enums";
-
 export async function getFacilitiesForProfile(userId: string, profileId: string) {
   await assertProfileAccess(userId, profileId);
   return prisma.facility.findMany({
@@ -22,7 +20,8 @@ export async function getFacilitiesForProfile(userId: string, profileId: string)
 
 export interface CreateFacilityInput {
   name: string;
-  type: FacilityType;
+  type: string;
+  rating?: number | null;
   websiteUrl?: string;
   portalUrl?: string;
   phone?: string;
@@ -36,7 +35,7 @@ export async function createFacility(
 ) {
   await assertProfileAccess(userId, profileId, "OWNER");
   const { name, type, websiteUrl, portalUrl, phone, active } = input;
-  const facility = await prisma.facility.create({ data: { name, type, websiteUrl, portalUrl, phone, active, profileId } });
+  const facility = await prisma.facility.create({ data: { name, type, rating: input.rating, websiteUrl, portalUrl, phone, active, profileId } });
   await logAudit(userId, profileId, "CREATE_FACILITY", "Facility", facility.id, { name: facility.name });
   return facility;
 }
@@ -48,8 +47,8 @@ export async function updateFacility(
   input: Partial<CreateFacilityInput>
 ) {
   await assertProfileAccess(userId, profileId, "OWNER");
-  const { name, type, websiteUrl, portalUrl, phone, active } = input;
-  const facility = await prisma.facility.update({ where: { id: facilityId, profileId }, data: { name, type, websiteUrl, portalUrl, phone, active } });
+  const { name, type, rating, websiteUrl, portalUrl, phone, active } = input;
+  const facility = await prisma.facility.update({ where: { id: facilityId, profileId }, data: { name, type, rating, websiteUrl, portalUrl, phone, active } });
   await logAudit(userId, profileId, "UPDATE_FACILITY", "Facility", facilityId);
   return facility;
 }

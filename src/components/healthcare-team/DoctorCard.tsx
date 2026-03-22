@@ -6,8 +6,10 @@ interface Doctor {
   id: string;
   name: string;
   specialty?: string | null;
+  facilityId?: string | null;
   facility?: { id: string; name: string } | null;
   phone?: string | null;
+  rating?: number | null;
   active: boolean;
   visitCount?: number;
   lastVisit?: string | null;
@@ -45,8 +47,12 @@ export function DoctorCard({ doctor }: Props) {
             )}
           </div>
           <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-500">
-            {doctor.facility && <span>{doctor.facility.name}</span>}
             {doctor.phone && <span>{doctor.phone}</span>}
+            {doctor.rating != null && (
+              <span className="text-amber-500">
+                {'\u2605'.repeat(Math.round(doctor.rating))}{'\u2606'.repeat(5 - Math.round(doctor.rating))} {doctor.rating.toFixed(1)}
+              </span>
+            )}
             {doctor.visitCount != null && (
               <span>{doctor.visitCount} visit{doctor.visitCount !== 1 ? "s" : ""}</span>
             )}

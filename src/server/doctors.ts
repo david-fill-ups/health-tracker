@@ -15,6 +15,7 @@ export interface CreateDoctorInput {
   name: string;
   specialty?: string;
   facilityId?: string;
+  rating?: number | null;
   websiteUrl?: string;
   portalUrl?: string;
   phone?: string;
@@ -28,8 +29,8 @@ export async function createDoctor(
   input: CreateDoctorInput
 ) {
   await assertProfileAccess(userId, profileId, "OWNER");
-  const { name, specialty, facilityId, websiteUrl, portalUrl, phone, notes, active } = input;
-  const doctor = await prisma.doctor.create({ data: { name, specialty, facilityId, websiteUrl, portalUrl, phone, notes, active, profileId } });
+  const { name, specialty, facilityId, rating, websiteUrl, portalUrl, phone, notes, active } = input;
+  const doctor = await prisma.doctor.create({ data: { name, specialty, facilityId, rating, websiteUrl, portalUrl, phone, notes, active, profileId } });
   await logAudit(userId, profileId, "CREATE_DOCTOR", "Doctor", doctor.id, { name: doctor.name });
   return doctor;
 }
@@ -41,8 +42,8 @@ export async function updateDoctor(
   input: Partial<CreateDoctorInput>
 ) {
   await assertProfileAccess(userId, profileId, "OWNER");
-  const { name, specialty, facilityId, websiteUrl, portalUrl, phone, notes, active } = input;
-  const doctor = await prisma.doctor.update({ where: { id: doctorId, profileId }, data: { name, specialty, facilityId, websiteUrl, portalUrl, phone, notes, active } });
+  const { name, specialty, facilityId, rating, websiteUrl, portalUrl, phone, notes, active } = input;
+  const doctor = await prisma.doctor.update({ where: { id: doctorId, profileId }, data: { name, specialty, facilityId, rating, websiteUrl, portalUrl, phone, notes, active } });
   await logAudit(userId, profileId, "UPDATE_DOCTOR", "Doctor", doctorId);
   return doctor;
 }

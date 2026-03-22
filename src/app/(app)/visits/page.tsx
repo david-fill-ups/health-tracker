@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { VisitCard, type Visit } from "@/components/visits/VisitCard";
 import type { VisitStatus, VisitType } from "@/generated/prisma/enums";
+import { CardSkeleton } from "@/components/ui/Skeleton";
 
 const STATUS_TABS: Array<{ label: string; value: VisitStatus | "ALL" }> = [
   { label: "All", value: "ALL" },
@@ -59,26 +60,36 @@ export default function VisitsPage() {
   }
 
   // Build unique facility/doctor lists from loaded visits
-  const facilityMap = new Map<string, string>();
-  const doctorMap = new Map<string, string>();
-  for (const v of visits) {
-    if (v.facility) facilityMap.set(v.facility.id, v.facility.name);
-    if (v.doctor) doctorMap.set(v.doctor.id, v.doctor.name);
-  }
-  const facilities = Array.from(facilityMap.entries()).sort((a, b) => a[1].localeCompare(b[1]));
-  const doctors = Array.from(doctorMap.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  const { facilities, doctors, specialties } = useMemo(() => {
+    const facilityMap = new Map<string, string>();
+    const doctorMap = new Map<string, string>();
+    const specialtySet = new Set<string>();
+    for (const v of visits) {
+      if (v.facility) facilityMap.set(v.facility.id, v.facility.name);
+      if (v.doctor) doctorMap.set(v.doctor.id, v.doctor.name);
+      if (v.specialty) specialtySet.add(v.specialty);
+    }
+    return {
+      facilities: Array.from(facilityMap.entries()).sort((a, b) => a[1].localeCompare(b[1])),
+      doctors: Array.from(doctorMap.entries()).sort((a, b) => a[1].localeCompare(b[1])),
+      specialties: Array.from(specialtySet).sort(),
+    };
+  }, [visits]);
 
   // Apply all filters
-  let filtered = visits;
-  if (activeTab !== "ALL") filtered = filtered.filter((v) => v.status === activeTab);
-  if (filterFacilityId) filtered = filtered.filter((v) => v.facility?.id === filterFacilityId);
-  if (filterDoctorId) filtered = filtered.filter((v) => v.doctor?.id === filterDoctorId);
-  if (filterSpecialty) filtered = filtered.filter((v) =>
-    (v.specialty ?? "").toLowerCase().includes(filterSpecialty.toLowerCase())
-  );
-  if (filterType) filtered = filtered.filter((v) => v.type === filterType);
-  if (filterDateFrom) filtered = filtered.filter((v) => v.date && v.date >= filterDateFrom);
-  if (filterDateTo) filtered = filtered.filter((v) => v.date && v.date <= filterDateTo + "T23:59:59");
+  const filtered = useMemo(() => {
+    let result = visits;
+    if (activeTab !== "ALL") result = result.filter((v) => v.status === activeTab);
+    if (filterFacilityId) result = result.filter((v) => v.facility?.id === filterFacilityId);
+    if (filterDoctorId) result = result.filter((v) => v.doctor?.id === filterDoctorId);
+    if (filterSpecialty) result = result.filter((v) =>
+      (v.specialty ?? "").toLowerCase().includes(filterSpecialty.toLowerCase())
+    );
+    if (filterType) result = result.filter((v) => v.type === filterType);
+    if (filterDateFrom) result = result.filter((v) => v.date && v.date >= filterDateFrom);
+    if (filterDateTo) result = result.filter((v) => v.date && v.date <= filterDateTo + "T23:59:59");
+    return result;
+  }, [visits, activeTab, filterFacilityId, filterDoctorId, filterSpecialty, filterType, filterDateFrom, filterDateTo]);
 
   const hasFilters = !!(filterFacilityId || filterDoctorId || filterSpecialty || filterType || filterDateFrom || filterDateTo);
 
@@ -91,10 +102,25 @@ export default function VisitsPage() {
     setFilterDateTo("");
   }
 
-  const needsScheduling = filtered.filter(
-    (v) => !v.date && (v.status === "PENDING" || v.status === "SCHEDULED")
-  );
-  const scheduled = filtered.filter((v) => !!v.date);
+  const { needsScheduling, scheduled } = useMemo(() => {
+    const now = Date.now();
+    return {
+      needsScheduling: filtered.filter(
+        (v) => !v.date && (v.status === "PENDING" || v.status === "SCHEDULED")
+      ),
+      scheduled: filtered
+        .filter((v) => !!v.date)
+        .sort((a, b) => {
+          const aTime = new Date(a.date!).getTime();
+          const bTime = new Date(b.date!).getTime();
+          const aFuture = aTime >= now;
+          const bFuture = bTime >= now;
+          if (aFuture !== bFuture) return aFuture ? -1 : 1;
+          if (aFuture) return aTime - bTime; // upcoming: ascending
+          return bTime - aTime; // past: descending
+        }),
+    };
+  }, [filtered]);
 
   return (
     <div className="space-y-5">
@@ -174,11 +200,17 @@ export default function VisitsPage() {
             <label className="block text-xs font-medium text-gray-600 mb-1">Office / Specialty</label>
             <input
               type="text"
+              list="visit-specialty-suggestions"
               value={filterSpecialty}
               onChange={(e) => setFilterSpecialty(e.target.value)}
               placeholder="e.g. Urology"
               className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
+            <datalist id="visit-specialty-suggestions">
+              {specialties.map((s) => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
           </div>
 
           <div>
@@ -213,7 +245,7 @@ export default function VisitsPage() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-gray-400">Loading…</p>
+        <CardSkeleton count={4} />
       ) : (
         <>
           {needsScheduling.length > 0 && (

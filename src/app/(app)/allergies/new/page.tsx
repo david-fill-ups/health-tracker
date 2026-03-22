@@ -3,11 +3,13 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
+import { Toast } from "@/components/ui/Toast";
 
 export default function NewAllergyPage() {
   const router = useRouter();
   const { activeProfileId } = useProfile();
   const [submitting, setSubmitting] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [allergen, setAllergen] = useState("");
@@ -40,8 +42,8 @@ export default function NewAllergyPage() {
         return;
       }
 
-      router.push("/allergies");
-      router.refresh();
+      setSaved(true);
+      setTimeout(() => { router.push("/allergies"); router.refresh(); }, 1500);
     } finally {
       setSubmitting(false);
     }
@@ -67,10 +69,11 @@ export default function NewAllergyPage() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="allergen" className="block text-sm font-medium text-gray-700 mb-1">
               Allergen <span className="text-red-500">*</span>
             </label>
             <input
+              id="allergen"
               type="text"
               required
               value={allergen}
@@ -81,8 +84,9 @@ export default function NewAllergyPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">Category</label>
             <input
+              id="category"
               type="text"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
@@ -92,8 +96,9 @@ export default function NewAllergyPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Diagnosis date</label>
+            <label htmlFor="diagnosisDate" className="block text-sm font-medium text-gray-700 mb-1">Diagnosis date</label>
             <input
+              id="diagnosisDate"
               type="date"
               value={diagnosisDate}
               onChange={(e) => setDiagnosisDate(e.target.value)}
@@ -102,8 +107,9 @@ export default function NewAllergyPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
             <textarea
+              id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
@@ -118,7 +124,7 @@ export default function NewAllergyPage() {
               disabled={submitting}
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
             >
-              {submitting ? "Saving…" : "Add allergy"}
+              {saved ? "Saved!" : submitting ? "Saving…" : "Add allergy"}
             </button>
             <a
               href="/allergies"
@@ -129,6 +135,7 @@ export default function NewAllergyPage() {
           </div>
         </form>
       )}
+      <Toast message={saved ? "Allergy added" : null} onDismiss={() => setSaved(false)} />
     </div>
   );
 }

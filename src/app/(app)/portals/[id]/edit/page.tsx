@@ -31,11 +31,11 @@ export default function EditPortalPage({
 
   useEffect(() => {
     if (!activeProfileId) return;
-    fetch()
+    fetch(`/api/facilities?profileId=${activeProfileId}`)
       .then((r) => r.json())
       .then((data) => setFacilities(Array.isArray(data) ? data : []))
       .catch(() => {});
-    fetch()
+    fetch(`/api/portals/${id}?profileId=${activeProfileId}`)
       .then((r) => r.json())
       .then((data) => {
         setName(data.name ?? "");
@@ -56,7 +56,7 @@ export default function EditPortalPage({
     setError(null);
 
     try {
-      const res = await fetch(, {
+      const res = await fetch(`/api/portals/${id}?profileId=${activeProfileId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -149,7 +149,7 @@ export default function EditPortalPage({
             onChange={(e) => setFacilityId(e.target.value)}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           >
-            <option value="">-- None --</option>
+            <option value="">— None —</option>
             {facilities.map((f) => (
               <option key={f.id} value={f.id}>{f.name}</option>
             ))}

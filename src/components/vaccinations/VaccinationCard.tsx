@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 interface Vaccination {
   id: string;
   name: string;
@@ -15,10 +17,13 @@ interface VaccinationCardProps {
 }
 
 export function VaccinationCard({ vaccination, onDelete, compact }: VaccinationCardProps) {
+  const router = useRouter();
+
   async function handleDelete() {
     if (!confirm(`Delete vaccination record for ${vaccination.name}?`)) return;
     await fetch(`/api/vaccinations/${vaccination.id}`, { method: "DELETE" });
     onDelete(vaccination.id);
+    router.refresh();
   }
 
   if (compact) {

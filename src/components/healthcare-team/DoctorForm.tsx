@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { StarRating } from "@/components/ui/StarRating";
 
 interface Facility {
   id: string;
@@ -11,6 +12,7 @@ interface DoctorFormData {
   name: string;
   specialty: string;
   facilityId: string;
+  rating: number | null;
   websiteUrl: string;
   portalUrl: string;
   phone: string;
@@ -18,23 +20,34 @@ interface DoctorFormData {
   active: boolean;
 }
 
-interface ExistingDoctor extends DoctorFormData {
+interface ExistingDoctor {
   id: string;
+  name: string;
+  specialty: string;
+  facilityId: string;
+  rating?: number | null;
+  websiteUrl: string;
+  portalUrl: string;
+  phone: string;
+  notes: string;
+  active: boolean;
 }
 
 interface Props {
   profileId: string;
   facilities: Facility[];
+  existingSpecialties?: string[];
   initial?: ExistingDoctor;
   onSuccess: (doctor: ExistingDoctor & { facility?: Facility | null }) => void;
   onCancel: () => void;
 }
 
-export function DoctorForm({ profileId, facilities, initial, onSuccess, onCancel }: Props) {
+export function DoctorForm({ profileId, facilities, existingSpecialties = [], initial, onSuccess, onCancel }: Props) {
   const [form, setForm] = useState<DoctorFormData>({
     name: initial?.name ?? "",
     specialty: initial?.specialty ?? "",
     facilityId: initial?.facilityId ?? "",
+    rating: initial?.rating ?? null,
     websiteUrl: initial?.websiteUrl ?? "",
     portalUrl: initial?.portalUrl ?? "",
     phone: initial?.phone ?? "",
@@ -57,6 +70,7 @@ export function DoctorForm({ profileId, facilities, initial, onSuccess, onCancel
       name: form.name,
       specialty: form.specialty || undefined,
       facilityId: form.facilityId || undefined,
+      rating: form.rating ?? undefined,
       websiteUrl: form.websiteUrl || undefined,
       portalUrl: form.portalUrl || undefined,
       phone: form.phone || undefined,
@@ -124,11 +138,17 @@ export function DoctorForm({ profileId, facilities, initial, onSuccess, onCancel
           <label className="block text-sm font-medium text-gray-700 mb-1">Specialty</label>
           <input
             type="text"
+            list="specialty-suggestions"
             value={form.specialty}
             onChange={(e) => set("specialty", e.target.value)}
             placeholder="e.g. Cardiologist"
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
+          <datalist id="specialty-suggestions">
+            {existingSpecialties.map((s) => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
         </div>
 
         <div>
@@ -187,6 +207,11 @@ export function DoctorForm({ profileId, facilities, initial, onSuccess, onCancel
             rows={2}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
+        </div>
+
+        <div className="sm:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+          <StarRating value={form.rating} onChange={(r) => set("rating", r === 0 ? null : r)} />
         </div>
 
         <div className="sm:col-span-2 flex items-center gap-2">

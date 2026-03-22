@@ -1,39 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import type { FacilityType } from "@/generated/prisma/enums";
-
-const FACILITY_TYPES: FacilityType[] = [
-  "CLINIC",
-  "HOSPITAL",
-  "LAB",
-  "PHARMACY",
-  "SUPPLIER",
-  "URGENT_CARE",
-  "OTHER",
-];
-
-const FACILITY_TYPE_LABELS: Record<FacilityType, string> = {
-  CLINIC: "Clinic",
-  HOSPITAL: "Hospital",
-  LAB: "Lab",
-  PHARMACY: "Pharmacy",
-  SUPPLIER: "Supplier",
-  URGENT_CARE: "Urgent Care",
-  OTHER: "Other",
-};
+import { FACILITY_TYPE_SUGGESTIONS } from "@/lib/validation";
 
 interface FacilityFormData {
   name: string;
-  type: FacilityType;
+  type: string;
+  rating: string;
   websiteUrl: string;
   portalUrl: string;
   phone: string;
   active: boolean;
 }
 
-interface ExistingFacility extends FacilityFormData {
+interface ExistingFacility {
   id: string;
+  name: string;
+  type: string;
+  rating?: number | null;
+  websiteUrl: string;
+  portalUrl: string;
+  phone: string;
+  active: boolean;
 }
 
 interface Props {
@@ -46,7 +34,8 @@ interface Props {
 export function FacilityForm({ profileId, initial, onSuccess, onCancel }: Props) {
   const [form, setForm] = useState<FacilityFormData>({
     name: initial?.name ?? "",
-    type: initial?.type ?? "CLINIC",
+    type: initial?.type ?? "Clinic",
+    rating: initial?.rating != null ? String(initial.rating) : "",
     websiteUrl: initial?.websiteUrl ?? "",
     portalUrl: initial?.portalUrl ?? "",
     phone: initial?.phone ?? "",
@@ -64,9 +53,12 @@ export function FacilityForm({ profileId, initial, onSuccess, onCancel }: Props)
     setSaving(true);
     setError(null);
 
+    const ratingVal = form.rating ? parseFloat(form.rating) : undefined;
+
     const body = {
       name: form.name,
       type: form.type,
+      rating: ratingVal != null && !isNaN(ratingVal) ? ratingVal : undefined,
       websiteUrl: form.websiteUrl || undefined,
       portalUrl: form.portalUrl || undefined,
       phone: form.phone || undefined,
@@ -131,17 +123,19 @@ export function FacilityForm({ profileId, initial, onSuccess, onCancel }: Props)
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-          <select
+          <input
+            type="text"
+            list="facility-type-suggestions"
             value={form.type}
-            onChange={(e) => set("type", e.target.value as FacilityType)}
+            onChange={(e) => set("type", e.target.value)}
+            placeholder="e.g. Clinic"
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            {FACILITY_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {FACILITY_TYPE_LABELS[t]}
-              </option>
+          />
+          <datalist id="facility-type-suggestions">
+            {FACILITY_TYPE_SUGGESTIONS.map((t) => (
+              <option key={t} value={t} />
             ))}
-          </select>
+          </datalist>
         </div>
 
         <div>

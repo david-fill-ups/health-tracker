@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { FacilityCard } from "@/components/healthcare-team/FacilityCard";
 import { DoctorCard } from "@/components/healthcare-team/DoctorCard";
-import type { FacilityType } from "@/generated/prisma/enums";
 
 interface Doctor {
   id: string;
@@ -15,6 +14,7 @@ interface Doctor {
   facility?: { id: string; name: string } | null;
   phone?: string | null;
   active: boolean;
+  rating?: number | null;
   _count?: { visits: number };
   visits?: Array<{ date: string | null }>;
 }
@@ -22,7 +22,8 @@ interface Doctor {
 interface Facility {
   id: string;
   name: string;
-  type: FacilityType;
+  type: string;
+  rating?: number | null;
   websiteUrl?: string | null;
   portalUrl?: string | null;
   phone?: string | null;
@@ -30,7 +31,6 @@ interface Facility {
   _count?: { visits: number };
   visits?: Array<{ date: string | null }>;
 }
-
 export default function HealthcareTeamPage() {
   const { activeProfileId } = useProfile();
 
@@ -38,9 +38,9 @@ export default function HealthcareTeamPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loadingFacilities, setLoadingFacilities] = useState(false);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
-
-  const [inactiveFacilitiesOpen, setInactiveFacilitiesOpen] = useState(false);
-  const [inactiveDoctorsOpen, setInactiveDoctorsOpen] = useState(false);
+  const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const [inactiveOpen, setInactiveOpen] = useState(false);
+  const addMenuRef = useRef<HTMLDivElement>(null);
 
   const fetchFacilities = useCallback(async () => {
     if (!activeProfileId) return;
@@ -63,11 +63,21 @@ export default function HealthcareTeamPage() {
       setLoadingDoctors(false);
     }
   }, [activeProfileId]);
-
   useEffect(() => {
     fetchFacilities();
     fetchDoctors();
   }, [fetchFacilities, fetchDoctors]);
+
+  // Close menu on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) {
+        setAddMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   if (!activeProfileId) {
     return (
@@ -79,122 +89,156 @@ export default function HealthcareTeamPage() {
 
   const activeFacilities = facilities.filter((f) => f.active);
   const inactiveFacilities = facilities.filter((f) => !f.active);
-  const activeDoctors = doctors.filter((d) => d.active);
   const inactiveDoctors = doctors.filter((d) => !d.active);
 
-  function toFacilityCardProps(f: Facility) {
-    return {
-      ...f,
-      visitCount: f._count?.visits,
-      lastVisit: f.visits?.[0]?.date ?? null,
-    };
+  // Group active doctors by facilityId
+  const activeDoctorsByFacility = new Map<string, Doctor[]>();
+  const independentDoctors: Doctor[] = [];
+  for (const d of doctors.filter((d) => d.active)) {
+    if (d.facilityId) {
+      const arr = activeDoctorsByFacility.get(d.facilityId) ?? [];
+      arr.push(d);
+      activeDoctorsByFacility.set(d.facilityId, arr);
+    } else {
+      independentDoctors.push(d);
+    }
+  }
+
+  // Inactive grouped
+  const inactiveDoctorsByFacility = new Map<string, Doctor[]>();
+  const inactiveIndependentDoctors: Doctor[] = [];
+  for (const d of inactiveDoctors) {
+    if (d.facilityId) {
+      const arr = inactiveDoctorsByFacility.get(d.facilityId) ?? [];
+      arr.push(d);
+      inactiveDoctorsByFacility.set(d.facilityId, arr);
+    } else {
+      inactiveIndependentDoctors.push(d);
+    }
   }
 
   function toDoctorCardProps(d: Doctor) {
-    return {
-      ...d,
-      visitCount: d._count?.visits,
-      lastVisit: d.visits?.[0]?.date ?? null,
-    };
+    return { ...d, visitCount: d._count?.visits, lastVisit: d.visits?.[0]?.date ?? null };
   }
 
+  function toFacilityCardProps(f: Facility) {
+    return { ...f, visitCount: f._count?.visits, lastVisit: f.visits?.[0]?.date ?? null };
+  }
+
+  const loading = loadingFacilities || loadingDoctors;
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Healthcare Team</h1>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-        {/* Facilities column */}
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-800">Facilities</h2>
-            <Link
-              href="/healthcare-team/facility/new"
-              className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
-            >
-              + Add Facility
-            </Link>
-          </div>
-
-          {loadingFacilities ? (
-            <p className="text-sm text-gray-400">Loading…</p>
-          ) : (
-            <>
-              {activeFacilities.length === 0 && inactiveFacilities.length === 0 && (
-                <p className="text-sm text-gray-400">No facilities added yet.</p>
-              )}
-              <div className="space-y-2">
-                {activeFacilities.map((f) => (
-                  <FacilityCard key={f.id} facility={toFacilityCardProps(f)} />
-                ))}
-              </div>
-
-              {inactiveFacilities.length > 0 && (
-                <div className="mt-2">
-                  <button
-                    onClick={() => setInactiveFacilitiesOpen((v) => !v)}
-                    className="text-sm text-gray-500 underline"
-                  >
-                    {inactiveFacilitiesOpen ? "Hide" : "Show"} inactive ({inactiveFacilities.length})
-                  </button>
-                  {inactiveFacilitiesOpen && (
-                    <div className="mt-2 space-y-2">
-                      {inactiveFacilities.map((f) => (
-                        <FacilityCard key={f.id} facility={toFacilityCardProps(f)} />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Healthcare Team</h1>
+        <div className="relative" ref={addMenuRef}>
+          <button
+            onClick={() => setAddMenuOpen((v) => !v)}
+            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 flex items-center gap-1"
+          >
+            + Add <span className="text-xs opacity-70">▾</span>
+          </button>
+          {addMenuOpen && (
+            <div className="absolute right-0 mt-1 w-44 rounded-xl border border-gray-200 bg-white shadow-lg z-10 overflow-hidden">
+              <Link
+                href="/healthcare-team/facility/new"
+                className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700"
+                onClick={() => setAddMenuOpen(false)}
+              >
+                🏥 Add Facility
+              </Link>
+              <Link
+                href="/healthcare-team/provider/new"
+                className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700"
+                onClick={() => setAddMenuOpen(false)}
+              >
+                🩺 Add Provider
+              </Link>
+            </div>
           )}
-        </section>
+        </div>
+      </div>
 
-        {/* Doctors column */}
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-800">Doctors & Providers</h2>
-            <Link
-              href="/healthcare-team/provider/new"
-              className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
-            >
-              + Add Doctor
-            </Link>
-          </div>
+      {loading ? (
+        <p className="text-sm text-gray-400">Loading…</p>
+      ) : (
+        <div className="space-y-4">
+          {activeFacilities.length === 0 && independentDoctors.length === 0 && (
+            <p className="text-sm text-gray-400">No facilities or providers added yet.</p>
+          )}
 
-          {loadingDoctors ? (
-            <p className="text-sm text-gray-400">Loading…</p>
-          ) : (
-            <>
-              {activeDoctors.length === 0 && inactiveDoctors.length === 0 && (
-                <p className="text-sm text-gray-400">No doctors added yet.</p>
-              )}
-              <div className="space-y-2">
-                {activeDoctors.map((d) => (
+          {/* Facilities with their doctors */}
+          {activeFacilities.map((f) => {
+            const facilityDoctors = activeDoctorsByFacility.get(f.id) ?? [];
+            return (
+              <div key={f.id} className="space-y-1">
+                <FacilityCard facility={toFacilityCardProps(f)} />
+                {facilityDoctors.length > 0 && (
+                  <div className="ml-6 space-y-1 border-l-2 border-indigo-100 pl-4">
+                    {facilityDoctors.map((d) => (
+                      <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {/* Independent providers */}
+          {independentDoctors.length > 0 && (
+            <div className="space-y-1">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">
+                Independent Providers
+              </h2>
+              <div className="space-y-1">
+                {independentDoctors.map((d) => (
                   <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} />
                 ))}
               </div>
+            </div>
+          )}
 
-              {inactiveDoctors.length > 0 && (
-                <div className="mt-2">
-                  <button
-                    onClick={() => setInactiveDoctorsOpen((v) => !v)}
-                    className="text-sm text-gray-500 underline"
-                  >
-                    {inactiveDoctorsOpen ? "Hide" : "Show"} inactive ({inactiveDoctors.length})
-                  </button>
-                  {inactiveDoctorsOpen && (
-                    <div className="mt-2 space-y-2">
-                      {inactiveDoctors.map((d) => (
+          {/* Inactive section */}
+          {(inactiveFacilities.length > 0 || inactiveDoctors.length > 0) && (
+            <div className="mt-2">
+              <button
+                onClick={() => setInactiveOpen((v) => !v)}
+                className="text-sm text-gray-500 underline"
+              >
+                {inactiveOpen ? "Hide" : "Show"} inactive (
+                {inactiveFacilities.length + inactiveDoctors.length})
+              </button>
+              {inactiveOpen && (
+                <div className="mt-3 space-y-4">
+                  {inactiveFacilities.map((f) => {
+                    const facilityDoctors = inactiveDoctorsByFacility.get(f.id) ?? [];
+                    return (
+                      <div key={f.id} className="space-y-1">
+                        <FacilityCard facility={toFacilityCardProps(f)} />
+                        {facilityDoctors.length > 0 && (
+                          <div className="ml-6 space-y-1 border-l-2 border-gray-100 pl-4">
+                            {facilityDoctors.map((d) => (
+                              <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {inactiveIndependentDoctors.length > 0 && (
+                    <div className="space-y-1">
+                      <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">
+                        Independent Providers
+                      </h2>
+                      {inactiveIndependentDoctors.map((d) => (
                         <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} />
                       ))}
                     </div>
                   )}
                 </div>
               )}
-            </>
+            </div>
           )}
-        </section>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

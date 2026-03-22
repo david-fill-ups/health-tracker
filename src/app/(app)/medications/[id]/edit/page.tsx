@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, use, type FormEvent } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
+import { MedicationForm } from "@/components/medications/MedicationForm";
 
 export default function EditMedicationPage({
   params,
@@ -13,62 +14,49 @@ export default function EditMedicationPage({
   const router = useRouter();
   const { activeProfileId } = useProfile();
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [name, setName] = useState("");
-  const [dosage, setDosage] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [instructions, setInstructions] = useState("");
-  const [active, setActive] = useState(true);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [initialValues, setInitialValues] = useState<{
+    name: string;
+    dosage: string | null;
+    frequency: string | null;
+    prescribingDoctorId: string | null;
+    startDate: string | null;
+    endDate: string | null;
+    instructions: string | null;
+    active: boolean;
+  } | null>(null);
 
   useEffect(() => {
     if (!activeProfileId) return;
     fetch(`/api/medications/${id}?profileId=${activeProfileId}`)
       .then((r) => r.json())
       .then((data) => {
-        setName(data.name ?? "");
-        setDosage(data.dosage ?? "");
-        setStartDate(data.startDate ? data.startDate.slice(0, 10) : "");
-        setEndDate(data.endDate ? data.endDate.slice(0, 10) : "");
-        setInstructions(data.instructions ?? "");
-        setActive(data.active ?? true);
+        setInitialValues({
+          name: data.name ?? "",
+          dosage: data.dosage ?? null,
+          frequency: data.frequency ?? null,
+          prescribingDoctorId: data.prescribingDoctorId ?? null,
+          startDate: data.startDate ? data.startDate.slice(0, 10) : null,
+          endDate: data.endDate ? data.endDate.slice(0, 10) : null,
+          instructions: data.instructions ?? null,
+          active: data.active ?? true,
+        });
       })
-      .catch(() => setError("Failed to load medication"))
       .finally(() => setLoading(false));
   }, [id, activeProfileId]);
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!activeProfileId) return;
-    setSubmitting(true);
-    setError(null);
-
-    try {
-      const res = await fetch(`/api/medications/${id}?profileId=${activeProfileId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          dosage: dosage || undefined,
-          startDate: startDate || undefined,
-          endDate: endDate || undefined,
-          instructions: instructions || undefined,
-          active,
-        }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error ?? "Failed to save medication");
-        return;
-      }
-
-      router.push(`/medications/${id}`);
+  async function handleDelete() {
+    if (!activeProfileId || !confirm("Permanently delete this medication and all its logs?")) return;
+    setDeleting(true);
+    setDeleteError(null);
+    const res = await fetch(`/api/medications/${id}?profileId=${activeProfileId}`, { method: "DELETE" });
+    if (res.ok) {
+      router.push("/medications");
       router.refresh();
-    } finally {
-      setSubmitting(false);
+    } else {
+      setDeleteError("Failed to delete medication");
+      setDeleting(false);
     }
   }
 
@@ -77,6 +65,7 @@ export default function EditMedicationPage({
   }
 
   if (loading) return <p className="text-sm text-gray-400">Loading…</p>;
+  if (!initialValues) return <p className="text-sm text-red-600">Medication not found.</p>;
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -87,101 +76,24 @@ export default function EditMedicationPage({
         <h1 className="mt-2 text-2xl font-bold text-gray-900">Edit Medication</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {error && (
-          <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
+      <MedicationForm
+        profileId={activeProfileId}
+        initialValues={initialValues}
+        medicationId={id}
+      />
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Medication name <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Dosage
-          </label>
-          <input
-            type="text"
-            value={dosage}
-            onChange={(e) => setDosage(e.target.value)}
-            placeholder="e.g. 10mg"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Start date</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">End date</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Instructions / notes
-          </label>
-          <textarea
-            value={instructions}
-            onChange={(e) => setInstructions(e.target.value)}
-            rows={3}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="active"
-            checked={active}
-            onChange={(e) => setActive(e.target.checked)}
-            className="h-4 w-4 rounded border-gray-300 text-indigo-600"
-          />
-          <label htmlFor="active" className="text-sm font-medium text-gray-700">
-            Active medication
-          </label>
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            disabled={submitting}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-          >
-            {submitting ? "Saving…" : "Save changes"}
-          </button>
-          <a
-            href={`/medications/${id}`}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            Cancel
-          </a>
-        </div>
-      </form>
+      <div className="border-t border-gray-200 pt-4">
+        {deleteError && <p className="mb-2 text-sm text-red-600">{deleteError}</p>}
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={deleting}
+          aria-label="Delete this medication permanently"
+          className="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+        >
+          {deleting ? "Deleting…" : "Delete medication"}
+        </button>
+      </div>
     </div>
   );
 }

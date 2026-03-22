@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
+import { Toast } from "@/components/ui/Toast";
 import { COMMON_METRIC_TYPES } from "@/lib/validation";
 
 const COMMON_UNITS = ["kg", "lbs", "mmHg", "mg/dL", "mmol/L", "bpm", "%", "cm", "in"];
@@ -17,6 +18,7 @@ export default function NewHealthMetricPage() {
   const router = useRouter();
   const { activeProfileId } = useProfile();
   const [submitting, setSubmitting] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [metricType, setMetricType] = useState("");
@@ -51,8 +53,8 @@ export default function NewHealthMetricPage() {
         return;
       }
 
-      router.push("/health-metrics");
-      router.refresh();
+      setSaved(true);
+      setTimeout(() => { router.push("/health-metrics"); router.refresh(); }, 1500);
     } finally {
       setSubmitting(false);
     }
@@ -79,10 +81,11 @@ export default function NewHealthMetricPage() {
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="metricType" className="block text-sm font-medium text-gray-700 mb-1">
             Metric type <span className="text-red-500">*</span>
           </label>
           <input
+            id="metricType"
             type="text"
             required
             list="metric-type-suggestions"
@@ -100,10 +103,11 @@ export default function NewHealthMetricPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="value" className="block text-sm font-medium text-gray-700 mb-1">
               Value <span className="text-red-500">*</span>
             </label>
             <input
+              id="value"
               type="number"
               required
               step="any"
@@ -113,10 +117,11 @@ export default function NewHealthMetricPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="unit" className="block text-sm font-medium text-gray-700 mb-1">
               Unit <span className="text-red-500">*</span>
             </label>
             <input
+              id="unit"
               type="text"
               required
               list="unit-suggestions"
@@ -134,10 +139,11 @@ export default function NewHealthMetricPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="measuredAt" className="block text-sm font-medium text-gray-700 mb-1">
             Measured at <span className="text-red-500">*</span>
           </label>
           <input
+            id="measuredAt"
             type="datetime-local"
             required
             value={measuredAt}
@@ -147,8 +153,9 @@ export default function NewHealthMetricPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
           <textarea
+            id="notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
@@ -162,7 +169,7 @@ export default function NewHealthMetricPage() {
             disabled={submitting}
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
           >
-            {submitting ? "Saving…" : "Save metric"}
+            {saved ? "Saved!" : submitting ? "Saving…" : "Save metric"}
           </button>
           <a
             href="/health-metrics"
@@ -172,6 +179,7 @@ export default function NewHealthMetricPage() {
           </a>
         </div>
       </form>
+      <Toast message={saved ? "Metric saved" : null} onDismiss={() => setSaved(false)} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { PermissionError } from "@/lib/permissions";
+import { PermissionError, assertProfileAccess } from "@/lib/permissions";
 import { updateLocation, deleteLocation } from "@/server/locations";
 import { parseBody, UpdateLocationSchema } from "@/lib/validation";
 import { prisma } from "@/lib/prisma";
@@ -17,7 +17,6 @@ export async function GET(_req: Request, { params }: Params) {
       include: { facility: { select: { profileId: true } } },
     });
     if (!location) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    const { assertProfileAccess } = await import("@/lib/permissions");
     await assertProfileAccess(session.user.id, location.facility.profileId);
     return NextResponse.json(location);
   } catch (e) {

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { VisitForm } from "@/components/visits/VisitForm";
@@ -19,12 +20,9 @@ export default function NewVisitPage() {
   return (
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center gap-4">
-        <button
-          onClick={() => router.back()}
-          className="text-sm text-gray-500 hover:text-gray-700"
-        >
+        <Link href="/visits" className="text-sm text-gray-500 hover:text-gray-700">
           ← Back
-        </button>
+        </Link>
         <h1 className="text-2xl font-bold text-gray-900">New Visit</h1>
       </div>
 
@@ -32,7 +30,7 @@ export default function NewVisitPage() {
         <VisitForm
           profileId={activeProfileId}
           onSuccess={() => router.push("/visits")}
-          onCancel={() => router.back()}
+          onCancel={() => router.push("/visits")}
         />
       </div>
     </div>

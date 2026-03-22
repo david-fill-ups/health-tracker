@@ -39,10 +39,11 @@ export const VisitTypeEnum = z.enum([
   "ROUTINE", "LAB", "SPECIALIST", "URGENT", "TELEHEALTH", "PROCEDURE", "OTHER",
 ]);
 export const VisitStatusEnum = z.enum(["PENDING", "SCHEDULED", "COMPLETED", "CANCELLED"]);
-export const ConditionStatusEnum = z.enum(["ACTIVE", "RESOLVED", "MONITORING"]);
-export const FacilityTypeEnum = z.enum([
-  "CLINIC", "HOSPITAL", "LAB", "PHARMACY", "SUPPLIER", "URGENT_CARE", "OTHER",
-]);
+export const ConditionStatusEnum = z.enum(["ACTIVE", "RESOLVED", "MONITORING", "BENIGN"]);
+export const FACILITY_TYPE_SUGGESTIONS = [
+  "Clinic", "Hospital", "Lab", "Pharmacy", "Supplier", "Urgent Care",
+  "Dental", "Imaging", "Therapy", "Virtual", "Other",
+] as const;
 export const PermissionEnum = z.enum(["READ_ONLY", "WRITE", "OWNER"]);
 
 // ── Profile ────────────────────────────────────────────────────────────────────
@@ -140,6 +141,8 @@ export const CreateMedicationLogSchema = z.object({
   notes: z.string().max(1000).optional(),
 });
 
+export const UpdateMedicationLogSchema = CreateMedicationLogSchema.omit({ profileId: true }).partial();
+
 // ── Condition ──────────────────────────────────────────────────────────────────
 
 export const CreateConditionSchema = z.object({
@@ -156,7 +159,8 @@ export const UpdateConditionSchema = CreateConditionSchema.omit({ profileId: tru
 
 export const CreateFacilitySchema = z.object({
   name: name255,
-  type: FacilityTypeEnum,
+  type: z.string().min(1).max(100),
+  rating: z.number().min(0).max(5).optional(),
   websiteUrl: optStr500,
   portalUrl: optStr500,
   phone: optPhone,
@@ -171,6 +175,7 @@ export const CreateDoctorSchema = z.object({
   name: name255,
   specialty: optStr255,
   facilityId: z.string().min(1).optional(),
+  rating: z.number().min(0).max(5).optional(),
   websiteUrl: optStr500,
   portalUrl: optStr500,
   phone: optPhone,

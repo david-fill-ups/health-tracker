@@ -111,3 +111,39 @@ export async function createMedicationLog(
   await logAudit(userId, profileId, "CREATE_MEDICATION_LOG", "MedicationLog", log.id, { medicationId });
   return log;
 }
+
+export async function updateMedicationLog(
+  userId: string,
+  profileId: string,
+  medicationId: string,
+  logId: string,
+  input: Partial<CreateLogInput>
+) {
+  await assertProfileAccess(userId, profileId, "OWNER");
+  const existing = await prisma.medicationLog.findFirst({
+    where: { id: logId, medicationId, medication: { profileId } },
+  });
+  if (!existing) throw new PermissionError("FORBIDDEN", 403);
+  const { date, dosage, unit, injectionSite, weight, notes } = input;
+  const log = await prisma.medicationLog.update({
+    where: { id: logId },
+    data: { date, dosage, unit, injectionSite, weight, notes },
+  });
+  await logAudit(userId, profileId, "UPDATE_MEDICATION_LOG", "MedicationLog", logId, { medicationId });
+  return log;
+}
+
+export async function deleteMedicationLog(
+  userId: string,
+  profileId: string,
+  medicationId: string,
+  logId: string
+) {
+  await assertProfileAccess(userId, profileId, "OWNER");
+  const existing = await prisma.medicationLog.findFirst({
+    where: { id: logId, medicationId, medication: { profileId } },
+  });
+  if (!existing) throw new PermissionError("FORBIDDEN", 403);
+  await logAudit(userId, profileId, "DELETE_MEDICATION_LOG", "MedicationLog", logId, { medicationId });
+  return prisma.medicationLog.delete({ where: { id: logId } });
+}

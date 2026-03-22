@@ -25,6 +25,21 @@ interface Medication {
   prescribingDoctor?: { name: string } | null;
 }
 
+interface LogEditForm {
+  date: string;
+  dosage: string;
+  unit: string;
+  injectionSite: string;
+  weight: string;
+  notes: string;
+}
+
+function toISOLocal(dateStr: string) {
+  // Convert ISO string to datetime-local input value
+  const d = new Date(dateStr);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 export default function MedicationDetailPage({
   params,
@@ -36,6 +51,10 @@ export default function MedicationDetailPage({
   const [medication, setMedication] = useState<Medication | null>(null);
   const [logs, setLogs] = useState<MedicationLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingLogId, setEditingLogId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<LogEditForm | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!activeProfileId) return;
@@ -50,6 +69,73 @@ export default function MedicationDetailPage({
       })
       .finally(() => setLoading(false));
   }, [id, activeProfileId]);
+
+  function startEdit(log: MedicationLog) {
+    setEditingLogId(log.id);
+    setEditError(null);
+    setEditForm({
+      date: toISOLocal(log.date),
+      dosage: log.dosage != null ? String(log.dosage) : "",
+      unit: log.unit ?? "",
+      injectionSite: log.injectionSite ?? "",
+      weight: log.weight != null ? String(log.weight) : "",
+      notes: log.notes ?? "",
+    });
+  }
+
+  function cancelEdit() {
+    setEditingLogId(null);
+    setEditForm(null);
+    setEditError(null);
+  }
+
+  async function saveEdit() {
+    if (!editForm || !editingLogId || !activeProfileId) return;
+    setSaving(true);
+    setEditError(null);
+    try {
+      const body: Record<string, unknown> = {
+        date: new Date(editForm.date).toISOString(),
+      };
+      if (editForm.dosage) body.dosage = parseFloat(editForm.dosage);
+      if (editForm.unit) body.unit = editForm.unit;
+      if (editForm.injectionSite) body.injectionSite = editForm.injectionSite;
+      if (editForm.weight) body.weight = parseFloat(editForm.weight);
+      if (editForm.notes) body.notes = editForm.notes;
+
+      const res = await fetch(
+        `/api/medications/${id}/logs/${editingLogId}?profileId=${activeProfileId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }
+      );
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? "Failed to save");
+      }
+      const updated: MedicationLog = await res.json();
+      setLogs((prev) => prev.map((l) => (l.id === editingLogId ? updated : l)));
+      cancelEdit();
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteLog(logId: string) {
+    if (!activeProfileId || !confirm("Delete this dose entry?")) return;
+    const res = await fetch(
+      `/api/medications/${id}/logs/${logId}?profileId=${activeProfileId}`,
+      { method: "DELETE" }
+    );
+    if (res.ok) {
+      setLogs((prev) => prev.filter((l) => l.id !== logId));
+      if (editingLogId === logId) cancelEdit();
+    }
+  }
 
   if (!activeProfileId) {
     return <p className="text-sm text-gray-500">Select a profile first.</p>;
@@ -139,17 +225,112 @@ export default function MedicationDetailPage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 whitespace-nowrap">{formatDateTime(log.date)}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {log.dosage != null ? `${log.dosage} ${log.unit ?? ""}` : "—"}
-                    </td>
-                    <td className="px-4 py-3">{log.injectionSite ?? "—"}</td>
-                    <td className="px-4 py-3">{log.weight ?? "—"}</td>
-                    <td className="px-4 py-3 max-w-xs truncate">{log.notes ?? "—"}</td>
-                  </tr>
-                ))}
+                {logs.map((log) =>
+                  editingLogId === log.id && editForm ? (
+                    <tr key={log.id} className="bg-indigo-50/40">
+                      <td colSpan={5} className="px-4 py-3">
+                        <div className="space-y-3">
+                          {editError && (
+                            <p className="text-xs text-red-600">{editError}</p>
+                          )}
+                          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Date & time</label>
+                              <input
+                                type="datetime-local"
+                                value={editForm.date}
+                                onChange={(e) => setEditForm((f) => f && { ...f, date: e.target.value })}
+                                className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Dosage</label>
+                              <input
+                                type="number"
+                                step="any"
+                                value={editForm.dosage}
+                                onChange={(e) => setEditForm((f) => f && { ...f, dosage: e.target.value })}
+                                className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Unit</label>
+                              <input
+                                type="text"
+                                value={editForm.unit}
+                                onChange={(e) => setEditForm((f) => f && { ...f, unit: e.target.value })}
+                                className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Injection site</label>
+                              <input
+                                type="text"
+                                value={editForm.injectionSite}
+                                onChange={(e) => setEditForm((f) => f && { ...f, injectionSite: e.target.value })}
+                                className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Weight (lbs)</label>
+                              <input
+                                type="number"
+                                step="any"
+                                value={editForm.weight}
+                                onChange={(e) => setEditForm((f) => f && { ...f, weight: e.target.value })}
+                                className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+                              <input
+                                type="text"
+                                value={editForm.notes}
+                                onChange={(e) => setEditForm((f) => f && { ...f, notes: e.target.value })}
+                                className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={saveEdit}
+                              disabled={saving}
+                              className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                            >
+                              {saving ? "Saving…" : "Save"}
+                            </button>
+                            <button
+                              onClick={cancelEdit}
+                              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => deleteLog(log.id)}
+                              className="ml-auto rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    <tr
+                      key={log.id}
+                      className="hover:bg-gray-50 cursor-pointer"
+                      onClick={() => startEdit(log)}
+                    >
+                      <td className="px-4 py-3 whitespace-nowrap">{formatDateTime(log.date)}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {log.dosage != null ? `${log.dosage} ${log.unit ?? ""}` : "—"}
+                      </td>
+                      <td className="px-4 py-3">{log.injectionSite ?? "—"}</td>
+                      <td className="px-4 py-3">{log.weight ?? "—"}</td>
+                      <td className="px-4 py-3 max-w-xs truncate">{log.notes ?? "—"}</td>
+                    </tr>
+                  )
+                )}
               </tbody>
             </table>
           </div>

@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { MedicationCard } from "@/components/medications/MedicationCard";
+import { CardSkeleton } from "@/components/ui/Skeleton";
+import { Toast } from "@/components/ui/Toast";
 
 interface MedicationLog {
   id: string;
@@ -33,6 +35,7 @@ export default function MedicationsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inactiveOpen, setInactiveOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     if (!activeProfileId) return;
@@ -49,6 +52,7 @@ export default function MedicationsPage() {
     setMedications((prev) =>
       prev.map((m) => (m.id === id ? { ...m, active: false } : m))
     );
+    setToast("Medication deactivated");
   }
 
   const active = medications.filter((m) => m.active);
@@ -70,13 +74,21 @@ export default function MedicationsPage() {
         <p className="text-sm text-gray-500">Select a profile to view medications.</p>
       )}
 
-      {loading && <p className="text-sm text-gray-400">Loading…</p>}
+      {loading && <CardSkeleton count={3} />}
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {activeProfileId && !loading && (
         <>
           {active.length === 0 && inactive.length === 0 && (
-            <p className="text-sm text-gray-500">No medications recorded.</p>
+            <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
+              <p className="text-gray-500 mb-3">No medications recorded.</p>
+              <Link
+                href="/medications/new"
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+              >
+                + Add your first medication
+              </Link>
+            </div>
           )}
 
           {active.length > 0 && (
@@ -116,6 +128,7 @@ export default function MedicationsPage() {
           )}
         </>
       )}
+      <Toast message={toast} onDismiss={() => setToast(null)} />
     </div>
   );
 }

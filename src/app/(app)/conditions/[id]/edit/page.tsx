@@ -3,6 +3,7 @@
 import { useState, useEffect, use, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
+import { Toast } from "@/components/ui/Toast";
 
 export default function EditConditionPage({
   params,
@@ -14,11 +15,12 @@ export default function EditConditionPage({
   const { activeProfileId } = useProfile();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [name, setName] = useState("");
   const [diagnosisDate, setDiagnosisDate] = useState("");
-  const [status, setStatus] = useState<"ACTIVE" | "MONITORING" | "RESOLVED">("ACTIVE");
+  const [status, setStatus] = useState<"ACTIVE" | "MONITORING" | "RESOLVED" | "BENIGN">("ACTIVE");
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
@@ -59,8 +61,8 @@ export default function EditConditionPage({
         return;
       }
 
-      router.push("/conditions");
-      router.refresh();
+      setSaved(true);
+      setTimeout(() => { router.push("/conditions"); router.refresh(); }, 1500);
     } finally {
       setSubmitting(false);
     }
@@ -89,10 +91,11 @@ export default function EditConditionPage({
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
             Condition name <span className="text-red-500">*</span>
           </label>
           <input
+            id="name"
             type="text"
             required
             value={name}
@@ -102,10 +105,11 @@ export default function EditConditionPage({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="diagnosisDate" className="block text-sm font-medium text-gray-700 mb-1">
             Diagnosis date
           </label>
           <input
+            id="diagnosisDate"
             type="date"
             value={diagnosisDate}
             onChange={(e) => setDiagnosisDate(e.target.value)}
@@ -114,23 +118,26 @@ export default function EditConditionPage({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
           <select
+            id="status"
             value={status}
             onChange={(e) =>
-              setStatus(e.target.value as "ACTIVE" | "MONITORING" | "RESOLVED")
+              setStatus(e.target.value as "ACTIVE" | "MONITORING" | "RESOLVED" | "BENIGN")
             }
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           >
             <option value="ACTIVE">Active</option>
             <option value="MONITORING">Monitoring</option>
             <option value="RESOLVED">Resolved</option>
+            <option value="BENIGN">Incidental / Benign</option>
           </select>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
           <textarea
+            id="notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
@@ -144,7 +151,7 @@ export default function EditConditionPage({
             disabled={submitting}
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
           >
-            {submitting ? "Saving…" : "Save changes"}
+            {saved ? "Saved!" : submitting ? "Saving…" : "Save changes"}
           </button>
           <a
             href="/conditions"
@@ -154,6 +161,7 @@ export default function EditConditionPage({
           </a>
         </div>
       </form>
+      <Toast message={saved ? "Saved successfully" : null} onDismiss={() => setSaved(false)} />
     </div>
   );
 }

@@ -89,13 +89,20 @@ export default async function ProfileDetailPage({ params }: Props) {
 
         <SharingSection profileId={id} currentUserId={session.user.id} />
 
-        <div className="border-t border-gray-100 pt-4 flex gap-3">
+        <div className="border-t border-gray-100 pt-4 flex flex-wrap gap-3">
           <Link
             href={`/profiles/${id}/edit`}
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
           >
             Edit profile
           </Link>
+          <a
+            href={`/api/profiles/${id}/export`}
+            download={`health-export-${profile.name.toLowerCase().replace(/\s+/g, "-")}.json`}
+            className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            Export data
+          </a>
           <Link
             href="/profiles"
             className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"

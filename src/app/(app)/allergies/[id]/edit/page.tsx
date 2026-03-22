@@ -3,6 +3,7 @@
 import { useState, useEffect, use, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
+import { Toast } from "@/components/ui/Toast";
 
 export default function EditAllergyPage({
   params,
@@ -14,6 +15,8 @@ export default function EditAllergyPage({
   const { activeProfileId } = useProfile();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [allergen, setAllergen] = useState("");
@@ -59,10 +62,23 @@ export default function EditAllergyPage({
         return;
       }
 
-      router.push("/allergies");
-      router.refresh();
+      setSaved(true);
+      setTimeout(() => { router.push("/allergies"); router.refresh(); }, 1500);
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!activeProfileId || !confirm("Delete this allergy record?")) return;
+    setDeleting(true);
+    const res = await fetch(`/api/allergies/${id}?profileId=${activeProfileId}`, { method: "DELETE" });
+    if (res.ok) {
+      router.push("/allergies");
+      router.refresh();
+    } else {
+      setError("Failed to delete allergy");
+      setDeleting(false);
     }
   }
 
@@ -89,10 +105,11 @@ export default function EditAllergyPage({
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="allergen" className="block text-sm font-medium text-gray-700 mb-1">
             Allergen <span className="text-red-500">*</span>
           </label>
           <input
+            id="allergen"
             type="text"
             required
             value={allergen}
@@ -102,8 +119,9 @@ export default function EditAllergyPage({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+          <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">Category</label>
           <input
+            id="category"
             type="text"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
@@ -113,8 +131,9 @@ export default function EditAllergyPage({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Diagnosis date</label>
+          <label htmlFor="diagnosisDate" className="block text-sm font-medium text-gray-700 mb-1">Diagnosis date</label>
           <input
+            id="diagnosisDate"
             type="date"
             value={diagnosisDate}
             onChange={(e) => setDiagnosisDate(e.target.value)}
@@ -123,8 +142,9 @@ export default function EditAllergyPage({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
           <textarea
+            id="notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
@@ -138,7 +158,7 @@ export default function EditAllergyPage({
             disabled={submitting}
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
           >
-            {submitting ? "Saving…" : "Save changes"}
+            {saved ? "Saved!" : submitting ? "Saving…" : "Save changes"}
           </button>
           <a
             href="/allergies"
@@ -146,8 +166,18 @@ export default function EditAllergyPage({
           >
             Cancel
           </a>
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleting}
+            aria-label="Delete this allergy record"
+            className="ml-auto rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+          >
+            {deleting ? "Deleting…" : "Delete"}
+          </button>
         </div>
       </form>
+      <Toast message={saved ? "Saved successfully" : null} onDismiss={() => setSaved(false)} />
     </div>
   );
 }

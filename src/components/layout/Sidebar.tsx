@@ -7,7 +7,6 @@ const NAV_ITEMS = [
   { label: "Dashboard", href: "/dashboard", icon: "◎" },
   { label: "Profiles", href: "/profiles", icon: "👤" },
   { label: "Healthcare Team", href: "/healthcare-team", icon: "🏥" },
-  { label: "Pharmacies", href: "/portals", icon: "🔗" },
   { label: "Visits", href: "/visits", icon: "📅" },
   { label: "Medications", href: "/medications", icon: "💊" },
   { label: "Health Metrics", href: "/health-metrics", icon: "📊" },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { VisitForm, type VisitInitial } from "@/components/visits/VisitForm";
@@ -69,6 +70,7 @@ export default function EditVisitPage() {
     setDeleting(true);
     await fetch(`/api/visits/${id}?profileId=${activeProfileId}`, { method: "DELETE" });
     router.push("/visits");
+    router.refresh();
   }
 
   if (!activeProfileId) {
@@ -87,12 +89,9 @@ export default function EditVisitPage() {
   return (
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center gap-4">
-        <button
-          onClick={() => router.push(`/visits/${id}`)}
-          className="text-sm text-gray-500 hover:text-gray-700"
-        >
+        <Link href={`/visits/${id}`} className="text-sm text-gray-500 hover:text-gray-700">
           ← Visit Details
-        </button>
+        </Link>
         <h1 className="text-2xl font-bold text-gray-900">Edit Visit</h1>
       </div>
 
@@ -100,7 +99,7 @@ export default function EditVisitPage() {
         <VisitForm
           profileId={activeProfileId}
           initial={initial}
-          onSuccess={() => router.push(`/visits/${id}`)}
+          onSuccess={() => { router.push(`/visits/${id}`); router.refresh(); }}
           onCancel={() => router.push(`/visits/${id}`)}
         />
       </div>
@@ -109,6 +108,7 @@ export default function EditVisitPage() {
         <button
           onClick={handleDelete}
           disabled={deleting}
+          aria-label="Delete this visit permanently"
           className="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
         >
           {deleting ? "Deleting…" : "Delete visit"}

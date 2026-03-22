@@ -3,6 +3,7 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
+import { Toast } from "@/components/ui/Toast";
 
 interface Facility {
   id: string;
@@ -31,6 +32,7 @@ export default function NewVaccinationPage() {
   const { activeProfileId } = useProfile();
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [name, setName] = useState("");
@@ -73,8 +75,8 @@ export default function NewVaccinationPage() {
         return;
       }
 
-      router.push("/vaccinations");
-      router.refresh();
+      setSaved(true);
+      setTimeout(() => { router.push("/vaccinations"); router.refresh(); }, 1500);
     } finally {
       setSubmitting(false);
     }
@@ -100,10 +102,11 @@ export default function NewVaccinationPage() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
               Vaccine name <span className="text-red-500">*</span>
             </label>
             <input
+              id="name"
               type="text"
               list="vaccine-list"
               required
@@ -120,10 +123,11 @@ export default function NewVaccinationPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
               Date <span className="text-red-500">*</span>
             </label>
             <input
+              id="date"
               type="date"
               required
               value={date}
@@ -133,8 +137,9 @@ export default function NewVaccinationPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Facility</label>
+            <label htmlFor="facility" className="block text-sm font-medium text-gray-700 mb-1">Facility</label>
             <select
+              id="facility"
               value={facilityId}
               onChange={(e) => setFacilityId(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
@@ -149,10 +154,11 @@ export default function NewVaccinationPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="lotNumber" className="block text-sm font-medium text-gray-700 mb-1">
               Lot number
             </label>
             <input
+              id="lotNumber"
               type="text"
               value={lotNumber}
               onChange={(e) => setLotNumber(e.target.value)}
@@ -162,8 +168,9 @@ export default function NewVaccinationPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
             <textarea
+              id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
@@ -178,7 +185,7 @@ export default function NewVaccinationPage() {
               disabled={submitting}
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
             >
-              {submitting ? "Saving…" : "Record vaccination"}
+              {saved ? "Saved!" : submitting ? "Saving…" : "Record vaccination"}
             </button>
             <a
               href="/vaccinations"
@@ -189,6 +196,7 @@ export default function NewVaccinationPage() {
           </div>
         </form>
       )}
+      <Toast message={saved ? "Vaccination recorded" : null} onDismiss={() => setSaved(false)} />
     </div>
   );
 }

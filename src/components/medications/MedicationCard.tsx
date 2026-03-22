@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface MedicationLog {
   id: string;
@@ -37,6 +38,7 @@ function fmt(dateStr: string | null) {
 
 export function MedicationCard({ medication, profileId, onDeactivate }: MedicationCardProps) {
   const log = medication.recentLog;
+  const router = useRouter();
 
   async function handleDeactivate() {
     if (!confirm("Deactivate this medication?")) return;
@@ -46,6 +48,7 @@ export function MedicationCard({ medication, profileId, onDeactivate }: Medicati
       body: JSON.stringify({ active: false }),
     });
     onDeactivate(medication.id);
+    router.refresh();
   }
 
   return (
@@ -54,7 +57,9 @@ export function MedicationCard({ medication, profileId, onDeactivate }: Medicati
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-semibold text-gray-900 text-lg">
-              {medication.name}
+              <Link href={`/medications/${medication.id}`} className="hover:text-indigo-600 hover:underline">
+                {medication.name}
+              </Link>
               {medication.dosage && (
                 <span className="ml-1.5 text-base font-normal text-gray-500">{medication.dosage}</span>
               )}
@@ -85,8 +90,8 @@ export function MedicationCard({ medication, profileId, onDeactivate }: Medicati
             {medication.endDate && <span>Ended {fmt(medication.endDate)}</span>}
           </div>
 
-          <div className="mt-3 rounded-lg bg-gray-50 p-3 text-sm">
-            {log ? (
+          {log && (
+            <div className="mt-3 rounded-lg bg-gray-50 p-3 text-sm">
               <div className="space-y-0.5">
                 <p className="font-medium text-gray-700">Last dose: {fmt(log.date)}</p>
                 <p className="text-gray-500">
@@ -95,17 +100,15 @@ export function MedicationCard({ medication, profileId, onDeactivate }: Medicati
                   {log.weight ? ` · ${log.weight} lbs` : ""}
                 </p>
               </div>
-            ) : (
-              <p className="text-gray-400 italic">No doses logged yet</p>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-2 shrink-0">
           {medication.active && (
             <a
               href={`/medications/${medication.id}/log`}
-              className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 text-center whitespace-nowrap"
+              className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 text-center whitespace-nowrap"
             >
               Log dose
             </a>

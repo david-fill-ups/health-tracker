@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { FacilityForm } from "@/components/healthcare-team/FacilityForm";
-import type { FacilityType, VisitStatus, VisitType } from "@/generated/prisma/enums";
+import { StarRating } from "@/components/ui/StarRating";
+import type { VisitStatus, VisitType } from "@/generated/prisma/enums";
 
 interface VisitSummary {
   id: string;
@@ -27,7 +28,8 @@ interface Doctor {
 interface FacilityDetail {
   id: string;
   name: string;
-  type: FacilityType;
+  type: string;
+  rating: number | null;
   websiteUrl: string | null;
   portalUrl: string | null;
   phone: string | null;
@@ -45,10 +47,10 @@ const STATUS_STYLES: Record<VisitStatus, string> = {
   PENDING: "bg-amber-100 text-amber-700", SCHEDULED: "bg-blue-100 text-blue-700",
   COMPLETED: "bg-green-100 text-green-700", CANCELLED: "bg-gray-100 text-gray-500",
 };
-const FACILITY_TYPE_LABELS: Record<FacilityType, string> = {
-  CLINIC: "Clinic", HOSPITAL: "Hospital", LAB: "Lab", PHARMACY: "Pharmacy",
-  SUPPLIER: "Supplier", URGENT_CARE: "Urgent Care", OTHER: "Other",
-};
+
+function formatType(type: string): string {
+  return type.replace(/_/g, " ").replace(/w/g, (c) => c.toUpperCase());
+}
 
 export default function FacilityDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -93,6 +95,17 @@ export default function FacilityDetailPage({ params }: { params: Promise<{ id: s
       setFacility((prev) => prev ? { ...prev, active: updated.active } : prev);
     }
     setToggling(false);
+  }
+
+  async function handleRatingChange(rating: number) {
+    if (!activeProfileId || !facility) return;
+    const newRating = rating === 0 ? null : rating;
+    setFacility((prev) => prev ? { ...prev, rating: newRating } : prev);
+    await fetch(`/api/facilities/${id}?profileId=${activeProfileId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rating: newRating }),
+    });
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -145,15 +158,19 @@ export default function FacilityDetailPage({ params }: { params: Promise<{ id: s
           <div className="space-y-1 text-sm text-gray-700">
             <p>
               <span className="font-medium text-gray-500">Type:</span>{" "}
-              {FACILITY_TYPE_LABELS[facility.type]}
+              {formatType(facility.type)}
             </p>
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-500">Rating:</span>
+              <StarRating value={facility.rating} onChange={handleRatingChange} />
+            </div>
             {facility.phone && (
               <p><span className="font-medium text-gray-500">Phone:</span> {facility.phone}</p>
             )}
             {facility.websiteUrl && (
               <p>
                 <span className="font-medium text-gray-500">Website:</span>{" "}
-                <a href={facility.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
+                <a href={facility.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline break-all">
                   {facility.websiteUrl} ↗
                 </a>
               </p>
@@ -161,7 +178,7 @@ export default function FacilityDetailPage({ params }: { params: Promise<{ id: s
             {facility.portalUrl && (
               <p>
                 <span className="font-medium text-gray-500">Patient Portal:</span>{" "}
-                <a href={facility.portalUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
+                <a href={facility.portalUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline break-all">
                   {facility.portalUrl} ↗
                 </a>
               </p>
@@ -199,6 +216,7 @@ export default function FacilityDetailPage({ params }: { params: Promise<{ id: s
                 id: facility.id,
                 name: facility.name,
                 type: facility.type,
+                rating: facility.rating,
                 websiteUrl: facility.websiteUrl ?? "",
                 portalUrl: facility.portalUrl ?? "",
                 phone: facility.phone ?? "",
@@ -214,7 +232,7 @@ export default function FacilityDetailPage({ params }: { params: Promise<{ id: s
       {/* Doctors */}
       {facility.doctors.length > 0 && (
         <section className="space-y-2">
-          <h2 className="text-lg font-semibold text-gray-700">Doctors at this Facility</h2>
+          <h2 className="text-lg font-semibold text-gray-700">Providers at this Facility</h2>
           <div className="space-y-2">
             {facility.doctors.map((doc) => (
               <div key={doc.id} className={`rounded-xl border border-gray-200 bg-white p-3 flex items-center justify-between ${doc.active ? "" : "opacity-50"}`}>

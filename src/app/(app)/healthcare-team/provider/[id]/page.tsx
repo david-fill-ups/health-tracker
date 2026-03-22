@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { DoctorForm } from "@/components/healthcare-team/DoctorForm";
+import { StarRating } from "@/components/ui/StarRating";
 import type { VisitStatus, VisitType } from "@/generated/prisma/enums";
 
 interface VisitSummary {
@@ -20,6 +21,7 @@ interface VisitSummary {
 interface Facility {
   id: string;
   name: string;
+  portalUrl: string | null;
 }
 
 interface DoctorDetail {
@@ -28,6 +30,7 @@ interface DoctorDetail {
   specialty: string | null;
   facilityId: string | null;
   facility: Facility | null;
+  rating: number | null;
   phone: string | null;
   websiteUrl: string | null;
   portalUrl: string | null;
@@ -53,6 +56,7 @@ export default function ProviderDetailPage({ params }: { params: Promise<{ id: s
 
   const [doctor, setDoctor] = useState<DoctorDetail | null>(null);
   const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [allSpecialties, setAllSpecialties] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -65,11 +69,19 @@ export default function ProviderDetailPage({ params }: { params: Promise<{ id: s
     Promise.all([
       fetch(`/api/doctors/${id}?profileId=${activeProfileId}`),
       fetch(`/api/facilities?profileId=${activeProfileId}`),
+      fetch(`/api/doctors?profileId=${activeProfileId}`),
     ])
-      .then(async ([docRes, facRes]) => {
+      .then(async ([docRes, facRes, allDocRes]) => {
         if (docRes.status === 404) { setNotFound(true); return; }
         if (docRes.ok) setDoctor(await docRes.json());
         if (facRes.ok) setFacilities(await facRes.json());
+        if (allDocRes.ok) {
+          const allDocs = await allDocRes.json();
+          const specs = [...new Set(
+            allDocs.map((d: { specialty?: string | null }) => d.specialty).filter(Boolean)
+          )] as string[];
+          setAllSpecialties(specs);
+        }
       })
       .finally(() => setLoading(false));
   }, [activeProfileId, id]);
@@ -96,6 +108,17 @@ export default function ProviderDetailPage({ params }: { params: Promise<{ id: s
     setToggling(false);
   }
 
+  async function handleRatingChange(rating: number) {
+    if (!activeProfileId || !doctor) return;
+    const newRating = rating === 0 ? null : rating;
+    setDoctor((prev) => prev ? { ...prev, rating: newRating } : prev);
+    await fetch(`/api/doctors/${id}?profileId=${activeProfileId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rating: newRating }),
+    });
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function handleEditSuccess(saved: any) {
     setDoctor((prev) => prev ? { ...prev, ...saved } : prev);
@@ -111,6 +134,9 @@ export default function ProviderDetailPage({ params }: { params: Promise<{ id: s
   const visitDates = doctor.visits.filter((v) => v.date).map((v) => new Date(v.date!).getTime());
   const firstSeen = visitDates.length ? new Date(Math.min(...visitDates)).toLocaleDateString() : null;
   const lastSeen = visitDates.length ? new Date(Math.max(...visitDates)).toLocaleDateString() : null;
+
+  const effectivePortalUrl = doctor.portalUrl || doctor.facility?.portalUrl || null;
+  const portalIsInherited = !doctor.portalUrl && !!doctor.facility?.portalUrl;
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -155,23 +181,28 @@ export default function ProviderDetailPage({ params }: { params: Promise<{ id: s
                 </Link>
               </p>
             )}
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-500">Rating:</span>
+              <StarRating value={doctor.rating} onChange={handleRatingChange} />
+            </div>
             {doctor.phone && (
               <p><span className="font-medium text-gray-500">Phone:</span> {doctor.phone}</p>
             )}
             {doctor.websiteUrl && (
               <p>
                 <span className="font-medium text-gray-500">Website:</span>{" "}
-                <a href={doctor.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
+                <a href={doctor.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline break-all">
                   {doctor.websiteUrl} ↗
                 </a>
               </p>
             )}
-            {doctor.portalUrl && (
+            {effectivePortalUrl && (
               <p>
                 <span className="font-medium text-gray-500">Patient Portal:</span>{" "}
-                <a href={doctor.portalUrl} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
-                  {doctor.portalUrl} ↗
+                <a href={effectivePortalUrl} target="_blank" rel="noopener noreferrer" className={`hover:underline break-all ${portalIsInherited ? "text-gray-400" : "text-indigo-600"}`}>
+                  {effectivePortalUrl} ↗
                 </a>
+                {portalIsInherited && <span className="ml-1 text-xs text-gray-400">(from facility)</span>}
               </p>
             )}
             {doctor.notes && (
@@ -207,11 +238,13 @@ export default function ProviderDetailPage({ params }: { params: Promise<{ id: s
             <DoctorForm
               profileId={activeProfileId}
               facilities={facilities}
+              existingSpecialties={allSpecialties}
               initial={{
                 id: doctor.id,
                 name: doctor.name,
                 specialty: doctor.specialty ?? "",
                 facilityId: doctor.facilityId ?? "",
+                rating: doctor.rating,
                 websiteUrl: doctor.websiteUrl ?? "",
                 portalUrl: doctor.portalUrl ?? "",
                 phone: doctor.phone ?? "",

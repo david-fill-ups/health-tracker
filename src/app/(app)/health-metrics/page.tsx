@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { TableSkeleton } from "@/components/ui/Skeleton";
+import { Toast } from "@/components/ui/Toast";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { COMMON_METRIC_TYPES } from "@/lib/validation";
 import {
@@ -54,6 +56,7 @@ export default function HealthMetricsPage() {
   const [activeType, setActiveType] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [view, setView] = useState<"table" | "chart">("table");
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     if (!activeProfileId) return;
@@ -71,30 +74,43 @@ export default function HealthMetricsPage() {
   async function handleDelete(id: string) {
     if (!activeProfileId || !confirm("Delete this metric entry?")) return;
     setDeleting(id);
-    await fetch(`/api/health-metrics/${id}?profileId=${activeProfileId}`, { method: "DELETE" });
+    const snapshot = metrics.find((m) => m.id === id);
     setMetrics((prev) => prev.filter((m) => m.id !== id));
-    setDeleting(null);
+    try {
+      const res = await fetch(`/api/health-metrics/${id}?profileId=${activeProfileId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setToast("Metric deleted");
+    } catch {
+      if (snapshot) setMetrics((prev) => [...prev, snapshot]);
+      setToast("Failed to delete metric");
+    } finally {
+      setDeleting(null);
+    }
   }
 
   // Collect unique metricTypes present in data for dynamic filter pills
-  const presentTypes = Array.from(new Set(metrics.map((m) => m.metricType)));
-  const filterTypes = Array.from(
-    new Set([
-      ...COMMON_METRIC_TYPES.filter((t) => presentTypes.includes(t)),
-      ...presentTypes.filter((t) => !COMMON_METRIC_TYPES.includes(t as never)),
-    ])
-  );
+  const filterTypes = useMemo(() => {
+    const presentTypes = Array.from(new Set(metrics.map((m) => m.metricType)));
+    return Array.from(
+      new Set([
+        ...COMMON_METRIC_TYPES.filter((t) => presentTypes.includes(t)),
+        ...presentTypes.filter((t) => !COMMON_METRIC_TYPES.includes(t as never)),
+      ])
+    );
+  }, [metrics]);
 
   // Group metrics by type for chart view
-  const metricsByType = new Map<string, HealthMetric[]>();
-  for (const m of metrics) {
-    if (!metricsByType.has(m.metricType)) metricsByType.set(m.metricType, []);
-    metricsByType.get(m.metricType)!.push(m);
-  }
-  // Sort each group by date ascending for charting
-  for (const arr of metricsByType.values()) {
-    arr.sort((a, b) => new Date(a.measuredAt).getTime() - new Date(b.measuredAt).getTime());
-  }
+  const metricsByType = useMemo(() => {
+    const map = new Map<string, HealthMetric[]>();
+    for (const m of metrics) {
+      if (!map.has(m.metricType)) map.set(m.metricType, []);
+      map.get(m.metricType)!.push(m);
+    }
+    for (const arr of map.values()) {
+      arr.sort((a, b) => new Date(a.measuredAt).getTime() - new Date(b.measuredAt).getTime());
+    }
+    return map;
+  }, [metrics]);
 
   if (!activeProfileId) {
     return <p className="text-sm text-gray-500">Select a profile first.</p>;
@@ -167,7 +183,7 @@ export default function HealthMetricsPage() {
       )}
 
       {loading ? (
-        <p className="text-sm text-gray-400">Loading…</p>
+        <TableSkeleton rows={5} cols={4} />
       ) : metrics.length === 0 ? (
         <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
           <p className="text-gray-500">No health metrics recorded yet.</p>
@@ -210,8 +226,8 @@ export default function HealthMetricsPage() {
                       width={40}
                     />
                     <Tooltip
-                      formatter={(value: number) => [`${value} ${unit}`, type]}
-                      labelFormatter={(label: string) => label}
+                      formatter={(value) => [`${value} ${unit}`, type]}
+                      labelFormatter={(label) => String(label)}
                       contentStyle={{
                         borderRadius: "8px",
                         border: "1px solid #e5e7eb",
@@ -278,6 +294,7 @@ export default function HealthMetricsPage() {
           </table>
         </div>
       )}
+      <Toast message={toast} onDismiss={() => setToast(null)} />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useState, useEffect, use, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { COMMON_METRIC_TYPES } from "@/lib/validation";
+import { Toast } from "@/components/ui/Toast";
 
 const COMMON_UNITS = ["kg", "lbs", "mmHg", "mg/dL", "mmol/L", "bpm", "%", "cm", "in"];
 
@@ -17,6 +18,8 @@ export default function EditHealthMetricPage({
   const { activeProfileId } = useProfile();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [metricType, setMetricType] = useState("");
@@ -67,10 +70,23 @@ export default function EditHealthMetricPage({
         return;
       }
 
-      router.push("/health-metrics");
-      router.refresh();
+      setSaved(true);
+      setTimeout(() => { router.push("/health-metrics"); router.refresh(); }, 1500);
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!activeProfileId || !confirm("Delete this metric entry?")) return;
+    setDeleting(true);
+    const res = await fetch(`/api/health-metrics/${id}?profileId=${activeProfileId}`, { method: "DELETE" });
+    if (res.ok) {
+      router.push("/health-metrics");
+      router.refresh();
+    } else {
+      setError("Failed to delete metric");
+      setDeleting(false);
     }
   }
 
@@ -97,12 +113,13 @@ export default function EditHealthMetricPage({
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="metricType" className="block text-sm font-medium text-gray-700 mb-1">
             Metric type <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             required
+            id="metricType"
             list="metric-type-suggestions"
             value={metricType}
             onChange={(e) => setMetricType(e.target.value)}
@@ -117,10 +134,11 @@ export default function EditHealthMetricPage({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="value" className="block text-sm font-medium text-gray-700 mb-1">
               Value <span className="text-red-500">*</span>
             </label>
             <input
+              id="value"
               type="number"
               required
               step="any"
@@ -130,10 +148,11 @@ export default function EditHealthMetricPage({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="unit" className="block text-sm font-medium text-gray-700 mb-1">
               Unit <span className="text-red-500">*</span>
             </label>
             <input
+              id="unit"
               type="text"
               required
               list="unit-suggestions"
@@ -150,10 +169,11 @@ export default function EditHealthMetricPage({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="measuredAt" className="block text-sm font-medium text-gray-700 mb-1">
             Measured at <span className="text-red-500">*</span>
           </label>
           <input
+            id="measuredAt"
             type="datetime-local"
             required
             value={measuredAt}
@@ -163,8 +183,9 @@ export default function EditHealthMetricPage({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
           <textarea
+            id="notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
@@ -178,7 +199,7 @@ export default function EditHealthMetricPage({
             disabled={submitting}
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
           >
-            {submitting ? "Saving…" : "Save changes"}
+            {saved ? "Saved!" : submitting ? "Saving…" : "Save changes"}
           </button>
           <a
             href="/health-metrics"
@@ -186,8 +207,18 @@ export default function EditHealthMetricPage({
           >
             Cancel
           </a>
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleting}
+            aria-label="Delete this metric entry"
+            className="ml-auto rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+          >
+            {deleting ? "Deleting…" : "Delete"}
+          </button>
         </div>
       </form>
+      <Toast message={saved ? "Saved successfully" : null} onDismiss={() => setSaved(false)} />
     </div>
   );
 }

@@ -7,12 +7,15 @@ A personal health management app for tracking medical visits, medications, vacci
 - **Profiles** — manage multiple health profiles (family members); share read/write access with others
 - **Visits** — track scheduled, completed, and pending appointments with doctors and facilities
 - **Medications** — log active/inactive medications with dose history and per-dose notes
-- **Conditions** — track diagnoses with status (Active / Monitoring / Resolved)
+- **Conditions** — track diagnoses with status (Active / Monitoring / Resolved / Incidental)
+- **Allergies** — record allergen reactions with category, wheal size, and diagnosis date
+- **Health Metrics** — log standalone measurements (weight, blood sugar, blood pressure, etc.) with trend charts
 - **Vaccinations** — record vaccinations and compare against CDC recommended schedule
 - **Healthcare Team** — manage doctors and facilities; link locations to facilities
 - **Calendar feed** — subscribe to upcoming appointments via webcal/iCal in any calendar app
 - **Import / Export** — full profile data export to JSON; re-import with append, skip-duplicates, or replace modes
-- **Audit log** — immutable log of all create/update/delete operations
+- **Audit log** — immutable log of all create/update/delete operations, viewable per profile
+- **API documentation** — built-in Swagger UI at `/account/api-docs` with full OpenAPI spec
 
 ## Tech Stack
 
@@ -85,7 +88,9 @@ Open [http://localhost:3000](http://localhost:3000).
 |---------|-------------|
 | `npm run dev` | Start development server |
 | `npm test` | Run Vitest unit tests |
-| `npm run build` | Run migrations, tests, and production build |
+| `npm run build` | `prisma generate` → `prisma migrate deploy` → `vitest run` → `next build` |
+| `npm run db:migrate` | Create and apply a new Prisma migration (dev only) |
+| `npm run db:studio` | Open Prisma Studio to browse the database |
 
 ## Project Structure
 
@@ -120,7 +125,18 @@ All endpoints require authentication. Profile-scoped endpoints require a `profil
 | POST | `/api/medications/[id]/logs` | Log a medication dose |
 | GET/POST | `/api/conditions` | List / create conditions |
 | GET/PUT/DELETE | `/api/conditions/[id]` | Get / update / delete condition |
+| GET/POST | `/api/allergies` | List / create allergy records |
+| GET/PUT/DELETE | `/api/allergies/[id]` | Get / update / delete allergy |
+| GET/POST | `/api/health-metrics` | List / create health measurements |
+| GET/PUT/DELETE | `/api/health-metrics/[id]` | Get / update / delete health metric |
 | GET/POST | `/api/vaccinations` | List / create vaccinations |
 | GET | `/api/vaccinations/recommendations` | CDC compliance recommendations for a profile |
+| GET/POST | `/api/doctors` | List / create doctors |
+| GET/PUT/DELETE | `/api/doctors/[id]` | Get / update / delete doctor |
+| GET/POST | `/api/facilities` | List / create facilities |
+| GET/PUT/DELETE | `/api/facilities/[id]` | Get / update / delete facility |
+| GET | `/api/profiles/[id]/access` | List users with access to a profile |
+| POST/PUT/DELETE | `/api/profiles/[id]/access` | Grant / update / revoke profile access |
 | GET | `/api/calendar/[profileId]` | iCal calendar feed (authenticated via token) |
+| GET | `/api/openapi` | OpenAPI spec JSON (also viewable at `/account/api-docs`) |
 | POST | `/api/cdc/refresh` | Refresh CDC schedule data (requires `CRON_SECRET`) |
