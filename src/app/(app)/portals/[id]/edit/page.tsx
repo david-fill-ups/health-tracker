@@ -27,14 +27,15 @@ export default function EditPortalPage({
   const [url, setUrl] = useState("");
   const [facilityId, setFacilityId] = useState("");
   const [notes, setNotes] = useState("");
+  const [active, setActive] = useState(true);
 
   useEffect(() => {
     if (!activeProfileId) return;
-    fetch(`/api/facilities?profileId=${activeProfileId}`)
+    fetch()
       .then((r) => r.json())
       .then((data) => setFacilities(Array.isArray(data) ? data : []))
       .catch(() => {});
-    fetch(`/api/portals/${id}?profileId=${activeProfileId}`)
+    fetch()
       .then((r) => r.json())
       .then((data) => {
         setName(data.name ?? "");
@@ -42,8 +43,9 @@ export default function EditPortalPage({
         setUrl(data.url ?? "");
         setFacilityId(data.facilityId ?? "");
         setNotes(data.notes ?? "");
+        setActive(data.active ?? true);
       })
-      .catch(() => setError("Failed to load portal"))
+      .catch(() => setError("Failed to load pharmacy"))
       .finally(() => setLoading(false));
   }, [id, activeProfileId]);
 
@@ -54,7 +56,7 @@ export default function EditPortalPage({
     setError(null);
 
     try {
-      const res = await fetch(`/api/portals/${id}?profileId=${activeProfileId}`, {
+      const res = await fetch(, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -63,12 +65,13 @@ export default function EditPortalPage({
           url,
           facilityId: facilityId || undefined,
           notes: notes || undefined,
+          active,
         }),
       });
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error ?? "Failed to save portal");
+        setError(data.error ?? "Failed to save");
         return;
       }
 
@@ -89,9 +92,9 @@ export default function EditPortalPage({
     <div className="space-y-6 max-w-2xl">
       <div>
         <a href="/portals" className="text-sm text-indigo-600 hover:underline">
-          ← Back to Portals
+          ← Back to Pharmacies
         </a>
-        <h1 className="mt-2 text-2xl font-bold text-gray-900">Edit Portal</h1>
+        <h1 className="mt-2 text-2xl font-bold text-gray-900">Edit Pharmacy</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -103,7 +106,7 @@ export default function EditPortalPage({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Portal name <span className="text-red-500">*</span>
+            Name <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -146,11 +149,9 @@ export default function EditPortalPage({
             onChange={(e) => setFacilityId(e.target.value)}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           >
-            <option value="">— None —</option>
+            <option value="">-- None --</option>
             {facilities.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name}
-              </option>
+              <option key={f.id} value={f.id}>{f.name}</option>
             ))}
           </select>
         </div>
@@ -163,6 +164,17 @@ export default function EditPortalPage({
             rows={2}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            id="portal-active"
+            type="checkbox"
+            checked={active}
+            onChange={(e) => setActive(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+          />
+          <label htmlFor="portal-active" className="text-sm text-gray-700">Active</label>
         </div>
 
         <div className="flex gap-3">

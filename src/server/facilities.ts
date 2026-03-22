@@ -10,7 +10,12 @@ export async function getFacilitiesForProfile(userId: string, profileId: string)
   await assertProfileAccess(userId, profileId);
   return prisma.facility.findMany({
     where: { profileId },
-    include: { locations: true, doctors: true },
+    include: {
+      locations: true,
+      doctors: true,
+      _count: { select: { visits: true } },
+      visits: { orderBy: { date: "desc" }, take: 1, select: { date: true } },
+    },
     orderBy: [{ active: "desc" }, { name: "asc" }],
   });
 }

@@ -11,13 +11,25 @@ interface Vaccination {
 interface VaccinationCardProps {
   vaccination: Vaccination;
   onDelete: (id: string) => void;
+  compact?: boolean;
 }
 
-export function VaccinationCard({ vaccination, onDelete }: VaccinationCardProps) {
+export function VaccinationCard({ vaccination, onDelete, compact }: VaccinationCardProps) {
   async function handleDelete() {
     if (!confirm(`Delete vaccination record for ${vaccination.name}?`)) return;
     await fetch(`/api/vaccinations/${vaccination.id}`, { method: "DELETE" });
     onDelete(vaccination.id);
+  }
+
+  if (compact) {
+    return (
+      <button
+        onClick={handleDelete}
+        className="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+      >
+        Delete
+      </button>
+    );
   }
 
   return (

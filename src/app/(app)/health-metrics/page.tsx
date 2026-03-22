@@ -4,6 +4,15 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { COMMON_METRIC_TYPES } from "@/lib/validation";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 
 interface HealthMetric {
   id: string;
@@ -24,6 +33,19 @@ function formatDateTime(iso: string) {
   });
 }
 
+function formatDateShort(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "2-digit",
+  });
+}
+
+const LINE_COLORS = [
+  "#6366f1", "#10b981", "#f59e0b", "#ef4444",
+  "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6",
+];
+
 export default function HealthMetricsPage() {
   const { activeProfileId } = useProfile();
   const router = useRouter();
@@ -31,6 +53,7 @@ export default function HealthMetricsPage() {
   const [loading, setLoading] = useState(true);
   const [activeType, setActiveType] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [view, setView] = useState<"table" | "chart">("table");
 
   useEffect(() => {
     if (!activeProfileId) return;
@@ -56,8 +79,22 @@ export default function HealthMetricsPage() {
   // Collect unique metricTypes present in data for dynamic filter pills
   const presentTypes = Array.from(new Set(metrics.map((m) => m.metricType)));
   const filterTypes = Array.from(
-    new Set([...COMMON_METRIC_TYPES.filter((t) => presentTypes.includes(t)), ...presentTypes.filter((t) => !COMMON_METRIC_TYPES.includes(t as never))])
+    new Set([
+      ...COMMON_METRIC_TYPES.filter((t) => presentTypes.includes(t)),
+      ...presentTypes.filter((t) => !COMMON_METRIC_TYPES.includes(t as never)),
+    ])
   );
+
+  // Group metrics by type for chart view
+  const metricsByType = new Map<string, HealthMetric[]>();
+  for (const m of metrics) {
+    if (!metricsByType.has(m.metricType)) metricsByType.set(m.metricType, []);
+    metricsByType.get(m.metricType)!.push(m);
+  }
+  // Sort each group by date ascending for charting
+  for (const arr of metricsByType.values()) {
+    arr.sort((a, b) => new Date(a.measuredAt).getTime() - new Date(b.measuredAt).getTime());
+  }
 
   if (!activeProfileId) {
     return <p className="text-sm text-gray-500">Select a profile first.</p>;
@@ -67,12 +104,37 @@ export default function HealthMetricsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Health Metrics</h1>
-        <button
-          onClick={() => router.push("/health-metrics/new")}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-        >
-          + Add Metric
-        </button>
+        <div className="flex items-center gap-2">
+          {/* View toggle */}
+          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+            <button
+              onClick={() => setView("table")}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                view === "table"
+                  ? "bg-indigo-600 text-white"
+                  : "bg-white text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              Table
+            </button>
+            <button
+              onClick={() => setView("chart")}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                view === "chart"
+                  ? "bg-indigo-600 text-white"
+                  : "bg-white text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              Chart
+            </button>
+          </div>
+          <button
+            onClick={() => router.push("/health-metrics/new")}
+            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+          >
+            + Add Metric
+          </button>
+        </div>
       </div>
 
       {/* Type filter pills */}
@@ -115,6 +177,60 @@ export default function HealthMetricsPage() {
           >
             Add your first metric
           </button>
+        </div>
+      ) : view === "chart" ? (
+        <div className="space-y-6">
+          {Array.from(metricsByType.entries()).map(([type, typeMetrics], idx) => {
+            const color = LINE_COLORS[idx % LINE_COLORS.length];
+            const unit = typeMetrics[0]?.unit ?? "";
+            const chartData = typeMetrics.map((m) => ({
+              date: formatDateShort(m.measuredAt),
+              value: m.value,
+              fullDate: formatDateTime(m.measuredAt),
+            }));
+            return (
+              <div key={type} className="rounded-xl border border-gray-200 bg-white p-4">
+                <h3 className="mb-3 text-sm font-semibold text-gray-700">
+                  {type}
+                  <span className="ml-2 font-normal text-gray-400 text-xs">({unit})</span>
+                </h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={chartData} margin={{ top: 4, right: 16, bottom: 4, left: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 11, fill: "#6b7280" }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11, fill: "#6b7280" }}
+                      tickLine={false}
+                      axisLine={false}
+                      width={40}
+                    />
+                    <Tooltip
+                      formatter={(value: number) => [`${value} ${unit}`, type]}
+                      labelFormatter={(label: string) => label}
+                      contentStyle={{
+                        borderRadius: "8px",
+                        border: "1px solid #e5e7eb",
+                        fontSize: "12px",
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke={color}
+                      strokeWidth={2}
+                      dot={{ r: 3, fill: color }}
+                      activeDot={{ r: 5 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            );
+          })}
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">

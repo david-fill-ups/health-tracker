@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 interface MedicationLog {
   id: string;
   date: string;
@@ -108,12 +110,6 @@ export function MedicationCard({ medication, profileId, onDeactivate }: Medicati
               Log dose
             </a>
           )}
-          <a
-            href={`/medications/${medication.id}`}
-            className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 text-center"
-          >
-            View
-          </a>
           {medication.active && (
             <button
               onClick={handleDeactivate}

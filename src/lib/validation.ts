@@ -228,6 +228,7 @@ export const CreatePortalSchema = z.object({
   url: z.string().url().max(500),
   facilityId: z.string().min(1).optional(),
   notes: z.string().max(2000).optional(),
+  active: z.boolean().optional(),
 });
 
 export const UpdatePortalSchema = CreatePortalSchema.omit({ profileId: true }).partial();

@@ -13,16 +13,16 @@ interface Medication {
   name: string;
   active: boolean;
   instructions: string | null;
-  logs: MedicationLog[];
+  recentLog: MedicationLog | null;
 }
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 function getDoseStatus(med: Medication): { label: string; color: string } {
-  if (med.logs.length === 0) {
+  if (!med.recentLog) {
     return { label: "No logs", color: "bg-amber-100 text-amber-700" };
   }
-  const lastDate = new Date(med.logs[0].date);
+  const lastDate = new Date(med.recentLog.date);
   const msSinceLast = Date.now() - lastDate.getTime();
   if (msSinceLast > SEVEN_DAYS_MS) {
     return {

@@ -29,6 +29,7 @@ export default function EditVisitPage() {
   const [initial, setInitial] = useState<VisitInitial | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!activeProfileId || !id) return;
@@ -63,6 +64,13 @@ export default function EditVisitPage() {
       .finally(() => setLoading(false));
   }, [activeProfileId, id]);
 
+  async function handleDelete() {
+    if (!activeProfileId || !confirm("Delete this visit? This cannot be undone.")) return;
+    setDeleting(true);
+    await fetch(`/api/visits/${id}?profileId=${activeProfileId}`, { method: "DELETE" });
+    router.push("/visits");
+  }
+
   if (!activeProfileId) {
     return (
       <div className="flex items-center justify-center h-48 text-gray-500">
@@ -95,6 +103,16 @@ export default function EditVisitPage() {
           onSuccess={() => router.push(`/visits/${id}`)}
           onCancel={() => router.push(`/visits/${id}`)}
         />
+      </div>
+
+      <div className="border-t border-gray-200 pt-4">
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+        >
+          {deleting ? "Deleting…" : "Delete visit"}
+        </button>
       </div>
     </div>
   );

@@ -114,7 +114,7 @@ export function MedicationForm({ profileId, initialValues, medicationId }: Medic
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Dosage</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Current Dosage</label>
         <input
           type="text"
           value={dosage}

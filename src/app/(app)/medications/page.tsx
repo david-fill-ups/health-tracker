@@ -18,6 +18,7 @@ interface Medication {
   id: string;
   name: string;
   dosage: string | null;
+  frequency: string | null;
   prescribingDoctorId: string | null;
   startDate: string | null;
   endDate: string | null;
@@ -31,6 +32,7 @@ export default function MedicationsPage() {
   const [medications, setMedications] = useState<Medication[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [inactiveOpen, setInactiveOpen] = useState(false);
 
   useEffect(() => {
     if (!activeProfileId) return;
@@ -73,38 +75,44 @@ export default function MedicationsPage() {
 
       {activeProfileId && !loading && (
         <>
-          <section>
-            <h2 className="mb-3 text-lg font-semibold text-gray-700">Active</h2>
-            {active.length === 0 ? (
-              <p className="text-sm text-gray-500">No active medications.</p>
-            ) : (
-              <div className="space-y-3">
-                {active.map((m) => (
-                  <MedicationCard
-                    key={m.id}
-                    medication={m}
-                    profileId={activeProfileId}
-                    onDeactivate={handleDeactivate}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
+          {active.length === 0 && inactive.length === 0 && (
+            <p className="text-sm text-gray-500">No medications recorded.</p>
+          )}
+
+          {active.length > 0 && (
+            <div className="space-y-3">
+              {active.map((m) => (
+                <MedicationCard
+                  key={m.id}
+                  medication={m}
+                  profileId={activeProfileId}
+                  onDeactivate={handleDeactivate}
+                />
+              ))}
+            </div>
+          )}
 
           {inactive.length > 0 && (
-            <section>
-              <h2 className="mb-3 text-lg font-semibold text-gray-500">Inactive</h2>
-              <div className="space-y-3">
-                {inactive.map((m) => (
-                  <MedicationCard
-                    key={m.id}
-                    medication={m}
-                    profileId={activeProfileId}
-                    onDeactivate={handleDeactivate}
-                  />
-                ))}
-              </div>
-            </section>
+            <div className="mt-2">
+              <button
+                onClick={() => setInactiveOpen((v) => !v)}
+                className="text-sm text-gray-500 underline"
+              >
+                {inactiveOpen ? "Hide" : "Show"} inactive ({inactive.length})
+              </button>
+              {inactiveOpen && (
+                <div className="mt-3 space-y-3">
+                  {inactive.map((m) => (
+                    <MedicationCard
+                      key={m.id}
+                      medication={m}
+                      profileId={activeProfileId}
+                      onDeactivate={handleDeactivate}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </>
       )}

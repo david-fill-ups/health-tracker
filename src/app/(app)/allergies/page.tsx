@@ -46,9 +46,6 @@ function AllergyCard({
             {allergy.diagnosisDate && (
               <span>Diagnosed {new Date(allergy.diagnosisDate).toLocaleDateString()}</span>
             )}
-            {allergy.whealSize != null && (
-              <span>Wheal {allergy.whealSize} mm</span>
-            )}
           </div>
           {allergy.notes && (
             <p className="mt-1 text-sm text-gray-500">{allergy.notes}</p>

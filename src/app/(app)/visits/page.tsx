@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { VisitCard, type Visit } from "@/components/visits/VisitCard";
-import type { VisitStatus } from "@/generated/prisma/enums";
+import type { VisitStatus, VisitType } from "@/generated/prisma/enums";
 
 const STATUS_TABS: Array<{ label: string; value: VisitStatus | "ALL" }> = [
   { label: "All", value: "ALL" },
@@ -15,13 +14,26 @@ const STATUS_TABS: Array<{ label: string; value: VisitStatus | "ALL" }> = [
   { label: "Cancelled", value: "CANCELLED" },
 ];
 
+const VISIT_TYPES: VisitType[] = ["ROUTINE", "LAB", "SPECIALIST", "URGENT", "TELEHEALTH", "PROCEDURE", "OTHER"];
+const VISIT_TYPE_LABELS: Record<VisitType, string> = {
+  ROUTINE: "Routine", LAB: "Lab", SPECIALIST: "Specialist", URGENT: "Urgent",
+  TELEHEALTH: "Telehealth", PROCEDURE: "Procedure", OTHER: "Other",
+};
+
 export default function VisitsPage() {
   const { activeProfileId } = useProfile();
-  const router = useRouter();
 
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<VisitStatus | "ALL">("ALL");
+
+  // Filter state
+  const [filterFacilityId, setFilterFacilityId] = useState("");
+  const [filterDoctorId, setFilterDoctorId] = useState("");
+  const [filterSpecialty, setFilterSpecialty] = useState("");
+  const [filterType, setFilterType] = useState<VisitType | "">("");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
 
   const fetchVisits = useCallback(async () => {
     if (!activeProfileId) return;
@@ -38,15 +50,6 @@ export default function VisitsPage() {
     fetchVisits();
   }, [fetchVisits]);
 
-  async function handleDelete(id: string) {
-    await fetch(`/api/visits/${id}?profileId=${activeProfileId}`, { method: "DELETE" });
-    setVisits((prev) => prev.filter((v) => v.id !== id));
-  }
-
-  function handleEdit(visit: Visit) {
-    router.push(`/visits/${visit.id}/edit`);
-  }
-
   if (!activeProfileId) {
     return (
       <div className="flex items-center justify-center h-48 text-gray-500">
@@ -55,17 +58,46 @@ export default function VisitsPage() {
     );
   }
 
-  const filtered =
-    activeTab === "ALL" ? visits : visits.filter((v) => v.status === activeTab);
+  // Build unique facility/doctor lists from loaded visits
+  const facilityMap = new Map<string, string>();
+  const doctorMap = new Map<string, string>();
+  for (const v of visits) {
+    if (v.facility) facilityMap.set(v.facility.id, v.facility.name);
+    if (v.doctor) doctorMap.set(v.doctor.id, v.doctor.name);
+  }
+  const facilities = Array.from(facilityMap.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  const doctors = Array.from(doctorMap.entries()).sort((a, b) => a[1].localeCompare(b[1]));
 
-  // Visits with no date that are pending/scheduled — "needs scheduling" section
+  // Apply all filters
+  let filtered = visits;
+  if (activeTab !== "ALL") filtered = filtered.filter((v) => v.status === activeTab);
+  if (filterFacilityId) filtered = filtered.filter((v) => v.facility?.id === filterFacilityId);
+  if (filterDoctorId) filtered = filtered.filter((v) => v.doctor?.id === filterDoctorId);
+  if (filterSpecialty) filtered = filtered.filter((v) =>
+    (v.specialty ?? "").toLowerCase().includes(filterSpecialty.toLowerCase())
+  );
+  if (filterType) filtered = filtered.filter((v) => v.type === filterType);
+  if (filterDateFrom) filtered = filtered.filter((v) => v.date && v.date >= filterDateFrom);
+  if (filterDateTo) filtered = filtered.filter((v) => v.date && v.date <= filterDateTo + "T23:59:59");
+
+  const hasFilters = !!(filterFacilityId || filterDoctorId || filterSpecialty || filterType || filterDateFrom || filterDateTo);
+
+  function clearFilters() {
+    setFilterFacilityId("");
+    setFilterDoctorId("");
+    setFilterSpecialty("");
+    setFilterType("");
+    setFilterDateFrom("");
+    setFilterDateTo("");
+  }
+
   const needsScheduling = filtered.filter(
     (v) => !v.date && (v.status === "PENDING" || v.status === "SCHEDULED")
   );
   const scheduled = filtered.filter((v) => !!v.date);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Visits & Appointments</h1>
         <Link
@@ -93,11 +125,97 @@ export default function VisitsPage() {
         ))}
       </div>
 
+      {/* Advanced filters */}
+      <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Facility</label>
+            <select
+              value={filterFacilityId}
+              onChange={(e) => setFilterFacilityId(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            >
+              <option value="">All</option>
+              {facilities.map(([id, name]) => (
+                <option key={id} value={id}>{name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Doctor</label>
+            <select
+              value={filterDoctorId}
+              onChange={(e) => setFilterDoctorId(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            >
+              <option value="">All</option>
+              {doctors.map(([id, name]) => (
+                <option key={id} value={id}>{name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Visit type</label>
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value as VisitType | "")}
+              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            >
+              <option value="">All</option>
+              {VISIT_TYPES.map((t) => (
+                <option key={t} value={t}>{VISIT_TYPE_LABELS[t]}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Office / Specialty</label>
+            <input
+              type="text"
+              value={filterSpecialty}
+              onChange={(e) => setFilterSpecialty(e.target.value)}
+              placeholder="e.g. Urology"
+              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Date from</label>
+            <input
+              type="date"
+              value={filterDateFrom}
+              onChange={(e) => setFilterDateFrom(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Date to</label>
+            <input
+              type="date"
+              value={filterDateTo}
+              onChange={(e) => setFilterDateTo(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+          </div>
+        </div>
+
+        {hasFilters && (
+          <button
+            onClick={clearFilters}
+            className="text-xs text-gray-500 underline hover:text-gray-700"
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
+
       {loading ? (
         <p className="text-sm text-gray-400">Loading…</p>
       ) : (
         <>
-          {/* Needs scheduling */}
           {needsScheduling.length > 0 && (
             <section className="space-y-3">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-amber-600">
@@ -105,13 +223,12 @@ export default function VisitsPage() {
               </h2>
               <div className="space-y-3">
                 {needsScheduling.map((v) => (
-                  <VisitCard key={v.id} visit={v} onEdit={handleEdit} onDelete={handleDelete} />
+                  <VisitCard key={v.id} visit={v} />
                 ))}
               </div>
             </section>
           )}
 
-          {/* Scheduled visits */}
           {scheduled.length > 0 && (
             <section className="space-y-3">
               {needsScheduling.length > 0 && (
@@ -121,7 +238,7 @@ export default function VisitsPage() {
               )}
               <div className="space-y-3">
                 {scheduled.map((v) => (
-                  <VisitCard key={v.id} visit={v} onEdit={handleEdit} onDelete={handleDelete} />
+                  <VisitCard key={v.id} visit={v} />
                 ))}
               </div>
             </section>

@@ -17,6 +17,7 @@ export interface CreatePortalInput {
   url: string;
   facilityId?: string;
   notes?: string;
+  active?: boolean;
 }
 
 export async function getPortalById(userId: string, profileId: string, portalId: string) {
@@ -33,8 +34,8 @@ export async function createPortal(
   input: CreatePortalInput
 ) {
   await assertProfileAccess(userId, profileId, "OWNER");
-  const { name, organization, url, facilityId, notes } = input;
-  const portal = await prisma.portal.create({ data: { name, organization, url, facilityId, notes, profileId } });
+  const { name, organization, url, facilityId, notes, active } = input;
+  const portal = await prisma.portal.create({ data: { name, organization, url, facilityId, notes, active, profileId } });
   await logAudit(userId, profileId, "CREATE_PORTAL", "Portal", portal.id, { name: portal.name });
   return portal;
 }
@@ -46,8 +47,8 @@ export async function updatePortal(
   input: Partial<CreatePortalInput>
 ) {
   await assertProfileAccess(userId, profileId, "OWNER");
-  const { name, organization, url, facilityId, notes } = input;
-  const portal = await prisma.portal.update({ where: { id: portalId, profileId }, data: { name, organization, url, facilityId, notes } });
+  const { name, organization, url, facilityId, notes, active } = input;
+  const portal = await prisma.portal.update({ where: { id: portalId, profileId }, data: { name, organization, url, facilityId, notes, active } });
   await logAudit(userId, profileId, "UPDATE_PORTAL", "Portal", portalId);
   return portal;
 }

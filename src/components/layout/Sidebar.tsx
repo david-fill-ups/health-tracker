@@ -7,14 +7,13 @@ const NAV_ITEMS = [
   { label: "Dashboard", href: "/dashboard", icon: "◎" },
   { label: "Profiles", href: "/profiles", icon: "👤" },
   { label: "Healthcare Team", href: "/healthcare-team", icon: "🏥" },
-  { label: "Portals", href: "/portals", icon: "🔗" },
+  { label: "Pharmacies", href: "/portals", icon: "🔗" },
   { label: "Visits", href: "/visits", icon: "📅" },
   { label: "Medications", href: "/medications", icon: "💊" },
   { label: "Health Metrics", href: "/health-metrics", icon: "📊" },
   { label: "Conditions", href: "/conditions", icon: "📋" },
   { label: "Allergies", href: "/allergies", icon: "🌿" },
   { label: "Vaccinations", href: "/vaccinations", icon: "💉" },
-  { label: "Account", href: "/account", icon: "⚙" },
 ];
 
 export function Sidebar() {

@@ -21,6 +21,7 @@ export default function NewPortalPage() {
   const [url, setUrl] = useState("");
   const [facilityId, setFacilityId] = useState("");
   const [notes, setNotes] = useState("");
+  const [active, setActive] = useState(true);
 
   useEffect(() => {
     if (!activeProfileId) return;
@@ -47,12 +48,13 @@ export default function NewPortalPage() {
           url,
           facilityId: facilityId || undefined,
           notes: notes || undefined,
+          active,
         }),
       });
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error ?? "Failed to save portal");
+        setError(data.error ?? "Failed to save");
         return;
       }
 
@@ -67,9 +69,9 @@ export default function NewPortalPage() {
     <div className="space-y-6 max-w-2xl">
       <div>
         <a href="/portals" className="text-sm text-indigo-600 hover:underline">
-          ← Back to Portals
+          ← Back to Pharmacies
         </a>
-        <h1 className="mt-2 text-2xl font-bold text-gray-900">New Portal</h1>
+        <h1 className="mt-2 text-2xl font-bold text-gray-900">New Pharmacy</h1>
       </div>
 
       {!activeProfileId ? (
@@ -84,7 +86,7 @@ export default function NewPortalPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Portal name <span className="text-red-500">*</span>
+              Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -92,7 +94,7 @@ export default function NewPortalPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="e.g. MyChart Patient Portal, CPAP Resupply"
+              placeholder="e.g. CVS Pharmacy, Walgreens, Express Scripts"
             />
           </div>
 
@@ -103,7 +105,6 @@ export default function NewPortalPage() {
               value={organization}
               onChange={(e) => setOrganization(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="e.g. Johns Hopkins, Aeroflow Sleep"
             />
           </div>
 
@@ -117,7 +118,7 @@ export default function NewPortalPage() {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="https://mychart.example.com"
+              placeholder="https://"
             />
           </div>
 
@@ -132,9 +133,7 @@ export default function NewPortalPage() {
             >
               <option value="">— None —</option>
               {facilities.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name}
-                </option>
+                <option key={f.id} value={f.id}>{f.name}</option>
               ))}
             </select>
           </div>
@@ -146,8 +145,18 @@ export default function NewPortalPage() {
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="e.g. Requires insurance card on file"
             />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              id="portal-active"
+              type="checkbox"
+              checked={active}
+              onChange={(e) => setActive(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <label htmlFor="portal-active" className="text-sm text-gray-700">Active</label>
           </div>
 
           <div className="flex gap-3">
@@ -156,7 +165,7 @@ export default function NewPortalPage() {
               disabled={submitting}
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
             >
-              {submitting ? "Saving…" : "Add portal"}
+              {submitting ? "Saving…" : "Add pharmacy"}
             </button>
             <a
               href="/portals"

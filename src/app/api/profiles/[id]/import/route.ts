@@ -354,10 +354,10 @@ export async function POST(req: Request, { params }: Params) {
             data: {
               medicationId,
               date: new Date(log.date),
-              dosage: log.dosage ?? undefined,
+              dosage: log.dosage != null ? Number(log.dosage) : undefined,
               unit: log.unit ?? undefined,
               injectionSite: log.injectionSite ?? undefined,
-              weight: log.weight ?? undefined,
+              weight: log.weight != null ? Number(log.weight) : undefined,
               notes: log.notes ?? undefined,
             },
           });
@@ -488,7 +488,7 @@ export async function POST(req: Request, { params }: Params) {
         });
         imported.healthMetrics++;
       }
-    });
+    }, { timeout: 60_000 });
 
     await logAudit(userId, profileId, "IMPORT_PROFILE", "Profile", profileId, { mode, imported });
 

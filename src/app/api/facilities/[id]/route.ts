@@ -19,7 +19,15 @@ export async function GET(_req: Request, { params }: Params) {
         id,
         profile: { access: { some: { userId: session.user.id } } },
       },
-      include: { locations: true, doctors: true },
+      include: {
+        locations: true,
+        doctors: true,
+        _count: { select: { visits: true } },
+        visits: {
+          orderBy: { date: "desc" },
+          select: { id: true, date: true, type: true, status: true, reason: true, doctor: { select: { id: true, name: true } }, location: { select: { id: true, name: true } } },
+        },
+      },
     });
     if (!facility) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(facility);
