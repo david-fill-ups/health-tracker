@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { assertProfileAccess } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
-import { generateRecommendations } from "@/lib/cdc";
+import { generateRecommendations, getCdcLastUpdated } from "@/lib/cdc";
+import { findDestination, getTravelVaccineStatus } from "@/lib/travel";
+import type { VaccinationSource } from "@/generated/prisma/client";
 
 export async function getVaccinationsForProfile(userId: string, profileId: string) {
   await assertProfileAccess(userId, profileId);
@@ -23,23 +25,37 @@ export async function getVaccinationRecommendations(userId: string, profileId: s
 
   const vaccinations = await prisma.vaccination.findMany({
     where: { profileId },
-    select: { name: true, date: true },
+    select: { name: true, date: true, source: true },
   });
 
-  const byName = new Map();
+  const declinedNames = new Set<string>();
+  const byName = new Map<string, Date[]>();
   for (const v of vaccinations) {
     const key = v.name.toLowerCase();
-    const existing = byName.get(key) ?? [];
-    existing.push(v.date);
-    byName.set(key, existing);
+    if (v.source === "DECLINED") {
+      declinedNames.add(key);
+      continue;
+    }
+    byName.set(key, [...(byName.get(key) ?? []), v.date]);
   }
 
-  return generateRecommendations(profile.birthDate, byName);
+  const recs = generateRecommendations(profile.birthDate, byName);
+  const recommendations = recs.map((r) => {
+    const allNames = [r.vaccine, ...r.aliases].map((n) => n.toLowerCase());
+    if (allNames.some((n) => declinedNames.has(n))) return { ...r, status: "exempt" as const };
+    return r;
+  });
+
+  return {
+    recommendations,
+    dataLastUpdated: getCdcLastUpdated(),
+  };
 }
 
 export interface CreateVaccinationInput {
   name: string;
-  date: Date;
+  date?: Date;
+  source?: VaccinationSource;
   facilityId?: string;
   lotNumber?: string;
   notes?: string;
@@ -51,8 +67,18 @@ export async function createVaccination(
   input: CreateVaccinationInput
 ) {
   await assertProfileAccess(userId, profileId, "OWNER");
-  const { name, date, facilityId, lotNumber, notes } = input;
-  const vaccination = await prisma.vaccination.create({ data: { name, date, facilityId, lotNumber, notes, profileId } });
+  const { name, date, source, facilityId, lotNumber, notes } = input;
+  const vaccination = await prisma.vaccination.create({
+    data: {
+      name,
+      date: date ?? new Date(),
+      source: source ?? "ADMINISTERED",
+      facilityId,
+      lotNumber,
+      notes,
+      profileId,
+    },
+  });
   await logAudit(userId, profileId, "CREATE_VACCINATION", "Vaccination", vaccination.id, { name: vaccination.name });
   return vaccination;
 }
@@ -60,6 +86,7 @@ export async function createVaccination(
 export interface UpdateVaccinationInput {
   name?: string;
   date?: Date;
+  source?: VaccinationSource;
   facilityId?: string | null;
   lotNumber?: string | null;
   notes?: string | null;
@@ -76,8 +103,11 @@ export async function updateVaccination(
   });
   if (!vaccination) throw new Error("Vaccination not found");
   await assertProfileAccess(userId, vaccination.profileId, "OWNER");
-  const { name, date, facilityId, lotNumber, notes } = input;
-  const updated = await prisma.vaccination.update({ where: { id }, data: { name, date, facilityId, lotNumber, notes } });
+  const { name, date, source, facilityId, lotNumber, notes } = input;
+  const updated = await prisma.vaccination.update({
+    where: { id },
+    data: { name, date, source, facilityId, lotNumber, notes },
+  });
   await logAudit(userId, vaccination.profileId, "UPDATE_VACCINATION", "Vaccination", id);
   return updated;
 }
@@ -91,6 +121,20 @@ export async function deleteVaccination(userId: string, id: string) {
   await assertProfileAccess(userId, vaccination.profileId, "OWNER");
   await logAudit(userId, vaccination.profileId, "DELETE_VACCINATION", "Vaccination", id);
   await prisma.vaccination.delete({ where: { id } });
+}
+
+export async function getTravelCheck(userId: string, profileId: string, destination: string) {
+  await assertProfileAccess(userId, profileId);
+
+  const destinationKey = findDestination(destination);
+  if (!destinationKey) return null;
+
+  const vaccinations = await prisma.vaccination.findMany({
+    where: { profileId, source: { not: "DECLINED" } },
+    select: { name: true },
+  });
+
+  return getTravelVaccineStatus(destinationKey, vaccinations);
 }
 
 export async function getVaccinationById(userId: string, id: string) {

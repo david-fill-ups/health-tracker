@@ -198,11 +198,12 @@ export default function HealthcareTeamPage() {
 
           {/* Inactive section */}
           {(inactiveFacilities.length > 0 || inactiveDoctors.length > 0) && (
-            <div className="mt-2">
+            <div className="border-t border-gray-200 pt-4 mt-2">
               <button
                 onClick={() => setInactiveOpen((v) => !v)}
-                className="text-sm text-gray-500 underline"
+                className="text-sm text-gray-400 hover:text-gray-600 flex items-center gap-1"
               >
+                <span className="text-xs">{inactiveOpen ? "▾" : "▸"}</span>
                 {inactiveOpen ? "Hide" : "Show"} inactive (
                 {inactiveFacilities.length + inactiveDoctors.length})
               </button>

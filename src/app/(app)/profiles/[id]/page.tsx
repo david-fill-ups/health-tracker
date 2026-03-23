@@ -2,8 +2,10 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { getProfileById, regenerateCalendarToken } from "@/server/profiles";
+import { hasProfileAccess } from "@/lib/permissions";
 import { CopyButton } from "@/components/profiles/CopyButton";
 import { SharingSection } from "@/components/profiles/SharingSection";
+import { LinkedProfilesSection } from "@/components/profiles/LinkedProfilesSection";
 import { ProfileActions } from "@/components/profiles/ProfileActions";
 
 type Props = { params: Promise<{ id: string }> };
@@ -15,7 +17,10 @@ export default async function ProfileDetailPage({ params }: Props) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const profile = await getProfileById(session.user.id, id);
+  const [profile, isOwner] = await Promise.all([
+    getProfileById(session.user.id, id),
+    hasProfileAccess(session.user.id, id, "OWNER"),
+  ]);
   if (!profile) notFound();
 
   const host = process.env.NEXTAUTH_URL ?? "localhost:3000";
@@ -87,7 +92,9 @@ export default async function ProfileDetailPage({ params }: Props) {
           </div>
         )}
 
-        <SharingSection profileId={id} currentUserId={session.user.id} />
+        <LinkedProfilesSection profileId={id} profileName={profile.name} isOwner={isOwner} />
+
+        <SharingSection profileId={id} currentUserId={session.user.id} isOwnerProfile={profile.isOwnerProfile} />
 
         <div className="border-t border-gray-100 pt-4 flex flex-wrap gap-3">
           <Link

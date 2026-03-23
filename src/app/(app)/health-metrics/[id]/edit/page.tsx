@@ -1,6 +1,11 @@
 "use client";
 
 import { useState, useEffect, use, type FormEvent } from "react";
+
+function toLocalDatetimeInput(date: Date): string {
+  const tzOffset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+}
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { COMMON_METRIC_TYPES } from "@/lib/validation";
@@ -37,7 +42,7 @@ export default function EditHealthMetricPage({
         setValue(data.value != null ? String(data.value) : "");
         setUnit(data.unit ?? "");
         setMeasuredAt(
-          data.measuredAt ? new Date(data.measuredAt).toISOString().slice(0, 16) : ""
+          data.measuredAt ? toLocalDatetimeInput(new Date(data.measuredAt)) : ""
         );
         setNotes(data.notes ?? "");
       })

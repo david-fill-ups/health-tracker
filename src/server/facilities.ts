@@ -22,9 +22,9 @@ export interface CreateFacilityInput {
   name: string;
   type: string;
   rating?: number | null;
-  websiteUrl?: string;
-  portalUrl?: string;
-  phone?: string;
+  websiteUrl?: string | null;
+  portalUrl?: string | null;
+  phone?: string | null;
   active?: boolean;
 }
 

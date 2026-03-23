@@ -26,7 +26,7 @@ const PERMISSION_COLORS: Record<string, string> = {
   READ_ONLY: "bg-gray-100 text-gray-600",
 };
 
-export function SharingSection({ profileId, currentUserId }: { profileId: string; currentUserId: string }) {
+export function SharingSection({ profileId, currentUserId, isOwnerProfile = false }: { profileId: string; currentUserId: string; isOwnerProfile?: boolean }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [pending, setPending] = useState<Pending[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,6 +97,8 @@ export function SharingSection({ profileId, currentUserId }: { profileId: string
     load();
   }
 
+  const ownerCount = members.filter((m) => m.permission === "OWNER").length;
+
   if (loading) return null;
 
   return (
@@ -104,37 +106,47 @@ export function SharingSection({ profileId, currentUserId }: { profileId: string
       <p className="text-sm font-medium text-gray-700">People with access</p>
 
       <ul className="space-y-2">
-        {members.map((m) => (
-          <li key={m.id} className="flex items-center justify-between gap-2 text-sm">
-            <div className="flex-1 min-w-0">
-              <p className="truncate font-medium text-gray-800">{m.user.name ?? m.user.email}</p>
-              <p className="truncate text-xs text-gray-400">{m.user.email}</p>
-            </div>
-            {isOwner && m.user.id !== currentUserId ? (
-              <div className="flex items-center gap-2 shrink-0">
-                <select
-                  value={m.permission}
-                  onChange={(e) => handleChangePermission(m.user.id, e.target.value)}
-                  className="rounded border border-gray-200 px-2 py-1 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                >
-                  <option value="READ_ONLY">View only</option>
-                  <option value="WRITE">Edit</option>
-                  <option value="OWNER">Owner</option>
-                </select>
-                <button
-                  onClick={() => handleRemove(m.user.id)}
-                  className="text-xs text-gray-400 hover:text-red-600 transition-colors"
-                >
-                  Remove
-                </button>
+        {members.map((m) => {
+          const isSelf = m.user.id === currentUserId;
+          // Self can edit their own permission only if another owner already exists (safe demotion)
+          // On the primary profile, the owner's own permission is permanently locked
+          const canEdit = isOwner && (!isSelf || (ownerCount > 1 && !isOwnerProfile));
+          return (
+            <li key={m.id} className="flex items-center justify-between gap-2 text-sm">
+              <div className="flex-1 min-w-0">
+                <p className="truncate font-medium text-gray-800">{m.user.name ?? m.user.email}</p>
+                <p className="truncate text-xs text-gray-400">{m.user.email}</p>
               </div>
-            ) : (
-              <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${PERMISSION_COLORS[m.permission]}`}>
-                {PERMISSION_LABELS[m.permission]}{m.user.id === currentUserId ? " (you)" : ""}
-              </span>
-            )}
-          </li>
-        ))}
+              {canEdit ? (
+                <div className="flex items-center gap-2 shrink-0">
+                  <select
+                    value={m.permission}
+                    onChange={(e) => handleChangePermission(m.user.id, e.target.value)}
+                    className="rounded border border-gray-200 px-2 py-1 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  >
+                    <option value="READ_ONLY">View only</option>
+                    <option value="WRITE">Edit</option>
+                    <option value="OWNER">Owner</option>
+                  </select>
+                  {isSelf ? (
+                    <span className="text-xs text-gray-400">(you)</span>
+                  ) : (
+                    <button
+                      onClick={() => handleRemove(m.user.id)}
+                      className="text-xs text-gray-400 hover:text-red-600 transition-colors"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${PERMISSION_COLORS[m.permission]}`}>
+                  {PERMISSION_LABELS[m.permission]}{isSelf ? " (you)" : ""}
+                </span>
+              )}
+            </li>
+          );
+        })}
 
         {pending.map((inv) => (
           <li key={inv.id} className="flex items-center justify-between gap-2 text-sm">

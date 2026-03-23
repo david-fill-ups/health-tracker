@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { label: "Medications", href: "/medications", icon: "💊" },
   { label: "Health Metrics", href: "/health-metrics", icon: "📊" },
   { label: "Conditions", href: "/conditions", icon: "📋" },
+  { label: "Family History", href: "/family-history", icon: "🧬" },
   { label: "Allergies", href: "/allergies", icon: "🌿" },
   { label: "Vaccinations", href: "/vaccinations", icon: "💉" },
 ];

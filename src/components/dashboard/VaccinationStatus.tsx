@@ -5,7 +5,7 @@ import Link from "next/link";
 
 interface Recommendation {
   vaccine: string;
-  status: "up_to_date" | "due" | "overdue" | "not_applicable";
+  status: "up_to_date" | "due" | "overdue" | "not_applicable" | "completed" | "exempt";
   nextDueDate: string | null;
   notes: string;
 }
@@ -15,6 +15,8 @@ const STATUS_STYLES: Record<string, string> = {
   due: "bg-amber-100 text-amber-700",
   overdue: "bg-red-100 text-red-700",
   not_applicable: "bg-gray-100 text-gray-500",
+  completed: "bg-blue-100 text-blue-700",
+  exempt: "bg-gray-100 text-gray-500",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -22,6 +24,8 @@ const STATUS_LABELS: Record<string, string> = {
   due: "Due",
   overdue: "Overdue",
   not_applicable: "N/A",
+  completed: "Completed",
+  exempt: "Declined",
 };
 
 export function VaccinationStatus({ activeProfileId }: { activeProfileId: string | null }) {
@@ -36,7 +40,7 @@ export function VaccinationStatus({ activeProfileId }: { activeProfileId: string
     setLoading(true);
     fetch(`/api/vaccinations/recommendations?profileId=${activeProfileId}`)
       .then((r) => r.json())
-      .then((data: Recommendation[]) => setRecs(data))
+      .then((data) => setRecs(Array.isArray(data) ? data : (data?.recommendations ?? [])))
       .catch(() => setRecs([]))
       .finally(() => setLoading(false));
   }, [activeProfileId]);

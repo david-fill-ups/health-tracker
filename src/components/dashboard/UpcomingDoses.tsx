@@ -81,9 +81,6 @@ export function UpcomingDoses({ activeProfileId }: { activeProfileId: string | n
               <li key={m.id} className="flex items-start justify-between gap-2">
                 <div>
                   <p className="text-sm font-medium text-gray-800">{m.name}</p>
-                  {m.instructions && (
-                    <p className="text-xs text-gray-500 line-clamp-2" title={m.instructions}>{m.instructions}</p>
-                  )}
                 </div>
                 <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${color}`}>
                   {label}

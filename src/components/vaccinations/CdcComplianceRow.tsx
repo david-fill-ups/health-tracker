@@ -12,6 +12,7 @@ const STATUS_BADGE: Record<
   due: { label: "Due", classes: "bg-amber-100 text-amber-700" },
   overdue: { label: "Overdue", classes: "bg-red-100 text-red-700" },
   not_applicable: { label: "N/A", classes: "bg-gray-100 text-gray-400" },
+  completed: { label: "Completed", classes: "bg-green-100 text-green-700" },
 };
 
 function fmtDate(d: Date | string | null) {

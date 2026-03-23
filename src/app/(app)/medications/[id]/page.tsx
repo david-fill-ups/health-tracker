@@ -51,6 +51,7 @@ export default function MedicationDetailPage({
   const [medication, setMedication] = useState<Medication | null>(null);
   const [logs, setLogs] = useState<MedicationLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deactivating, setDeactivating] = useState(false);
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<LogEditForm | null>(null);
   const [saving, setSaving] = useState(false);
@@ -69,6 +70,20 @@ export default function MedicationDetailPage({
       })
       .finally(() => setLoading(false));
   }, [id, activeProfileId]);
+
+  async function handleDeactivate() {
+    if (!activeProfileId || !confirm("Deactivate this medication?")) return;
+    setDeactivating(true);
+    const res = await fetch(`/api/medications/${id}?profileId=${activeProfileId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ active: false }),
+    });
+    if (res.ok) {
+      setMedication((prev) => prev ? { ...prev, active: false } : prev);
+    }
+    setDeactivating(false);
+  }
 
   function startEdit(log: MedicationLog) {
     setEditingLogId(log.id);
@@ -193,18 +208,29 @@ export default function MedicationDetailPage({
           </p>
         )}
         <div className="pt-2 flex gap-2">
-          <a
-            href={`/medications/${id}/log`}
-            className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700"
-          >
-            Log dose
-          </a>
+          {medication.active && (
+            <a
+              href={`/medications/${id}/log`}
+              className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700"
+            >
+              Log dose
+            </a>
+          )}
           <a
             href={`/medications/${id}/edit`}
             className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
           >
             Edit
           </a>
+          {medication.active && (
+            <button
+              onClick={handleDeactivate}
+              disabled={deactivating}
+              className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+            >
+              {deactivating ? "Deactivating…" : "Deactivate"}
+            </button>
+          )}
         </div>
       </div>
 

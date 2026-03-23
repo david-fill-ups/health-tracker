@@ -35,6 +35,7 @@ export default function VisitsPage() {
   const [filterType, setFilterType] = useState<VisitType | "">("");
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
+  const [dateSort, setDateSort] = useState<"asc" | "desc" | null>(null);
 
   const fetchVisits = useCallback(async () => {
     if (!activeProfileId) return;
@@ -104,23 +105,31 @@ export default function VisitsPage() {
 
   const { needsScheduling, scheduled } = useMemo(() => {
     const now = Date.now();
+    const scheduledList = filtered.filter((v) => !!v.date);
+
+    if (dateSort === "asc") {
+      scheduledList.sort((a, b) => new Date(a.date!).getTime() - new Date(b.date!).getTime());
+    } else if (dateSort === "desc") {
+      scheduledList.sort((a, b) => new Date(b.date!).getTime() - new Date(a.date!).getTime());
+    } else {
+      scheduledList.sort((a, b) => {
+        const aTime = new Date(a.date!).getTime();
+        const bTime = new Date(b.date!).getTime();
+        const aFuture = aTime >= now;
+        const bFuture = bTime >= now;
+        if (aFuture !== bFuture) return aFuture ? -1 : 1;
+        if (aFuture) return aTime - bTime; // upcoming: ascending
+        return bTime - aTime; // past: descending
+      });
+    }
+
     return {
       needsScheduling: filtered.filter(
         (v) => !v.date && (v.status === "PENDING" || v.status === "SCHEDULED")
       ),
-      scheduled: filtered
-        .filter((v) => !!v.date)
-        .sort((a, b) => {
-          const aTime = new Date(a.date!).getTime();
-          const bTime = new Date(b.date!).getTime();
-          const aFuture = aTime >= now;
-          const bFuture = bTime >= now;
-          if (aFuture !== bFuture) return aFuture ? -1 : 1;
-          if (aFuture) return aTime - bTime; // upcoming: ascending
-          return bTime - aTime; // past: descending
-        }),
+      scheduled: scheduledList,
     };
-  }, [filtered]);
+  }, [filtered, dateSort]);
 
   return (
     <div className="space-y-5">
@@ -263,11 +272,30 @@ export default function VisitsPage() {
 
           {scheduled.length > 0 && (
             <section className="space-y-3">
-              {needsScheduling.length > 0 && (
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">
-                  Scheduled
-                </h2>
-              )}
+              <div className="flex items-center justify-between">
+                {needsScheduling.length > 0 ? (
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">
+                    Scheduled
+                  </h2>
+                ) : (
+                  <span />
+                )}
+                <button
+                  onClick={() =>
+                    setDateSort((prev) =>
+                      prev === null ? "asc" : prev === "asc" ? "desc" : null
+                    )
+                  }
+                  className={`flex items-center gap-1 text-xs font-medium transition-colors ${
+                    dateSort ? "text-indigo-600" : "text-gray-400 hover:text-gray-600"
+                  }`}
+                >
+                  Date
+                  <span className="text-base leading-none">
+                    {dateSort === "asc" ? "↑" : dateSort === "desc" ? "↓" : "⇅"}
+                  </span>
+                </button>
+              </div>
               <div className="space-y-3">
                 {scheduled.map((v) => (
                   <VisitCard key={v.id} visit={v} />

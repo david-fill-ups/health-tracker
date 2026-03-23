@@ -33,6 +33,12 @@ import {
   UpdatePortalSchema,
   CreateHealthMetricSchema,
   UpdateHealthMetricSchema,
+  CreateFamilyMemberSchema,
+  UpdateFamilyMemberSchema,
+  CreateFamilyConditionSchema,
+  UpdateFamilyConditionSchema,
+  CreateProfileRelationshipSchema,
+  UpdateProfileRelationshipSchema,
 } from "./validation";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -101,6 +107,7 @@ export function buildOpenApiSpec(): AnyObj {
       { name: "Allergies", description: "Allergy records (allergen, category, wheal size)" },
       { name: "Portals", description: "Patient and resupply portal catalog" },
       { name: "Health Metrics", description: "Standalone health measurements (weight, blood sugar, etc.)" },
+      { name: "Family History", description: "Family member medical history (manual entries and profile links)" },
       { name: "Import / Export", description: "JSON data portability for health profiles" },
       { name: "Calendar", description: "iCal feed for upcoming visits" },
       { name: "Account", description: "Account management" },
@@ -990,6 +997,191 @@ export function buildOpenApiSpec(): AnyObj {
           summary: "Delete health metric",
           description: "Permanently deletes a health metric entry. Requires OWNER access.",
           tags: ["Health Metrics"],
+          responses: {
+            "204": resp("No content"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+      },
+
+      // ─── Family History ───────────────────────────────────────────────────────
+
+      "/api/family-members": {
+        get: {
+          operationId: "listFamilyMembers",
+          summary: "List family members",
+          description: "Returns all manual family member entries (with embedded conditions) for a profile, ordered by relationship then name. Requires READ_ONLY access.",
+          tags: ["Family History"],
+          parameters: [queryParam("profileId", "Profile ID", true)],
+          responses: {
+            "200": resp("Array of family members, each with a conditions array"),
+            "400": resp("Missing profileId"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+        post: {
+          operationId: "createFamilyMember",
+          summary: "Add family member",
+          description: "Adds a manual family member entry to a profile. Requires OWNER access.",
+          tags: ["Family History"],
+          requestBody: jsonBody(CreateFamilyMemberSchema),
+          responses: {
+            "201": resp("Created family member"),
+            "400": resp("Validation error"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+      },
+
+      "/api/family-members/{id}": {
+        parameters: [strPathParam("id", "Family Member ID")],
+        get: {
+          operationId: "getFamilyMember",
+          summary: "Get family member",
+          description: "Returns a single family member with their embedded conditions. Requires READ_ONLY access.",
+          tags: ["Family History"],
+          parameters: [queryParam("profileId", "Profile ID", true)],
+          responses: {
+            "200": resp("Family member with conditions array"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+            "404": resp("Not found"),
+          },
+        },
+        put: {
+          operationId: "updateFamilyMember",
+          summary: "Update family member",
+          description: "Updates a family member's name, relationship, or notes. Requires OWNER access.",
+          tags: ["Family History"],
+          parameters: [queryParam("profileId", "Profile ID", true)],
+          requestBody: jsonBody(UpdateFamilyMemberSchema),
+          responses: {
+            "200": resp("Updated family member"),
+            "400": resp("Validation error"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+        delete: {
+          operationId: "deleteFamilyMember",
+          summary: "Delete family member",
+          description: "Permanently deletes a family member and all their conditions (cascade). Requires OWNER access.",
+          tags: ["Family History"],
+          parameters: [queryParam("profileId", "Profile ID", true)],
+          responses: {
+            "204": resp("No content"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+      },
+
+      "/api/family-members/{id}/conditions": {
+        parameters: [strPathParam("id", "Family Member ID")],
+        post: {
+          operationId: "addFamilyCondition",
+          summary: "Add condition to family member",
+          description: "Adds a medical condition to a manual family member entry. Requires OWNER access.",
+          tags: ["Family History"],
+          requestBody: jsonBody(CreateFamilyConditionSchema),
+          responses: {
+            "201": resp("Created family condition"),
+            "400": resp("Validation error"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+      },
+
+      "/api/family-members/{id}/conditions/{conditionId}": {
+        parameters: [
+          strPathParam("id", "Family Member ID"),
+          strPathParam("conditionId", "Family Condition ID"),
+        ],
+        put: {
+          operationId: "updateFamilyCondition",
+          summary: "Update family condition",
+          description: "Updates a family member condition name or notes. Requires OWNER access.",
+          tags: ["Family History"],
+          parameters: [queryParam("profileId", "Profile ID", true)],
+          requestBody: jsonBody(UpdateFamilyConditionSchema),
+          responses: {
+            "200": resp("Updated family condition"),
+            "400": resp("Validation error"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+        delete: {
+          operationId: "deleteFamilyCondition",
+          summary: "Delete family condition",
+          description: "Permanently deletes a condition from a family member. Requires OWNER access.",
+          tags: ["Family History"],
+          parameters: [queryParam("profileId", "Profile ID", true)],
+          responses: {
+            "204": resp("No content"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+      },
+
+      "/api/profile-relationships": {
+        get: {
+          operationId: "listProfileRelationships",
+          summary: "List profile relationships",
+          description:
+            "Returns all profile links for the given profile. Biological relationships include the linked profile's conditions if accessible. Requires READ_ONLY access.",
+          tags: ["Family History"],
+          parameters: [queryParam("profileId", "Profile ID", true)],
+          responses: {
+            "200": resp("Array of profile relationships with linked profile info and conditions"),
+            "400": resp("Missing profileId"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+        post: {
+          operationId: "createProfileRelationship",
+          summary: "Link a profile",
+          description:
+            "Links another profile as a family member. The linked profile must be accessible to the current user. Requires OWNER access on the source profile.",
+          tags: ["Family History"],
+          requestBody: jsonBody(CreateProfileRelationshipSchema),
+          responses: {
+            "201": resp("Created profile relationship"),
+            "400": resp("Validation error or self-link attempt"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden — no access to source or linked profile"),
+          },
+        },
+      },
+
+      "/api/profile-relationships/{id}": {
+        parameters: [strPathParam("id", "Profile Relationship ID")],
+        put: {
+          operationId: "updateProfileRelationship",
+          summary: "Update profile relationship",
+          description: "Updates the relationship type or biological flag for a profile link. Requires OWNER access.",
+          tags: ["Family History"],
+          parameters: [queryParam("profileId", "Profile ID", true)],
+          requestBody: jsonBody(UpdateProfileRelationshipSchema),
+          responses: {
+            "200": resp("Updated profile relationship"),
+            "400": resp("Validation error"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+        delete: {
+          operationId: "deleteProfileRelationship",
+          summary: "Unlink a profile",
+          description: "Removes a profile link. Does not affect either profile's data. Requires OWNER access.",
+          tags: ["Family History"],
+          parameters: [queryParam("profileId", "Profile ID", true)],
           responses: {
             "204": resp("No content"),
             "401": resp("Unauthorized"),

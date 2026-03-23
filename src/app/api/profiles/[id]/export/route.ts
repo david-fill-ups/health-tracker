@@ -11,6 +11,7 @@ import { getVaccinationsForProfile } from "@/server/vaccinations";
 import { getAllergiesForProfile } from "@/server/allergies";
 import { getPortalsForProfile } from "@/server/portals";
 import { getHealthMetricsForProfile } from "@/server/health-metrics";
+import { getFamilyMembersForProfile } from "@/server/family-members";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -22,7 +23,7 @@ export async function GET(_req: Request, { params }: Params) {
     const { id } = await params;
     const userId = session.user.id;
 
-    const [profile, facilities, doctors, visits, conditions, vaccinations, allergies, portals, healthMetrics] =
+    const [profile, facilities, doctors, visits, conditions, vaccinations, allergies, portals, healthMetrics, familyMembers] =
       await Promise.all([
         getProfileById(userId, id),
         getFacilitiesForProfile(userId, id),
@@ -33,6 +34,7 @@ export async function GET(_req: Request, { params }: Params) {
         getAllergiesForProfile(userId, id),
         getPortalsForProfile(userId, id),
         getHealthMetricsForProfile(userId, id),
+        getFamilyMembersForProfile(userId, id),
       ]);
 
     // getMedicationsForProfile only fetches the last 10 logs — fetch all logs for a complete export
@@ -150,6 +152,16 @@ export async function GET(_req: Request, { params }: Params) {
         unit: m.unit,
         measuredAt: m.measuredAt.toISOString(),
         notes: m.notes ?? null,
+      })),
+      familyMembers: familyMembers.map((m) => ({
+        name: m.name,
+        relationship: m.relationship,
+        side: m.side ?? null,
+        notes: m.notes ?? null,
+        conditions: m.conditions.map((c) => ({
+          name: c.name,
+          notes: c.notes ?? null,
+        })),
       })),
     };
 

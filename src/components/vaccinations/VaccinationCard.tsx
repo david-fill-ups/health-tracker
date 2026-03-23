@@ -2,10 +2,18 @@
 
 import { useRouter } from "next/navigation";
 
+type VaccinationSource = "ADMINISTERED" | "NATURAL" | "DECLINED";
+
+const SOURCE_LABEL: Partial<Record<VaccinationSource, string>> = {
+  NATURAL: "Natural immunity",
+  DECLINED: "Declined",
+};
+
 interface Vaccination {
   id: string;
   name: string;
   date: string;
+  source?: VaccinationSource | null;
   lotNumber: string | null;
   facility?: { name: string } | null;
 }
@@ -26,14 +34,21 @@ export function VaccinationCard({ vaccination, onDelete, compact }: VaccinationC
     router.refresh();
   }
 
+  const sourceLabel = vaccination.source ? SOURCE_LABEL[vaccination.source] : null;
+
   if (compact) {
     return (
-      <button
-        onClick={handleDelete}
-        className="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
-      >
-        Delete
-      </button>
+      <div className="flex items-center gap-2 shrink-0">
+        {sourceLabel && (
+          <span className="text-xs text-gray-400 italic">{sourceLabel}</span>
+        )}
+        <button
+          onClick={handleDelete}
+          className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+        >
+          Delete
+        </button>
+      </div>
     );
   }
 
@@ -47,6 +62,9 @@ export function VaccinationCard({ vaccination, onDelete, compact }: VaccinationC
         </p>
         {vaccination.lotNumber && (
           <p className="mt-0.5 text-xs text-gray-400">Lot: {vaccination.lotNumber}</p>
+        )}
+        {sourceLabel && (
+          <p className="mt-0.5 text-xs text-gray-400 italic">{sourceLabel}</p>
         )}
       </div>
       <button

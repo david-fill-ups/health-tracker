@@ -26,9 +26,9 @@ export function parseBody<T>(schema: z.ZodType<T>, data: unknown): ParseResult<T
 // ── Shared primitives ──────────────────────────────────────────────────────────
 
 const name255 = z.string().min(1, "Required").max(255);
-const optStr255 = z.string().max(255).optional();
-const optStr500 = z.string().max(500).optional();
-const optPhone = z.string().max(30).optional();
+const optStr255 = z.string().max(255).nullish();
+const optStr500 = z.string().max(500).nullish();
+const optPhone = z.string().max(30).nullish();
 const optDate = z.coerce.date().optional();
 const id = z.string().min(1);
 
@@ -69,10 +69,13 @@ export const OnboardingSchema = z.object({
 
 // ── Vaccination ────────────────────────────────────────────────────────────────
 
+export const VaccinationSourceEnum = z.enum(["ADMINISTERED", "NATURAL", "DECLINED"]);
+
 export const CreateVaccinationSchema = z.object({
   profileId: id,
   name: name255,
-  date: z.coerce.date(),
+  date: z.coerce.date().optional(),
+  source: VaccinationSourceEnum.optional(),
   facilityId: z.string().min(1).optional(),
   lotNumber: optStr255,
   notes: z.string().max(1000).optional(),
@@ -81,6 +84,7 @@ export const CreateVaccinationSchema = z.object({
 export const UpdateVaccinationSchema = z.object({
   name: name255.optional(),
   date: z.coerce.date().optional(),
+  source: VaccinationSourceEnum.optional(),
   facilityId: z.string().min(1).nullable().optional(),
   lotNumber: z.string().max(255).nullable().optional(),
   notes: z.string().max(1000).nullable().optional(),
@@ -260,3 +264,71 @@ export const CreateHealthMetricSchema = z.object({
 });
 
 export const UpdateHealthMetricSchema = CreateHealthMetricSchema.omit({ profileId: true }).partial();
+
+// ── Family Member ────────────────────────────────────────────────────────────
+
+export const FamilyRelationshipEnum = z.enum([
+  "PARENT", "SIBLING", "GRANDFATHER", "GRANDMOTHER", "AUNT", "UNCLE", "SON", "DAUGHTER",
+]);
+
+export const FamilySideEnum = z.enum(["MATERNAL", "PATERNAL"]);
+
+export const CreateFamilyMemberSchema = z.object({
+  profileId: id,
+  name: name255,
+  relationship: FamilyRelationshipEnum,
+  side: FamilySideEnum.optional(),
+  notes: z.string().max(5000).optional(),
+});
+
+export const UpdateFamilyMemberSchema = CreateFamilyMemberSchema.omit({ profileId: true }).partial();
+
+export const CreateFamilyConditionSchema = z.object({
+  profileId: id,
+  name: name255,
+  notes: z.string().max(5000).optional(),
+});
+
+export const UpdateFamilyConditionSchema = CreateFamilyConditionSchema.omit({ profileId: true }).partial();
+
+// ── Profile Relationship ─────────────────────────────────────────────────────
+
+export const ProfileRelationshipTypeEnum = z.enum([
+  // Legacy (backward compat)
+  "PARENT", "CHILD", "SIBLING", "HALF_SIBLING",
+  "GRANDPARENT", "GRANDCHILD", "AUNT_UNCLE", "NIECE_NEPHEW",
+  "STEP_PARENT", "STEP_CHILD", "IN_LAW",
+  // Current
+  "SPOUSE",
+  "MOTHER", "FATHER",
+  "DAUGHTER", "SON",
+  "SISTER", "BROTHER", "HALF_SISTER", "HALF_BROTHER",
+  "MATERNAL_GRANDMOTHER", "MATERNAL_GRANDFATHER", "PATERNAL_GRANDMOTHER", "PATERNAL_GRANDFATHER",
+  "GRANDDAUGHTER", "GRANDSON",
+  "MATERNAL_AUNT", "MATERNAL_UNCLE", "PATERNAL_AUNT", "PATERNAL_UNCLE",
+  "NIECE", "NEPHEW",
+  "COUSIN",
+  "STEP_MOTHER", "STEP_FATHER", "STEP_DAUGHTER", "STEP_SON", "STEP_SISTER", "STEP_BROTHER",
+  "MOTHER_IN_LAW", "FATHER_IN_LAW", "DAUGHTER_IN_LAW", "SON_IN_LAW", "SISTER_IN_LAW", "BROTHER_IN_LAW",
+  "OTHER",
+]);
+
+export const CreateProfileRelationshipSchema = z.object({
+  profileId: id,
+  linkedProfileId: id,
+  relationship: ProfileRelationshipTypeEnum,
+  biological: z.boolean().optional(),
+});
+
+export const UpdateProfileRelationshipSchema = z.object({
+  profileId: id,
+  relationship: ProfileRelationshipTypeEnum.optional(),
+  biological: z.boolean().optional(),
+});
+
+// ── Travel ──────────────────────────────────────────────────────────────────────
+
+export const TravelCheckSchema = z.object({
+  profileId: id,
+  destination: z.string().min(1).max(200),
+});

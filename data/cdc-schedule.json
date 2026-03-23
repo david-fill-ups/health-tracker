@@ -5,6 +5,7 @@
     {
       "vaccine": "Influenza",
       "aliases": ["Flu", "Flu Shot"],
+      "description": "Protects against seasonal influenza (flu), a contagious respiratory illness caused by influenza viruses. Strains change each year, which is why annual vaccination is recommended. Complications can include pneumonia and hospitalization, especially in young children, older adults, and people with chronic conditions.",
       "ageGroups": [
         {
           "label": "6 months and older",
@@ -20,6 +21,7 @@
     {
       "vaccine": "COVID-19",
       "aliases": ["COVID", "Coronavirus"],
+      "description": "Protects against COVID-19, a respiratory disease caused by the SARS-CoV-2 virus. Updated vaccines are formulated annually to match currently circulating strains and help reduce the risk of severe illness, hospitalization, and death.",
       "ageGroups": [
         {
           "label": "6 months and older",
@@ -35,6 +37,7 @@
     {
       "vaccine": "Tdap",
       "aliases": ["Td", "Tetanus", "Tetanus/Diphtheria/Pertussis"],
+      "description": "Protects against tetanus (lockjaw), diphtheria, and pertussis (whooping cough). Tetanus is caused by bacteria in soil and can cause painful muscle stiffness. Diphtheria and pertussis spread person-to-person and can cause serious respiratory illness. The adult booster (Td) maintains protection every 10 years.",
       "ageGroups": [
         {
           "label": "Children 11-12 years",
@@ -59,6 +62,7 @@
     {
       "vaccine": "MMR",
       "aliases": ["Measles", "Mumps", "Rubella", "Measles/Mumps/Rubella"],
+      "description": "Protects against measles, mumps, and rubella — three highly contagious viral diseases. Measles can cause serious complications including pneumonia and encephalitis. Mumps can lead to deafness or meningitis. Rubella during pregnancy can cause severe birth defects (congenital rubella syndrome).",
       "ageGroups": [
         {
           "label": "Children 12-15 months",
@@ -92,6 +96,7 @@
     {
       "vaccine": "Varicella",
       "aliases": ["Chickenpox", "Varivax"],
+      "description": "Protects against chickenpox, a highly contagious disease caused by the varicella-zoster virus, characterized by an itchy blister-like rash. Adults who get chickenpox are at higher risk for severe complications. The virus remains dormant in nerve tissue and can reactivate later in life as shingles.",
       "ageGroups": [
         {
           "label": "Children 12-15 months",
@@ -116,6 +121,7 @@
     {
       "vaccine": "HPV",
       "aliases": ["Human Papillomavirus", "Gardasil"],
+      "description": "Protects against human papillomavirus (HPV) infections that can cause cervical, oropharyngeal, anal, vaginal, vulvar, and penile cancers, as well as genital warts. HPV is the most common sexually transmitted infection; most people will be exposed at some point in their lives.",
       "ageGroups": [
         {
           "label": "11-12 years (routine)",
@@ -140,6 +146,7 @@
     {
       "vaccine": "Hepatitis B",
       "aliases": ["Hep B", "HBV"],
+      "description": "Protects against hepatitis B, a serious infection of the liver caused by the hepatitis B virus (HBV). Transmitted through blood, sexual contact, or from mother to child at birth. Chronic infection can lead to liver cirrhosis, liver failure, and liver cancer. About 2 billion people worldwide have been infected.",
       "ageGroups": [
         {
           "label": "Infants",
@@ -164,6 +171,7 @@
     {
       "vaccine": "Hepatitis A",
       "aliases": ["Hep A", "HAV"],
+      "description": "Protects against hepatitis A, a highly contagious liver infection caused by the hepatitis A virus (HAV). Typically spread through contaminated food or water, or close contact with an infected person. Unlike hepatitis B and C, hepatitis A does not cause chronic liver disease but can cause prolonged or relapsing illness lasting months.",
       "ageGroups": [
         {
           "label": "Children 12-23 months",
@@ -188,6 +196,7 @@
     {
       "vaccine": "Pneumococcal (PCV15/PCV20)",
       "aliases": ["Pneumonia", "Prevnar", "PCV", "PPSV23"],
+      "description": "Protects against pneumococcal disease caused by Streptococcus pneumoniae bacteria, which can lead to pneumonia, bacterial meningitis, and bloodstream infections (bacteremia). Older adults and immunocompromised individuals are at highest risk for severe disease.",
       "ageGroups": [
         {
           "label": "Adults 65+",
@@ -203,6 +212,7 @@
     {
       "vaccine": "Shingrix",
       "aliases": ["Shingles", "Zoster", "RZV"],
+      "description": "Protects against shingles (herpes zoster), a painful rash caused by reactivation of the varicella-zoster virus — the same virus that causes chickenpox. After chickenpox, the virus lies dormant in nerve tissue and can reactivate decades later. Shingles can cause severe nerve pain (postherpetic neuralgia) lasting months or years.",
       "ageGroups": [
         {
           "label": "Adults 50+",
@@ -218,6 +228,7 @@
     {
       "vaccine": "RSV",
       "aliases": ["Respiratory Syncytial Virus", "Abrysvo", "Arexvy"],
+      "description": "Protects against respiratory syncytial virus (RSV), a common respiratory virus that typically causes mild cold-like symptoms. However, in adults 60 and older, RSV can cause serious lower respiratory tract disease including pneumonia and bronchiolitis, leading to hospitalization.",
       "ageGroups": [
         {
           "label": "Adults 60+",
@@ -233,6 +244,7 @@
     {
       "vaccine": "Meningococcal ACWY",
       "aliases": ["Meningitis", "MenACWY", "MCV4"],
+      "description": "Protects against meningococcal disease caused by Neisseria meningitidis serogroups A, C, W, and Y. These bacteria can cause bacterial meningitis (infection of the brain and spinal cord lining) and septicemia (bloodstream infection). Disease can progress rapidly and be fatal within 24 hours.",
       "ageGroups": [
         {
           "label": "Adolescents 11-12 years",
@@ -248,6 +260,7 @@
     {
       "vaccine": "DTaP",
       "aliases": ["Diphtheria", "Pertussis", "Whooping Cough"],
+      "description": "Protects children against diphtheria, tetanus, and pertussis (whooping cough). DTaP is the pediatric formulation given in a 5-dose series. Pertussis can be especially dangerous for infants before the vaccine series is complete. The adult equivalent is Tdap, which maintains protection.",
       "ageGroups": [
         {
           "label": "Infants and children (primary series)",
@@ -263,6 +276,7 @@
     {
       "vaccine": "Hib",
       "aliases": ["Haemophilus influenzae type b"],
+      "description": "Protects against Haemophilus influenzae type b (Hib), a bacteria that was once the leading cause of bacterial meningitis in children under 5. Before the vaccine, Hib disease caused thousands of deaths and permanent disabilities each year. Vaccination has reduced Hib disease by more than 99% in the US.",
       "ageGroups": [
         {
           "label": "Infants",
@@ -278,6 +292,7 @@
     {
       "vaccine": "Polio (IPV)",
       "aliases": ["Inactivated Poliovirus", "Polio"],
+      "description": "Protects against poliomyelitis, a crippling and potentially fatal infectious disease caused by poliovirus. Polio can cause irreversible paralysis, usually in the legs. While wild poliovirus has been eradicated from most of the world, vaccination remains important to prevent reintroduction. The inactivated poliovirus vaccine (IPV) is used in the United States.",
       "ageGroups": [
         {
           "label": "Children",

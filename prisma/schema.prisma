@@ -74,6 +74,93 @@ enum Sex {
   PREFER_NOT_TO_SAY
 }
 
+enum FamilySide {
+  MATERNAL
+  PATERNAL
+}
+
+enum FamilyRelationship {
+  PARENT
+  SIBLING
+  GRANDFATHER
+  GRANDMOTHER
+  AUNT
+  UNCLE
+  SON
+  DAUGHTER
+}
+
+enum ProfileRelationshipType {
+  // Kept for backward compatibility with any existing records
+  PARENT
+  CHILD
+  SIBLING
+  HALF_SIBLING
+  GRANDPARENT
+  GRANDCHILD
+  AUNT_UNCLE
+  NIECE_NEPHEW
+  STEP_PARENT
+  STEP_CHILD
+  IN_LAW
+
+  SPOUSE
+
+  // Parents
+  MOTHER
+  FATHER
+
+  // Children
+  DAUGHTER
+  SON
+
+  // Siblings
+  SISTER
+  BROTHER
+  HALF_SISTER
+  HALF_BROTHER
+
+  // Grandparents
+  MATERNAL_GRANDMOTHER
+  MATERNAL_GRANDFATHER
+  PATERNAL_GRANDMOTHER
+  PATERNAL_GRANDFATHER
+
+  // Grandchildren
+  GRANDDAUGHTER
+  GRANDSON
+
+  // Aunts & Uncles
+  MATERNAL_AUNT
+  MATERNAL_UNCLE
+  PATERNAL_AUNT
+  PATERNAL_UNCLE
+
+  // Nieces & Nephews
+  NIECE
+  NEPHEW
+
+  COUSIN
+
+  // Step family
+  STEP_MOTHER
+  STEP_FATHER
+  STEP_DAUGHTER
+  STEP_SON
+  STEP_SISTER
+  STEP_BROTHER
+
+  // In-laws
+  MOTHER_IN_LAW
+  FATHER_IN_LAW
+  DAUGHTER_IN_LAW
+  SON_IN_LAW
+  SISTER_IN_LAW
+  BROTHER_IN_LAW
+
+  OTHER
+}
+
 enum ProfilePermission {
   OWNER
   WRITE
@@ -102,9 +189,12 @@ model Profile {
   medications   Medication[]
   facilities    Facility[]
   doctors       Doctor[]
-  allergies     Allergy[]
-  portals       Portal[]
-  healthMetrics HealthMetric[]
+  allergies              Allergy[]
+  portals                Portal[]
+  healthMetrics          HealthMetric[]
+  familyMembers          FamilyMember[]
+  outgoingRelationships  ProfileRelationship[] @relation("RelationshipsFrom")
+  incomingRelationships  ProfileRelationship[] @relation("RelationshipsTo")
 }
 
 model ProfileAccess {
@@ -141,7 +231,7 @@ model Facility {
   id         String   @id @default(cuid())
   profileId  String
   name       String
-  type       String   @default("CLINIC")
+  type       String   @default("Clinic")
   rating     Float?
   websiteUrl String?
   portalUrl  String?
@@ -317,16 +407,23 @@ model Condition {
 
 // ─── Vaccinations ─────────────────────────────────────────────────────────────
 
+enum VaccinationSource {
+  ADMINISTERED
+  NATURAL
+  DECLINED
+}
+
 model Vaccination {
-  id         String    @id @default(cuid())
+  id         String            @id @default(cuid())
   profileId  String
   name       String
   date       DateTime
+  source     VaccinationSource @default(ADMINISTERED)
   facilityId String?
   lotNumber  String?
   notes      String?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
 
   profile  Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
   facility Facility? @relation(fields: [facilityId], references: [id])
@@ -404,6 +501,52 @@ model HealthMetric {
   @@index([profileId])
   @@index([profileId, metricType])
   @@index([profileId, measuredAt])
+}
+
+// ─── Family Medical History ───────────────────────────────────────────────────
+
+model FamilyMember {
+  id           String             @id @default(cuid())
+  profileId    String
+  name         String
+  relationship FamilyRelationship
+  side         FamilySide?
+  notes        String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  profile    Profile             @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  conditions FamilyCondition[]
+
+  @@index([profileId])
+}
+
+model FamilyCondition {
+  id             String   @id @default(cuid())
+  familyMemberId String
+  name           String
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  familyMember FamilyMember @relation(fields: [familyMemberId], references: [id], onDelete: Cascade)
+
+  @@index([familyMemberId])
+}
+
+model ProfileRelationship {
+  id            String                  @id @default(cuid())
+  fromProfileId String
+  toProfileId   String
+  relationship  ProfileRelationshipType
+  biological    Boolean                 @default(true)
+  createdAt     DateTime                @default(now())
+
+  fromProfile Profile @relation("RelationshipsFrom", fields: [fromProfileId], references: [id], onDelete: Cascade)
+  toProfile   Profile @relation("RelationshipsTo",   fields: [toProfileId],   references: [id], onDelete: Cascade)
+
+  @@unique([fromProfileId, toProfileId])
+  @@index([fromProfileId])
 }
 
 // ─── Audit Log ────────────────────────────────────────────────────────────────

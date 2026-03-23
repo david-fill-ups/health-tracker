@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import type { VisitStatus, VisitType } from "@/generated/prisma/enums";
 
@@ -51,8 +52,7 @@ function formatDate(iso: string) {
     year: "numeric",
     month: "long",
     day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+    timeZone: "UTC",
   });
 }
 
@@ -156,7 +156,12 @@ export default function VisitDetailPage() {
             <div>
               <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400">Doctor</dt>
               <dd className="mt-0.5 text-sm text-gray-700">
-                {visit.doctor.name}
+                <Link
+                  href={`/healthcare-team/provider/${visit.doctor.id}`}
+                  className="text-indigo-600 hover:text-indigo-800 hover:underline"
+                >
+                  {visit.doctor.name}
+                </Link>
                 {visit.doctor.specialty && (
                   <span className="text-gray-400"> — {visit.doctor.specialty}</span>
                 )}
@@ -166,7 +171,14 @@ export default function VisitDetailPage() {
           {visit.facility && (
             <div>
               <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400">Facility</dt>
-              <dd className="mt-0.5 text-sm text-gray-700">{visit.facility.name}</dd>
+              <dd className="mt-0.5 text-sm text-gray-700">
+                <Link
+                  href={`/healthcare-team/facility/${visit.facility.id}`}
+                  className="text-indigo-600 hover:text-indigo-800 hover:underline"
+                >
+                  {visit.facility.name}
+                </Link>
+              </dd>
             </div>
           )}
           {visit.location && (

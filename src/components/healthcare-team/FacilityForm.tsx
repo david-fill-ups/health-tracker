@@ -59,9 +59,9 @@ export function FacilityForm({ profileId, initial, onSuccess, onCancel }: Props)
       name: form.name,
       type: form.type,
       rating: ratingVal != null && !isNaN(ratingVal) ? ratingVal : undefined,
-      websiteUrl: form.websiteUrl || undefined,
-      portalUrl: form.portalUrl || undefined,
-      phone: form.phone || undefined,
+      websiteUrl: form.websiteUrl || null,
+      portalUrl: form.portalUrl || null,
+      phone: form.phone || null,
       active: form.active,
     };
 

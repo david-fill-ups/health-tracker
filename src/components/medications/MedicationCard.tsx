@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 interface MedicationLog {
   id: string;
@@ -28,7 +27,6 @@ interface Medication {
 interface MedicationCardProps {
   medication: Medication;
   profileId: string;
-  onDeactivate: (id: string) => void;
 }
 
 function fmt(dateStr: string | null) {
@@ -36,20 +34,8 @@ function fmt(dateStr: string | null) {
   return new Date(dateStr).toLocaleDateString();
 }
 
-export function MedicationCard({ medication, profileId, onDeactivate }: MedicationCardProps) {
+export function MedicationCard({ medication }: MedicationCardProps) {
   const log = medication.recentLog;
-  const router = useRouter();
-
-  async function handleDeactivate() {
-    if (!confirm("Deactivate this medication?")) return;
-    await fetch(`/api/medications/${medication.id}?profileId=${profileId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ active: false }),
-    });
-    onDeactivate(medication.id);
-    router.refresh();
-  }
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
@@ -104,24 +90,14 @@ export function MedicationCard({ medication, profileId, onDeactivate }: Medicati
           )}
         </div>
 
-        <div className="flex flex-col gap-2 shrink-0">
-          {medication.active && (
-            <a
-              href={`/medications/${medication.id}/log`}
-              className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 text-center whitespace-nowrap"
-            >
-              Log dose
-            </a>
-          )}
-          {medication.active && (
-            <button
-              onClick={handleDeactivate}
-              className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
-            >
-              Deactivate
-            </button>
-          )}
-        </div>
+        {medication.active && (
+          <a
+            href={`/medications/${medication.id}/log`}
+            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 text-center whitespace-nowrap shrink-0"
+          >
+            Log dose
+          </a>
+        )}
       </div>
     </div>
   );

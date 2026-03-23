@@ -38,7 +38,12 @@ export function ProfileCard({
     >
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h3 className="text-base font-semibold text-gray-900">{profile.name}</h3>
+          <Link
+            href={`/profiles/${profile.id}`}
+            className="text-base font-semibold text-gray-900 hover:text-indigo-600 transition-colors"
+          >
+            {profile.name}
+          </Link>
           <p className="mt-0.5 text-sm text-gray-500">
             Born {new Date(profile.birthDate).toLocaleDateString()} &middot;{" "}
             {profile.sex.replace(/_/g, " ").toLowerCase()}{" "}
@@ -63,6 +68,12 @@ export function ProfileCard({
       )}
 
       <div className="mt-4 flex items-center gap-2">
+        <Link
+          href={`/profiles/${profile.id}`}
+          className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          Manage
+        </Link>
         {calUrl && (
           <Link
             href={`/profiles/${profile.id}/edit`}

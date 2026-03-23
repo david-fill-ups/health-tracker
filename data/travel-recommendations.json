@@ -1,0 +1,442 @@
+{
+  "lastUpdated": "2026-03-22",
+  "source": "CDC Travelers' Health (wwwnc.cdc.gov/travel)",
+  "disclaimer": "For reference only. Consult your doctor or a travel health clinic before travel.",
+  "destinations": {
+    "France": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "United Kingdom": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Germany": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Italy": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Spain": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Portugal": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Netherlands": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Belgium": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Switzerland": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Austria": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Ireland": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Greece": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Sweden": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Norway": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Denmark": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Finland": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Iceland": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Czech Republic": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": ["Tick-borne encephalitis vaccine recommended for forested/rural areas"]
+    },
+    "Poland": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": ["Tick-borne encephalitis vaccine recommended for forested/rural areas"]
+    },
+    "Hungary": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Romania": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid"],
+      "notes": ["Tick-borne encephalitis vaccine recommended for forested areas"]
+    },
+    "Croatia": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Russia": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid"],
+      "notes": ["Tick-borne encephalitis vaccine recommended for Siberia and rural forested areas"]
+    },
+    "Turkey": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid"],
+      "notes": []
+    },
+    "Israel": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Jordan": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid"],
+      "notes": []
+    },
+    "Egypt": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid"],
+      "notes": ["Malaria prophylaxis recommended for El Faiyum Governorate only (very limited risk)"]
+    },
+    "Morocco": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid"],
+      "notes": []
+    },
+    "Tunisia": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid"],
+      "notes": []
+    },
+    "Algeria": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid"],
+      "notes": ["Malaria prophylaxis recommended for remote desert areas (very low risk overall)"]
+    },
+    "United Arab Emirates": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Saudi Arabia": {
+      "required": ["Meningococcal"],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid"],
+      "notes": ["Meningococcal (quadrivalent) vaccine is required for all Hajj and Umrah pilgrims; required within 10 years before arrival"]
+    },
+    "Qatar": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Kuwait": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Japan": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": ["Japanese Encephalitis vaccine recommended for rural stays longer than 1 month or extensive outdoor activity during transmission season (May–October)"]
+    },
+    "South Korea": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": ["Japanese Encephalitis vaccine recommended for rural areas during transmission season"]
+    },
+    "China": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid"],
+      "notes": ["Japanese Encephalitis vaccine recommended for rural areas and trips longer than 4 weeks"]
+    },
+    "Taiwan": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Hong Kong": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Singapore": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Thailand": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid", "Japanese Encephalitis", "Rabies"],
+      "notes": ["Malaria prophylaxis recommended for rural/jungle areas and border regions with Myanmar and Cambodia (not needed in Bangkok, Chiang Mai city, or major tourist resorts)"]
+    },
+    "Vietnam": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid", "Japanese Encephalitis", "Rabies"],
+      "notes": ["Malaria prophylaxis recommended for rural areas, particularly in the Central Highlands and southern provinces (not needed in Hanoi or Ho Chi Minh City)"]
+    },
+    "Indonesia": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid", "Japanese Encephalitis", "Rabies"],
+      "notes": ["Malaria prophylaxis recommended for most areas outside Bali, Java, and major cities; Bali has minimal risk but Rabies is present — seek care immediately for any animal bite"]
+    },
+    "Malaysia": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid", "Japanese Encephalitis", "Rabies"],
+      "notes": ["Malaria prophylaxis recommended for jungle/rural areas in Borneo (Sabah and Sarawak); not needed in Kuala Lumpur or Penang"]
+    },
+    "Philippines": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid", "Japanese Encephalitis", "Rabies"],
+      "notes": ["Malaria prophylaxis recommended for rural areas on Palawan, Mindanao, and other islands (not needed in Manila or Cebu City)"]
+    },
+    "Cambodia": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid", "Japanese Encephalitis", "Rabies"],
+      "notes": ["Malaria prophylaxis recommended for rural areas and border regions (not needed in Phnom Penh or Siem Reap city center)"]
+    },
+    "Laos": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid", "Japanese Encephalitis", "Rabies"],
+      "notes": ["Malaria prophylaxis recommended outside major cities and in rural/forested areas"]
+    },
+    "Myanmar": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid", "Japanese Encephalitis", "Rabies"],
+      "notes": ["Malaria prophylaxis recommended for rural areas and border regions; not needed in Yangon or Mandalay"]
+    },
+    "India": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid", "Japanese Encephalitis", "Rabies"],
+      "notes": ["Malaria prophylaxis recommended for most rural areas; consult your doctor based on specific itinerary", "Japanese Encephalitis risk primarily in southern states and during monsoon season"]
+    },
+    "Nepal": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid", "Japanese Encephalitis", "Rabies"],
+      "notes": ["Malaria prophylaxis recommended for the Terai lowlands (not needed above 2000m or in Kathmandu)", "Altitude sickness prevention (acetazolamide) recommended for high-altitude trekking above 3000m"]
+    },
+    "Sri Lanka": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid", "Japanese Encephalitis", "Rabies"],
+      "notes": ["Malaria risk is very low in most tourist areas; prophylaxis may be recommended for the North and East provinces"]
+    },
+    "Pakistan": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid", "Rabies"],
+      "notes": ["Malaria prophylaxis recommended for most areas below 2500m", "Polio booster (IPV) recommended — Pakistan remains a polio-endemic country"]
+    },
+    "Bangladesh": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid", "Japanese Encephalitis", "Rabies"],
+      "notes": ["Malaria prophylaxis recommended for the Chittagong Hill Tracts"]
+    },
+    "Kenya": {
+      "required": [],
+      "recommended": ["Yellow Fever", "Typhoid", "Hepatitis A", "Hepatitis B", "Rabies", "Meningococcal"],
+      "notes": ["Malaria prophylaxis strongly recommended for all areas below 2500m", "Yellow Fever proof of vaccination required if arriving from a Yellow Fever-endemic country; recommended for most travelers visiting areas outside Nairobi city center"]
+    },
+    "Tanzania": {
+      "required": [],
+      "recommended": ["Yellow Fever", "Typhoid", "Hepatitis A", "Hepatitis B", "Rabies", "Meningococcal"],
+      "notes": ["Malaria prophylaxis strongly recommended for all mainland areas; Zanzibar also has malaria risk", "Yellow Fever proof required if arriving from endemic country; recommended for most travelers"]
+    },
+    "Uganda": {
+      "required": ["Yellow Fever"],
+      "recommended": ["Typhoid", "Hepatitis A", "Hepatitis B", "Rabies", "Meningococcal", "Mpox"],
+      "notes": ["Malaria prophylaxis required for all areas", "Mpox (JYNNEOS) vaccine recommended due to ongoing regional outbreak — consult your travel health provider"]
+    },
+    "Rwanda": {
+      "required": ["Yellow Fever"],
+      "recommended": ["Typhoid", "Hepatitis A", "Hepatitis B", "Rabies", "Mpox"],
+      "notes": ["Malaria prophylaxis required", "Mpox (JYNNEOS) vaccine recommended given proximity to ongoing outbreak in the DRC region"]
+    },
+    "Democratic Republic of Congo": {
+      "required": ["Yellow Fever"],
+      "recommended": ["Typhoid", "Hepatitis A", "Hepatitis B", "Rabies", "Meningococcal", "Mpox"],
+      "notes": ["Malaria prophylaxis required for all travelers", "Mpox (JYNNEOS) vaccine strongly recommended — active outbreak with Clade Ib strain as of 2025–2026", "Travel to affected areas requires careful risk assessment; consult a travel health clinic"]
+    },
+    "Burundi": {
+      "required": ["Yellow Fever"],
+      "recommended": ["Typhoid", "Hepatitis A", "Hepatitis B", "Rabies", "Mpox"],
+      "notes": ["Malaria prophylaxis required", "Mpox (JYNNEOS) vaccine recommended due to ongoing regional outbreak"]
+    },
+    "Ethiopia": {
+      "required": [],
+      "recommended": ["Yellow Fever", "Typhoid", "Hepatitis A", "Hepatitis B", "Rabies", "Meningococcal"],
+      "notes": ["Malaria prophylaxis recommended for areas below 2500m (not needed in Addis Ababa)", "Yellow Fever required if arriving from endemic country; recommended for travelers to some regions"]
+    },
+    "Nigeria": {
+      "required": ["Yellow Fever"],
+      "recommended": ["Typhoid", "Hepatitis A", "Hepatitis B", "Meningococcal", "Rabies"],
+      "notes": ["Malaria prophylaxis required for all travelers", "Meningococcal vaccine particularly important for travel during dry season to northern regions (meningitis belt)"]
+    },
+    "Ghana": {
+      "required": ["Yellow Fever"],
+      "recommended": ["Typhoid", "Hepatitis A", "Hepatitis B", "Meningococcal", "Rabies"],
+      "notes": ["Malaria prophylaxis required for all travelers"]
+    },
+    "Senegal": {
+      "required": ["Yellow Fever"],
+      "recommended": ["Typhoid", "Hepatitis A", "Hepatitis B", "Meningococcal", "Rabies"],
+      "notes": ["Malaria prophylaxis required for all travelers"]
+    },
+    "Ivory Coast": {
+      "required": ["Yellow Fever"],
+      "recommended": ["Typhoid", "Hepatitis A", "Hepatitis B", "Meningococcal", "Rabies"],
+      "notes": ["Malaria prophylaxis required for all travelers"]
+    },
+    "Cameroon": {
+      "required": ["Yellow Fever"],
+      "recommended": ["Typhoid", "Hepatitis A", "Hepatitis B", "Meningococcal", "Rabies", "Mpox"],
+      "notes": ["Malaria prophylaxis required for all travelers", "Mpox vaccine recommended given proximity to DRC outbreak region"]
+    },
+    "South Africa": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid"],
+      "notes": ["Malaria prophylaxis recommended for Limpopo, Mpumalanga (including Kruger National Park), and KwaZulu-Natal coast below 1000m", "Yellow Fever proof required if arriving from endemic country"]
+    },
+    "Zimbabwe": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid", "Rabies"],
+      "notes": ["Malaria prophylaxis recommended for northern and eastern lowveld areas, including Zambezi Valley and Victoria Falls region"]
+    },
+    "Zambia": {
+      "required": [],
+      "recommended": ["Yellow Fever", "Hepatitis A", "Hepatitis B", "Typhoid", "Rabies"],
+      "notes": ["Malaria prophylaxis required for all travelers", "Yellow Fever recommended for most areas; proof required if arriving from endemic country"]
+    },
+    "Mozambique": {
+      "required": [],
+      "recommended": ["Yellow Fever", "Hepatitis A", "Hepatitis B", "Typhoid", "Rabies"],
+      "notes": ["Malaria prophylaxis required for all travelers", "Yellow Fever proof required if arriving from endemic country"]
+    },
+    "Mexico": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid"],
+      "notes": ["Malaria prophylaxis recommended for rural areas of Chiapas, Oaxaca, Sinaloa, Nayarit, and Tabasco (not needed in major tourist destinations like Cancun, Los Cabos, or Mexico City)"]
+    },
+    "Brazil": {
+      "required": [],
+      "recommended": ["Yellow Fever", "Hepatitis A", "Hepatitis B", "Typhoid", "Rabies"],
+      "notes": ["Malaria prophylaxis required for Amazon region (Acre, Amapá, Amazonas, Maranhão, Mato Grosso, Pará, Rondônia, Roraima, Tocantins)", "Yellow Fever recommended for most areas; proof of vaccination required for entry to several Brazilian states and may be required at borders"]
+    },
+    "Peru": {
+      "required": [],
+      "recommended": ["Yellow Fever", "Hepatitis A", "Hepatitis B", "Typhoid", "Rabies"],
+      "notes": ["Malaria prophylaxis recommended for Amazon/jungle regions below 2000m (not needed in Lima or Cusco/Machu Picchu area above 2000m)", "Yellow Fever required for entry to jungle areas; proof may be required at internal checkpoints"]
+    },
+    "Colombia": {
+      "required": [],
+      "recommended": ["Yellow Fever", "Hepatitis A", "Hepatitis B", "Typhoid", "Rabies"],
+      "notes": ["Malaria prophylaxis recommended for rural lowland areas including Pacific coast and Amazon region (not needed in Bogotá or major cities at altitude)", "Yellow Fever required for entry to Amazon/jungle areas"]
+    },
+    "Ecuador": {
+      "required": [],
+      "recommended": ["Yellow Fever", "Hepatitis A", "Hepatitis B", "Typhoid", "Rabies"],
+      "notes": ["Malaria prophylaxis recommended for rural lowland areas below 1500m (not needed in Quito or the Galápagos)", "Yellow Fever required for Amazon jungle areas; Galápagos visitors do NOT need Yellow Fever vaccine"]
+    },
+    "Bolivia": {
+      "required": [],
+      "recommended": ["Yellow Fever", "Hepatitis A", "Hepatitis B", "Typhoid", "Rabies"],
+      "notes": ["Malaria prophylaxis recommended for Amazon lowland areas below 2500m (not needed in La Paz at altitude)", "Yellow Fever required for entry to lowland jungle departments; not needed for the Altiplano (La Paz, Potosí, Oruro)"]
+    },
+    "Argentina": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid"],
+      "notes": ["Yellow Fever recommended for travelers to Iguazú Falls and northeastern jungle areas (Misiones, Formosa, Chaco, Corrientes provinces)", "No malaria risk in most tourist areas"]
+    },
+    "Chile": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": ["Very low risk destination; no malaria, no Yellow Fever risk"]
+    },
+    "Costa Rica": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid"],
+      "notes": ["Malaria prophylaxis recommended for rural areas on the Caribbean coast and Osa Peninsula (not needed in San José or Pacific tourist destinations like Manuel Antonio)"]
+    },
+    "Panama": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid"],
+      "notes": ["Malaria prophylaxis recommended for Darién region and indigenous Guna Yala (San Blas) islands; not needed in Panama City or other major tourist areas"]
+    },
+    "Cuba": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid"],
+      "notes": []
+    },
+    "Dominican Republic": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid"],
+      "notes": ["Malaria prophylaxis recommended for rural areas, particularly western provinces bordering Haiti (not needed in resort areas like Punta Cana or Santo Domingo city)"]
+    },
+    "Jamaica": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Bahamas": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Canada": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Australia": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "New Zealand": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B"],
+      "notes": []
+    },
+    "Papua New Guinea": {
+      "required": [],
+      "recommended": ["Hepatitis A", "Hepatitis B", "Typhoid", "Japanese Encephalitis", "Rabies"],
+      "notes": ["Malaria prophylaxis required for all travelers"]
+    }
+  }
+}

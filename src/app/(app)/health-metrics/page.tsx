@@ -54,9 +54,10 @@ export default function HealthMetricsPage() {
   const [metrics, setMetrics] = useState<HealthMetric[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeType, setActiveType] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState<string | null>(null);
   const [view, setView] = useState<"table" | "chart">("table");
   const [toast, setToast] = useState<string | null>(null);
+  const [chartDateFrom, setChartDateFrom] = useState("");
+  const [chartDateTo, setChartDateTo] = useState("");
 
   useEffect(() => {
     if (!activeProfileId) return;
@@ -71,23 +72,6 @@ export default function HealthMetricsPage() {
       .finally(() => setLoading(false));
   }, [activeProfileId, activeType]);
 
-  async function handleDelete(id: string) {
-    if (!activeProfileId || !confirm("Delete this metric entry?")) return;
-    setDeleting(id);
-    const snapshot = metrics.find((m) => m.id === id);
-    setMetrics((prev) => prev.filter((m) => m.id !== id));
-    try {
-      const res = await fetch(`/api/health-metrics/${id}?profileId=${activeProfileId}`, { method: "DELETE" });
-      if (!res.ok) throw new Error();
-      setToast("Metric deleted");
-    } catch {
-      if (snapshot) setMetrics((prev) => [...prev, snapshot]);
-      setToast("Failed to delete metric");
-    } finally {
-      setDeleting(null);
-    }
-  }
-
   // Collect unique metricTypes present in data for dynamic filter pills
   const filterTypes = useMemo(() => {
     const presentTypes = Array.from(new Set(metrics.map((m) => m.metricType)));
@@ -99,10 +83,21 @@ export default function HealthMetricsPage() {
     );
   }, [metrics]);
 
+  // Filter metrics by date range for chart view
+  const filteredForChart = useMemo(() => {
+    if (!chartDateFrom && !chartDateTo) return metrics;
+    return metrics.filter((m) => {
+      const d = m.measuredAt.slice(0, 10);
+      if (chartDateFrom && d < chartDateFrom) return false;
+      if (chartDateTo && d > chartDateTo) return false;
+      return true;
+    });
+  }, [metrics, chartDateFrom, chartDateTo]);
+
   // Group metrics by type for chart view
   const metricsByType = useMemo(() => {
     const map = new Map<string, HealthMetric[]>();
-    for (const m of metrics) {
+    for (const m of filteredForChart) {
       if (!map.has(m.metricType)) map.set(m.metricType, []);
       map.get(m.metricType)!.push(m);
     }
@@ -110,7 +105,7 @@ export default function HealthMetricsPage() {
       arr.sort((a, b) => new Date(a.measuredAt).getTime() - new Date(b.measuredAt).getTime());
     }
     return map;
-  }, [metrics]);
+  }, [filteredForChart]);
 
   if (!activeProfileId) {
     return <p className="text-sm text-gray-500">Select a profile first.</p>;
@@ -179,6 +174,34 @@ export default function HealthMetricsPage() {
               {type}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Date range picker for chart view */}
+      {view === "chart" && !loading && metrics.length > 0 && (
+        <div className="flex items-center gap-3 text-sm">
+          <span className="text-gray-500 font-medium">Date range:</span>
+          <input
+            type="date"
+            value={chartDateFrom}
+            onChange={(e) => setChartDateFrom(e.target.value)}
+            className="rounded-lg border border-gray-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          />
+          <span className="text-gray-400">–</span>
+          <input
+            type="date"
+            value={chartDateTo}
+            onChange={(e) => setChartDateTo(e.target.value)}
+            className="rounded-lg border border-gray-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          />
+          {(chartDateFrom || chartDateTo) && (
+            <button
+              onClick={() => { setChartDateFrom(""); setChartDateTo(""); }}
+              className="text-xs text-gray-400 hover:text-gray-600"
+            >
+              Clear
+            </button>
+          )}
         </div>
       )}
 
@@ -257,12 +280,15 @@ export default function HealthMetricsPage() {
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Type</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Value</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Notes</th>
-                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {metrics.map((m) => (
-                <tr key={m.id} className="hover:bg-gray-50">
+                <tr
+                  key={m.id}
+                  className="hover:bg-gray-50 cursor-pointer"
+                  onClick={() => router.push(`/health-metrics/${m.id}/edit`)}
+                >
                   <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{formatDateTime(m.measuredAt)}</td>
                   <td className="px-4 py-3">
                     <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
@@ -273,21 +299,6 @@ export default function HealthMetricsPage() {
                     {m.value} <span className="font-normal text-gray-500">{m.unit}</span>
                   </td>
                   <td className="px-4 py-3 text-gray-500 max-w-xs truncate">{m.notes ?? ""}</td>
-                  <td className="px-4 py-3 text-right whitespace-nowrap">
-                    <button
-                      onClick={() => router.push(`/health-metrics/${m.id}/edit`)}
-                      className="mr-3 text-indigo-600 hover:underline text-xs"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(m.id)}
-                      disabled={deleting === m.id}
-                      className="text-red-500 hover:underline text-xs disabled:opacity-50"
-                    >
-                      Delete
-                    </button>
-                  </td>
                 </tr>
               ))}
             </tbody>

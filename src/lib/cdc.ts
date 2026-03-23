@@ -13,6 +13,7 @@ export interface CdcAgeGroup {
 export interface CdcVaccineSchedule {
   vaccine: string;
   aliases: string[];
+  description?: string;
   ageGroups: CdcAgeGroup[];
 }
 
@@ -21,10 +22,11 @@ export interface CdcSchedule {
   schedules: CdcVaccineSchedule[];
 }
 
-export type VaccinationStatus = "up_to_date" | "due" | "overdue" | "not_applicable";
+export type VaccinationStatus = "up_to_date" | "due" | "overdue" | "not_applicable" | "completed" | "exempt";
 
 export interface VaccinationRecommendation {
   vaccine: string;
+  aliases: string[];
   status: VaccinationStatus;
   lastDoseDate: Date | null;
   nextDueDate: Date | null;
@@ -36,6 +38,18 @@ const schedule = cdcData as CdcSchedule;
 
 export function getCdcSchedule(): CdcSchedule {
   return schedule;
+}
+
+export function getCdcLastUpdated(): string {
+  return schedule.lastUpdated;
+}
+
+export function vaccineToSlug(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+export function getVaccineBySlug(slug: string): CdcVaccineSchedule | null {
+  return schedule.schedules.find((v) => vaccineToSlug(v.vaccine) === slug) ?? null;
 }
 
 /**
@@ -54,18 +68,29 @@ export function getVaccinationStatus(
     return meetsMin && meetsMax;
   });
 
+  const sortedDates = [...vaccinationDates].sort((a, b) => b.getTime() - a.getTime());
+  const lastDose = sortedDates[0] ?? null;
+
   if (!ageGroup) {
+    if (lastDose) {
+      return {
+        vaccine: vaccine.vaccine,
+        aliases: vaccine.aliases,
+        status: "completed",
+        lastDoseDate: lastDose,
+        nextDueDate: null,
+        notes: "Completed — no further doses needed",
+      };
+    }
     return {
       vaccine: vaccine.vaccine,
+      aliases: vaccine.aliases,
       status: "not_applicable",
       lastDoseDate: null,
       nextDueDate: null,
       notes: "Not recommended for this age group",
     };
   }
-
-  const sortedDates = [...vaccinationDates].sort((a, b) => b.getTime() - a.getTime());
-  const lastDose = sortedDates[0] ?? null;
   const now = new Date();
 
   if (ageGroup.frequency === "annual" || ageGroup.frequency === "booster") {
@@ -74,6 +99,7 @@ export function getVaccinationStatus(
     if (!lastDose) {
       return {
         vaccine: vaccine.vaccine,
+        aliases: vaccine.aliases,
         status: "overdue",
         lastDoseDate: null,
         nextDueDate: null,
@@ -87,6 +113,7 @@ export function getVaccinationStatus(
 
     return {
       vaccine: vaccine.vaccine,
+      aliases: vaccine.aliases,
       status: isOverdue ? "overdue" : isDueSoon ? "due" : "up_to_date",
       lastDoseDate: lastDose,
       nextDueDate: nextDue,
@@ -99,6 +126,7 @@ export function getVaccinationStatus(
     if (vaccinationDates.length >= requiredDoses) {
       return {
         vaccine: vaccine.vaccine,
+        aliases: vaccine.aliases,
         status: "up_to_date",
         lastDoseDate: lastDose,
         nextDueDate: null,
@@ -107,6 +135,7 @@ export function getVaccinationStatus(
     }
     return {
       vaccine: vaccine.vaccine,
+      aliases: vaccine.aliases,
       status: vaccinationDates.length === 0 ? "overdue" : "due",
       lastDoseDate: lastDose,
       nextDueDate: vaccinationDates.length === 0 ? null : now,
@@ -118,6 +147,7 @@ export function getVaccinationStatus(
   if (lastDose) {
     return {
       vaccine: vaccine.vaccine,
+      aliases: vaccine.aliases,
       status: "up_to_date",
       lastDoseDate: lastDose,
       nextDueDate: null,
@@ -127,6 +157,7 @@ export function getVaccinationStatus(
 
   return {
     vaccine: vaccine.vaccine,
+    aliases: vaccine.aliases,
     status: "overdue",
     lastDoseDate: null,
     nextDueDate: null,

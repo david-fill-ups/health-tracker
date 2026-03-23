@@ -19,6 +19,8 @@ interface ImportCounts {
   allergies: number;
   portals: number;
   healthMetrics: number;
+  familyMembers: number;
+  familyConditions: number;
 }
 
 function isoDatePart(iso: string | null | undefined): string | null {
@@ -63,11 +65,13 @@ export async function POST(req: Request, { params }: Params) {
       facilities: 0, locations: 0, doctors: 0, visits: 0,
       medications: 0, medicationLogs: 0, conditions: 0, vaccinations: 0,
       allergies: 0, portals: 0, healthMetrics: 0,
+      familyMembers: 0, familyConditions: 0,
     };
     const skipped: ImportCounts = {
       facilities: 0, locations: 0, doctors: 0, visits: 0,
       medications: 0, medicationLogs: 0, conditions: 0, vaccinations: 0,
       allergies: 0, portals: 0, healthMetrics: 0,
+      familyMembers: 0, familyConditions: 0,
     };
 
     await prisma.$transaction(async (tx) => {
@@ -84,6 +88,7 @@ export async function POST(req: Request, { params }: Params) {
         await tx.doctor.deleteMany({ where: { profileId } });
         await tx.location.deleteMany({ where: { facility: { profileId } } });
         await tx.facility.deleteMany({ where: { profileId } });
+        await tx.familyMember.deleteMany({ where: { profileId } }); // FamilyCondition deleted by cascade
       }
 
       // ID mapping: old export ID → newly created DB ID
@@ -233,7 +238,7 @@ export async function POST(req: Request, { params }: Params) {
           const existing = await tx.visit.findFirst({
             where: {
               profileId,
-              type: v.type,
+              type: v.type?.toUpperCase(),
               date: datePart
                 ? { gte: new Date(`${datePart}T00:00:00.000Z`), lt: new Date(`${datePart}T23:59:59.999Z`) }
                 : undefined,
@@ -251,7 +256,7 @@ export async function POST(req: Request, { params }: Params) {
             profileId,
             date: v.date ? new Date(v.date) : undefined,
             dueMonth: v.dueMonth ?? undefined,
-            type: v.type ?? undefined,
+            type: v.type ? v.type.toUpperCase() : undefined,
             status: v.status ?? undefined,
             reason: v.reason ?? undefined,
             specialty: v.specialty ?? undefined,
@@ -487,6 +492,55 @@ export async function POST(req: Request, { params }: Params) {
           },
         });
         imported.healthMetrics++;
+      }
+
+      // ── Family Members + Conditions ──
+      for (const m of (data.familyMembers ?? [])) {
+        let memberId: string;
+
+        if (mode === "skip_duplicates") {
+          const existing = await tx.familyMember.findFirst({
+            where: {
+              profileId,
+              name: { equals: m.name, mode: "insensitive" },
+              relationship: m.relationship,
+            },
+            select: { id: true },
+          });
+          if (existing) {
+            memberId = existing.id;
+            skipped.familyMembers++;
+          } else {
+            const newMember = await tx.familyMember.create({
+              data: { profileId, name: m.name, relationship: m.relationship, side: m.side ?? undefined, notes: m.notes ?? undefined },
+            });
+            memberId = newMember.id;
+            imported.familyMembers++;
+          }
+        } else {
+          const newMember = await tx.familyMember.create({
+            data: { profileId, name: m.name, relationship: m.relationship, side: m.side ?? undefined, notes: m.notes ?? undefined },
+          });
+          memberId = newMember.id;
+          imported.familyMembers++;
+        }
+
+        for (const c of (m.conditions ?? [])) {
+          if (mode === "skip_duplicates") {
+            const existingCond = await tx.familyCondition.findFirst({
+              where: { familyMemberId: memberId, name: { equals: c.name, mode: "insensitive" } },
+              select: { id: true },
+            });
+            if (existingCond) {
+              skipped.familyConditions++;
+              continue;
+            }
+          }
+          await tx.familyCondition.create({
+            data: { familyMemberId: memberId, name: c.name, notes: c.notes ?? undefined },
+          });
+          imported.familyConditions++;
+        }
       }
     }, { timeout: 60_000 });
 

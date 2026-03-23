@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { MedicationCard } from "@/components/medications/MedicationCard";
 import { CardSkeleton } from "@/components/ui/Skeleton";
-import { Toast } from "@/components/ui/Toast";
 
 interface MedicationLog {
   id: string;
@@ -35,7 +34,6 @@ export default function MedicationsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inactiveOpen, setInactiveOpen] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     if (!activeProfileId) return;
@@ -47,13 +45,6 @@ export default function MedicationsPage() {
       .catch(() => setError("Failed to load medications"))
       .finally(() => setLoading(false));
   }, [activeProfileId]);
-
-  function handleDeactivate(id: string) {
-    setMedications((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, active: false } : m))
-    );
-    setToast("Medication deactivated");
-  }
 
   const active = medications.filter((m) => m.active);
   const inactive = medications.filter((m) => !m.active);
@@ -98,7 +89,6 @@ export default function MedicationsPage() {
                   key={m.id}
                   medication={m}
                   profileId={activeProfileId}
-                  onDeactivate={handleDeactivate}
                 />
               ))}
             </div>
@@ -119,7 +109,6 @@ export default function MedicationsPage() {
                       key={m.id}
                       medication={m}
                       profileId={activeProfileId}
-                      onDeactivate={handleDeactivate}
                     />
                   ))}
                 </div>
@@ -128,7 +117,6 @@ export default function MedicationsPage() {
           )}
         </>
       )}
-      <Toast message={toast} onDismiss={() => setToast(null)} />
     </div>
   );
 }

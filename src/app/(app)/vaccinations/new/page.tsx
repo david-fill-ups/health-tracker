@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { Toast } from "@/components/ui/Toast";
 
@@ -9,6 +9,14 @@ interface Facility {
   id: string;
   name: string;
 }
+
+type VaccinationSource = "ADMINISTERED" | "NATURAL" | "DECLINED";
+
+const SOURCE_OPTIONS: { value: VaccinationSource; label: string; description: string }[] = [
+  { value: "ADMINISTERED", label: "Administered", description: "I received this vaccine" },
+  { value: "NATURAL", label: "Natural immunity", description: "I had the disease" },
+  { value: "DECLINED", label: "Declined", description: "I chose not to vaccinate" },
+];
 
 const COMMON_VACCINES = [
   "Influenza",
@@ -29,17 +37,23 @@ const COMMON_VACCINES = [
 
 export default function NewVaccinationPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { activeProfileId } = useProfile();
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [name, setName] = useState("");
+  const [source, setSource] = useState<VaccinationSource>("ADMINISTERED");
+  const [name, setName] = useState(searchParams.get("name") ?? "");
   const [date, setDate] = useState("");
   const [facilityId, setFacilityId] = useState("");
   const [lotNumber, setLotNumber] = useState("");
   const [notes, setNotes] = useState("");
+
+  const isAdministered = source === "ADMINISTERED";
+  const isNatural = source === "NATURAL";
+  const isDeclined = source === "DECLINED";
 
   useEffect(() => {
     if (!activeProfileId) return;
@@ -48,6 +62,13 @@ export default function NewVaccinationPage() {
       .then((data) => setFacilities(Array.isArray(data) ? data : []))
       .catch(() => {});
   }, [activeProfileId]);
+
+  useEffect(() => {
+    if (!isAdministered) {
+      setFacilityId("");
+      setLotNumber("");
+    }
+  }, [isAdministered]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -62,7 +83,8 @@ export default function NewVaccinationPage() {
         body: JSON.stringify({
           profileId: activeProfileId,
           name,
-          date,
+          date: date || undefined,
+          source,
           facilityId: facilityId || undefined,
           lotNumber: lotNumber || undefined,
           notes: notes || undefined,
@@ -71,7 +93,7 @@ export default function NewVaccinationPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error ?? "Failed to save vaccination");
+        setError(data.error ?? "Failed to save");
         return;
       }
 
@@ -102,8 +124,30 @@ export default function NewVaccinationPage() {
           )}
 
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+            <div className="grid grid-cols-3 gap-2">
+              {SOURCE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setSource(opt.value)}
+                  className={`rounded-lg border px-3 py-2.5 text-left text-sm transition-colors ${
+                    source === opt.value
+                      ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                      : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <span className="block font-medium">{opt.label}</span>
+                  <span className="block text-xs text-gray-400 mt-0.5">{opt.description}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              Vaccine name <span className="text-red-500">*</span>
+              {isNatural ? "Disease / condition" : "Vaccine name"}{" "}
+              <span className="text-red-500">*</span>
             </label>
             <input
               id="name"
@@ -113,7 +157,7 @@ export default function NewVaccinationPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="e.g. Influenza"
+              placeholder={isNatural ? "e.g. Varicella (Chickenpox)" : "e.g. Influenza"}
             />
             <datalist id="vaccine-list">
               {COMMON_VACCINES.map((v) => (
@@ -124,58 +168,72 @@ export default function NewVaccinationPage() {
 
           <div>
             <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
-              Date <span className="text-red-500">*</span>
+              {isNatural ? "Approx. date of illness" : isDeclined ? "Date declined" : "Date"}
+              {!isNatural && <span className="text-red-500"> *</span>}
+              {isNatural && <span className="text-gray-400 text-xs ml-1">(optional)</span>}
             </label>
             <input
               id="date"
               type="date"
-              required
+              required={!isNatural}
               value={date}
               onChange={(e) => setDate(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
           </div>
 
-          <div>
-            <label htmlFor="facility" className="block text-sm font-medium text-gray-700 mb-1">Facility</label>
-            <select
-              id="facility"
-              value={facilityId}
-              onChange={(e) => setFacilityId(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            >
-              <option value="">— None —</option>
-              {facilities.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {isAdministered && (
+            <div>
+              <label htmlFor="facility" className="block text-sm font-medium text-gray-700 mb-1">Facility</label>
+              <select
+                id="facility"
+                value={facilityId}
+                onChange={(e) => setFacilityId(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              >
+                <option value="">— None —</option>
+                {facilities.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {isAdministered && (
+            <div>
+              <label htmlFor="lotNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                Lot number
+              </label>
+              <input
+                id="lotNumber"
+                type="text"
+                value={lotNumber}
+                onChange={(e) => setLotNumber(e.target.value)}
+                placeholder="Optional"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+            </div>
+          )}
 
           <div>
-            <label htmlFor="lotNumber" className="block text-sm font-medium text-gray-700 mb-1">
-              Lot number
+            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+              {isDeclined ? "Reason" : "Notes"}
             </label>
-            <input
-              id="lotNumber"
-              type="text"
-              value={lotNumber}
-              onChange={(e) => setLotNumber(e.target.value)}
-              placeholder="Optional"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
             <textarea
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              placeholder="Any reactions, observations, etc."
+              placeholder={
+                isDeclined
+                  ? "Optional reason for declining"
+                  : isNatural
+                  ? "Any details, lab confirmation, etc."
+                  : "Any reactions, observations, etc."
+              }
             />
           </div>
 
@@ -185,7 +243,7 @@ export default function NewVaccinationPage() {
               disabled={submitting}
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
             >
-              {saved ? "Saved!" : submitting ? "Saving…" : "Record vaccination"}
+              {saved ? "Saved!" : submitting ? "Saving…" : "Save record"}
             </button>
             <a
               href="/vaccinations"
@@ -196,7 +254,7 @@ export default function NewVaccinationPage() {
           </div>
         </form>
       )}
-      <Toast message={saved ? "Vaccination recorded" : null} onDismiss={() => setSaved(false)} />
+      <Toast message={saved ? "Record saved" : null} onDismiss={() => setSaved(false)} />
     </div>
   );
 }

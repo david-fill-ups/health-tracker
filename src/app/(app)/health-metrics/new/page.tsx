@@ -8,10 +8,15 @@ import { COMMON_METRIC_TYPES } from "@/lib/validation";
 
 const COMMON_UNITS = ["kg", "lbs", "mmHg", "mg/dL", "mmol/L", "bpm", "%", "cm", "in"];
 
+function toLocalDatetimeInput(date: Date): string {
+  const tzOffset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+}
+
 function nowLocalDatetimeLocal() {
   const now = new Date();
   now.setSeconds(0, 0);
-  return now.toISOString().slice(0, 16);
+  return toLocalDatetimeInput(now);
 }
 
 export default function NewHealthMetricPage() {

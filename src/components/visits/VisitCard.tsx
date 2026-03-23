@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { VisitStatus, VisitType } from "@/generated/prisma/enums";
 
 interface Doctor {
@@ -28,6 +28,7 @@ export interface Visit {
   reason?: string | null;
   specialty?: string | null;
   notes?: string | null;
+  documentUrl?: string | null;
   doctor?: Doctor | null;
   facility?: Facility | null;
   location?: Location | null;
@@ -62,6 +63,7 @@ function formatDate(iso: string) {
     year: "numeric",
     month: "short",
     day: "numeric",
+    timeZone: "UTC",
   });
 }
 
@@ -78,6 +80,7 @@ interface Props {
 }
 
 export function VisitCard({ visit }: Props) {
+  const router = useRouter();
   const dateLabel = visit.date
     ? formatDate(visit.date)
     : visit.dueMonth
@@ -85,9 +88,9 @@ export function VisitCard({ visit }: Props) {
     : "No date";
 
   return (
-    <Link
-      href={`/visits/${visit.id}`}
-      className="block rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:bg-gray-50 transition-colors"
+    <div
+      onClick={() => router.push(`/visits/${visit.id}`)}
+      className="block rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:bg-gray-50 transition-colors cursor-pointer"
     >
       <div className="flex-1 min-w-0 space-y-1">
         <div className="flex items-center gap-2 flex-wrap">
@@ -114,7 +117,23 @@ export function VisitCard({ visit }: Props) {
         {visit.notes && (
           <p className="text-sm text-gray-500 line-clamp-2 mt-1">{visit.notes}</p>
         )}
+
+        {visit.documentUrl && (
+          <a
+            href={visit.documentUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="mt-1.5 inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="size-3.5">
+              <path d="M6.22 8.72a.75.75 0 0 0 1.06 1.06l5.22-5.22v1.69a.75.75 0 0 0 1.5 0v-3.5a.75.75 0 0 0-.75-.75h-3.5a.75.75 0 0 0 0 1.5h1.69L6.22 8.72Z" />
+              <path d="M3.5 6.75c0-.69.56-1.25 1.25-1.25H7A.75.75 0 0 0 7 4H4.75A2.75 2.75 0 0 0 2 6.75v4.5A2.75 2.75 0 0 0 4.75 14h4.5A2.75 2.75 0 0 0 12 11.25V9a.75.75 0 0 0-1.5 0v2.25c0 .69-.56 1.25-1.25 1.25h-4.5c-.69 0-1.25-.56-1.25-1.25v-4.5Z" />
+            </svg>
+            View document
+          </a>
+        )}
       </div>
-    </Link>
+    </div>
   );
 }
