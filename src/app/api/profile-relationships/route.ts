@@ -17,7 +17,8 @@ export async function GET(req: Request) {
   }
 
   try {
-    const relationships = await getProfileRelationships(session.user.id, profileId);
+    const includeInherited = searchParams.get("includeInherited") === "true";
+    const relationships = await getProfileRelationships(session.user.id, profileId, { includeInherited });
     return NextResponse.json(relationships);
   } catch (err) {
     if (err instanceof PermissionError) {

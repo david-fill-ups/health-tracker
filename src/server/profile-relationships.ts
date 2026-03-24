@@ -33,7 +33,56 @@ const BIOLOGICAL_DEFAULTS: Record<ProfileRelationshipType, boolean> = {
   OTHER: false,
 };
 
-export async function getProfileRelationships(userId: string, fromProfileId: string) {
+const INHERITABLE_FAMILY_RELATIONSHIPS = new Set([
+  "PARENT", "GRANDFATHER", "GRANDMOTHER", "SIBLING", "AUNT", "UNCLE",
+]);
+
+const INHERITABLE_PROFILE_RELATIONSHIPS = new Set([
+  "FATHER", "MOTHER", "PARENT",
+  "BROTHER", "HALF_BROTHER", "SISTER", "HALF_SISTER", "SIBLING",
+]);
+
+async function getInheritedFamilyData(userId: string, linkedProfileId: string) {
+  const [familyMembers, linkedRels] = await Promise.all([
+    prisma.familyMember.findMany({
+      where: {
+        profileId: linkedProfileId,
+        relationship: { in: [...INHERITABLE_FAMILY_RELATIONSHIPS] as any[] },
+      },
+      include: { conditions: true },
+      orderBy: { relationship: "asc" },
+    }),
+    prisma.profileRelationship.findMany({
+      where: {
+        fromProfileId: linkedProfileId,
+        relationship: { in: [...INHERITABLE_PROFILE_RELATIONSHIPS] as any[] },
+      },
+      include: { toProfile: { select: { id: true, name: true } } },
+      orderBy: { relationship: "asc" },
+    }),
+  ]);
+
+  const linkedProfilesWithConditions = await Promise.all(
+    linkedRels.map(async (rel) => {
+      if (!rel.biological) return { ...rel, conditions: [] };
+      const accessible = await hasProfileAccess(userId, rel.toProfileId);
+      if (!accessible) return { ...rel, conditions: [] };
+      const conditions = await prisma.condition.findMany({
+        where: { profileId: rel.toProfileId },
+        orderBy: { name: "asc" },
+      });
+      return { ...rel, conditions };
+    })
+  );
+
+  return { familyMembers, linkedProfiles: linkedProfilesWithConditions };
+}
+
+export async function getProfileRelationships(
+  userId: string,
+  fromProfileId: string,
+  options?: { includeInherited?: boolean }
+) {
   await assertProfileAccess(userId, fromProfileId);
   const relationships = await prisma.profileRelationship.findMany({
     where: { fromProfileId },
@@ -43,14 +92,17 @@ export async function getProfileRelationships(userId: string, fromProfileId: str
 
   return Promise.all(
     relationships.map(async (rel) => {
-      if (!rel.biological) return { ...rel, conditions: [] };
+      if (!rel.biological) return { ...rel, conditions: [], inherited: null };
       const accessible = await hasProfileAccess(userId, rel.toProfileId);
-      if (!accessible) return { ...rel, conditions: [] };
+      if (!accessible) return { ...rel, conditions: [], inherited: null };
       const conditions = await prisma.condition.findMany({
         where: { profileId: rel.toProfileId },
         orderBy: { name: "asc" },
       });
-      return { ...rel, conditions };
+      const inherited = options?.includeInherited
+        ? await getInheritedFamilyData(userId, rel.toProfileId)
+        : null;
+      return { ...rel, conditions, inherited };
     })
   );
 }
