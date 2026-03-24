@@ -12,7 +12,7 @@ export async function getAllergiesForProfile(userId: string, profileId: string) 
 
 export interface CreateAllergyInput {
   allergen: string;
-  category?: string;
+  category?: string | null;
   diagnosisDate?: Date;
   whealSize?: number;
   notes?: string;
