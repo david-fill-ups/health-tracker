@@ -74,7 +74,7 @@ export const VaccinationSourceEnum = z.enum(["ADMINISTERED", "NATURAL", "DECLINE
 export const CreateVaccinationSchema = z.object({
   profileId: id,
   name: name255,
-  date: z.coerce.date().optional(),
+  date: z.coerce.date(),
   source: VaccinationSourceEnum.optional(),
   facilityId: z.string().min(1).optional(),
   lotNumber: optStr255,
