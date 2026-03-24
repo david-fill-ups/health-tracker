@@ -57,7 +57,7 @@ export interface CreateVaccinationInput {
   date?: Date;
   source?: VaccinationSource;
   facilityId?: string;
-  lotNumber?: string;
+  lotNumber?: string | null;
   notes?: string;
 }
 

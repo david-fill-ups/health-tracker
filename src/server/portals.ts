@@ -13,7 +13,7 @@ export async function getPortalsForProfile(userId: string, profileId: string) {
 
 export interface CreatePortalInput {
   name: string;
-  organization?: string;
+  organization?: string | null;
   url: string;
   facilityId?: string;
   notes?: string;

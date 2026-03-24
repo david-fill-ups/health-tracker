@@ -13,12 +13,12 @@ export async function getDoctorsForProfile(userId: string, profileId: string) {
 
 export interface CreateDoctorInput {
   name: string;
-  specialty?: string;
+  specialty?: string | null;
   facilityId?: string;
   rating?: number | null;
-  websiteUrl?: string;
-  portalUrl?: string;
-  phone?: string;
+  websiteUrl?: string | null;
+  portalUrl?: string | null;
+  phone?: string | null;
   notes?: string;
   active?: boolean;
 }

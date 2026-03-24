@@ -27,12 +27,12 @@ export async function getLocationsForFacility(userId: string, facilityId: string
 
 export interface CreateLocationInput {
   name: string;
-  address1?: string;
-  address2?: string;
+  address1?: string | null;
+  address2?: string | null;
   city?: string;
   state?: string;
   zip?: string;
-  phone?: string;
+  phone?: string | null;
   active?: boolean;
 }
 

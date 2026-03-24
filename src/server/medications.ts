@@ -25,7 +25,7 @@ export async function getMedicationLogs(
 
 export interface CreateMedicationInput {
   name: string;
-  dosage?: string;
+  dosage?: string | null;
   frequency?: string;
   prescribingDoctorId?: string;
   startDate?: Date;
@@ -61,8 +61,8 @@ export async function createMedication(
 export interface CreateLogInput {
   date: Date;
   dosage?: number;
-  unit?: string;
-  injectionSite?: string;
+  unit?: string | null;
+  injectionSite?: string | null;
   weight?: number;
   notes?: string;
 }
