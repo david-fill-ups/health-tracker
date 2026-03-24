@@ -170,8 +170,6 @@ export function LinkedProfilesSection({
 }) {
   const [relationships, setRelationships] = useState<Relationship[]>([]);
   const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
-  const [ownProfile, setOwnProfile] = useState<Profile | null>(null);
-  const [myRelationship, setMyRelationship] = useState<Relationship | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -182,12 +180,6 @@ export function LinkedProfilesSection({
   const [addBio, setAddBio] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // My relationship state
-  const [myRelType, setMyRelType] = useState("SPOUSE");
-  const [myRelBio, setMyRelBio] = useState(false);
-  const [myRelEditing, setMyRelEditing] = useState(false);
-  const [savingMyRel, setSavingMyRel] = useState(false);
-  const [myRelError, setMyRelError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const [relsRes, profilesRes] = await Promise.all([
@@ -195,27 +187,7 @@ export function LinkedProfilesSection({
       fetch("/api/profiles"),
     ]);
     if (relsRes.ok) setRelationships(await relsRes.json());
-
-    if (profilesRes.ok) {
-      const profiles: Profile[] = await profilesRes.json();
-      setAllProfiles(profiles);
-      const own = profiles.find((p) => p.isOwnerProfile) ?? null;
-      setOwnProfile(own);
-
-      if (own && own.id !== profileId) {
-        const ownRelsRes = await fetch(`/api/profile-relationships?profileId=${own.id}`);
-        if (ownRelsRes.ok) {
-          const ownRels: Relationship[] = await ownRelsRes.json();
-          const myRel = ownRels.find((r) => r.toProfile.id === profileId) ?? null;
-          setMyRelationship(myRel);
-          if (myRel) {
-            setMyRelType(myRel.relationship);
-            setMyRelBio(myRel.biological);
-          }
-        }
-      }
-    }
-
+    if (profilesRes.ok) setAllProfiles(await profilesRes.json());
     setLoading(false);
   }, [profileId]);
 
@@ -276,70 +248,26 @@ export function LinkedProfilesSection({
     load();
   }
 
-  async function handleSaveMyRel(e: React.FormEvent) {
-    e.preventDefault();
-    if (!ownProfile) return;
-    setSavingMyRel(true);
-    setMyRelError(null);
-    const bio = showBio(myRelType) ? myRelBio : false;
-
-    if (myRelationship) {
-      await fetch(`/api/profile-relationships/${myRelationship.id}?profileId=${ownProfile.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profileId: ownProfile.id, relationship: myRelType, biological: bio }),
-      });
-    } else {
-      const res = await fetch("/api/profile-relationships", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          profileId: ownProfile.id,
-          linkedProfileId: profileId,
-          relationship: myRelType,
-          biological: bio,
-        }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setMyRelError(data.error ?? "Failed to save.");
-        setSavingMyRel(false);
-        return;
-      }
-    }
-
-    setSavingMyRel(false);
-    setMyRelEditing(false);
-    load();
-  }
-
-  async function handleRemoveMyRel() {
-    if (!myRelationship || !ownProfile) return;
-    await fetch(`/api/profile-relationships/${myRelationship.id}?profileId=${ownProfile.id}`, {
-      method: "DELETE",
-    });
-    setMyRelationship(null);
-    setMyRelEditing(false);
-    load();
-  }
-
   if (loading) return null;
-  if (!isOwner && relationships.length === 0 && !myRelationship && !ownProfile) return null;
+  if (!isOwner && relationships.length === 0) return null;
 
-  const showMyRelSection = ownProfile && ownProfile.id !== profileId;
   const selectClass = "rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+  const selectedProfileName = allProfiles.find((p) => p.id === addProfileId)?.name;
 
   return (
     <div className="border-t border-gray-100 pt-5 space-y-3">
-      <p className="text-sm font-medium text-gray-700">Family Connections</p>
+      <p className="text-sm font-medium text-gray-700">{profileName}&apos;s Family</p>
 
       {relationships.length === 0 ? (
-        <p className="text-sm text-gray-400">No connections linked yet.</p>
+        <p className="text-sm text-gray-400">No family members linked yet.</p>
       ) : (
         <ul className="space-y-2">
           {relationships.map((rel) =>
             editingId === rel.id ? (
               <li key={rel.id} className="flex items-center gap-2 text-sm flex-wrap">
+                <span className="text-xs text-gray-500 shrink-0">
+                  <span className="font-medium">{rel.toProfile.name}</span> is {profileName}&apos;s
+                </span>
                 <RelationshipSelect
                   value={editRel}
                   onChange={(v) => { setEditRel(v); setEditBio(bioDefault(v)); }}
@@ -415,11 +343,17 @@ export function LinkedProfilesSection({
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
-              <div className="flex gap-2 items-center">
+              <div className="flex gap-2 items-center flex-wrap">
+                <span className="text-sm text-gray-600 shrink-0">
+                  {selectedProfileName
+                    ? <><span className="font-medium">{selectedProfileName}</span> is {profileName}&apos;s</>
+                    : <>is {profileName}&apos;s</>
+                  }
+                </span>
                 <RelationshipSelect
                   value={addRel}
                   onChange={(v) => { setAddRel(v); setAddBio(bioDefault(v)); }}
-                  className={`flex-1 ${selectClass}`}
+                  className={selectClass}
                 />
                 {showBio(addRel) && (
                   <label className="flex items-center gap-1.5 text-sm text-gray-600 shrink-0">
@@ -455,7 +389,7 @@ export function LinkedProfilesSection({
               onClick={() => setIsAdding(true)}
               className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
             >
-              + Add connection
+              + Add family member
             </button>
           ) : (
             <p className="text-xs text-gray-400">
@@ -463,87 +397,6 @@ export function LinkedProfilesSection({
                 ? "No other profiles available to link."
                 : "All accessible profiles are already linked."}
             </p>
-          )}
-        </div>
-      )}
-
-      {/* My relationship to this profile (from the user's own profile perspective) */}
-      {showMyRelSection && (
-        <div className="border-t border-gray-100 pt-4 space-y-2">
-          <p className="text-sm font-medium text-gray-700">My relationship to {profileName}</p>
-          {myRelEditing ? (
-            <form onSubmit={handleSaveMyRel} className="space-y-2 rounded-lg border border-gray-200 p-3">
-              {myRelError && <p className="text-xs text-red-600">{myRelError}</p>}
-              <div className="flex gap-2 items-center">
-                <RelationshipSelect
-                  value={myRelType}
-                  onChange={(v) => { setMyRelType(v); setMyRelBio(bioDefault(v)); }}
-                  className={`flex-1 ${selectClass}`}
-                />
-                {showBio(myRelType) && (
-                  <label className="flex items-center gap-1.5 text-sm text-gray-600 shrink-0">
-                    <input
-                      type="checkbox"
-                      checked={myRelBio}
-                      onChange={(e) => setMyRelBio(e.target.checked)}
-                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                    />
-                    Biological
-                  </label>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={savingMyRel}
-                  className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-                >
-                  {savingMyRel ? "…" : "Save"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMyRelEditing(false);
-                    setMyRelError(null);
-                    if (myRelationship) { setMyRelType(myRelationship.relationship); setMyRelBio(myRelationship.biological); }
-                  }}
-                  className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                {myRelationship && (
-                  <button
-                    type="button"
-                    onClick={handleRemoveMyRel}
-                    className="ml-auto text-xs text-gray-400 hover:text-red-600 transition-colors"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-            </form>
-          ) : myRelationship ? (
-            <div className="flex items-center gap-2 text-sm">
-              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                {RELATIONSHIP_LABELS[myRelationship.relationship] ?? myRelationship.relationship}
-              </span>
-              {myRelationship.biological && showBio(myRelationship.relationship) && (
-                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600">Biological</span>
-              )}
-              <button
-                onClick={() => setMyRelEditing(true)}
-                className="text-xs text-gray-400 hover:text-gray-700 transition-colors"
-              >
-                Edit
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setMyRelEditing(true)}
-              className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
-            >
-              + Set my relationship
-            </button>
           )}
         </div>
       )}

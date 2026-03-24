@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { CardSkeleton } from "@/components/ui/Skeleton";
 
-type FamilyRelationship = "PARENT" | "SIBLING" | "GRANDFATHER" | "GRANDMOTHER" | "AUNT" | "UNCLE";
+type FamilyRelationship = "PARENT" | "SIBLING" | "FATHER" | "MOTHER" | "BROTHER" | "SISTER" | "HALF_BROTHER" | "HALF_SISTER" | "GRANDFATHER" | "GRANDMOTHER" | "AUNT" | "UNCLE";
 type FamilySide = "MATERNAL" | "PATERNAL";
 type ProfileRelationshipType =
   | "SPOUSE"
@@ -49,7 +49,16 @@ interface FamilyMember {
   conditions: FamilyCondition[];
 }
 
-interface ProfileRelationship {
+interface InheritedFamilyMember {
+  id: string;
+  name: string;
+  relationship: FamilyRelationship;
+  side: FamilySide | null;
+  notes: string | null;
+  conditions: FamilyCondition[];
+}
+
+interface InheritedLinkedProfile {
   id: string;
   toProfileId: string;
   relationship: ProfileRelationshipType;
@@ -58,9 +67,35 @@ interface ProfileRelationship {
   conditions: LinkedCondition[];
 }
 
+interface ProfileRelationship {
+  id: string;
+  toProfileId: string;
+  relationship: ProfileRelationshipType;
+  biological: boolean;
+  toProfile: { id: string; name: string };
+  conditions: LinkedCondition[];
+  inherited: {
+    familyMembers: InheritedFamilyMember[];
+    linkedProfiles: InheritedLinkedProfile[];
+  } | null;
+}
+
+type ChartItem =
+  | { kind: "manual"; member: FamilyMember }
+  | { kind: "linked"; rel: ProfileRelationship }
+  | { kind: "derived"; key: string; name: string; profileId?: string; conditions: Array<{ name: string }>; via: string; label: string };
+
 const MANUAL_BADGE: Record<FamilyRelationship, { label: string; classes: string }> = {
+  // Legacy
   PARENT:      { label: "Parent",      classes: "bg-purple-100 text-purple-700" },
   SIBLING:     { label: "Sibling",     classes: "bg-blue-100 text-blue-700" },
+  // Current — gendered
+  FATHER:      { label: "Father",      classes: "bg-purple-100 text-purple-700" },
+  MOTHER:      { label: "Mother",      classes: "bg-purple-100 text-purple-700" },
+  BROTHER:     { label: "Brother",     classes: "bg-blue-100 text-blue-700" },
+  SISTER:      { label: "Sister",      classes: "bg-blue-100 text-blue-700" },
+  HALF_BROTHER:{ label: "Half-Brother",classes: "bg-blue-100 text-blue-700" },
+  HALF_SISTER: { label: "Half-Sister", classes: "bg-blue-100 text-blue-700" },
   GRANDFATHER: { label: "Grandfather", classes: "bg-amber-100 text-amber-700" },
   GRANDMOTHER: { label: "Grandmother", classes: "bg-orange-100 text-orange-700" },
   AUNT:        { label: "Aunt",        classes: "bg-pink-100 text-pink-700" },
@@ -153,13 +188,15 @@ const CHILD_RELATIONSHIP_TYPES: ProfileRelationshipType[] = [
 ];
 
 const MANUAL_FILTER_OPTIONS: Array<{ value: FamilyRelationship | "ALL"; label: string }> = [
-  { value: "ALL",         label: "All" },
-  { value: "PARENT",      label: "Parent" },
-  { value: "SIBLING",     label: "Sibling" },
-  { value: "GRANDFATHER", label: "Grandfather" },
-  { value: "GRANDMOTHER", label: "Grandmother" },
-  { value: "AUNT",        label: "Aunt" },
-  { value: "UNCLE",       label: "Uncle" },
+  { value: "ALL",          label: "All" },
+  { value: "FATHER",       label: "Father" },
+  { value: "MOTHER",       label: "Mother" },
+  { value: "BROTHER",      label: "Brother" },
+  { value: "SISTER",       label: "Sister" },
+  { value: "GRANDFATHER",  label: "Grandfather" },
+  { value: "GRANDMOTHER",  label: "Grandmother" },
+  { value: "AUNT",         label: "Aunt" },
+  { value: "UNCLE",        label: "Uncle" },
 ];
 
 const BIOLOGICAL_DEFAULTS: Partial<Record<ProfileRelationshipType, boolean>> = {
@@ -211,15 +248,6 @@ function ChartCard({ member }: { member: FamilyMember }) {
         <span className={`rounded-full px-1.5 py-0.5 text-xs font-medium ${badge.classes}`}>
           {badge.label}
         </span>
-        {SIDE_APPLICABLE.includes(member.relationship) && member.side && (
-          <span className={`rounded-full px-1.5 py-0.5 text-xs font-medium border ${
-            member.side === "MATERNAL"
-              ? "bg-rose-50 text-rose-500 border-rose-200"
-              : "bg-sky-50 text-sky-500 border-sky-200"
-          }`}>
-            {member.side === "MATERNAL" ? "Mat." : "Pat."}
-          </span>
-        )}
       </div>
       <div className="border-t border-gray-100 pt-1.5">
         {member.conditions.length === 0 ? (
@@ -254,6 +282,11 @@ function ChartCard({ member }: { member: FamilyMember }) {
   );
 }
 
+/** Strips "Maternal "/"Paternal " prefix — redundant when already inside a sided chart column. */
+function shortLabel(label: string): string {
+  return label.replace(/^(Maternal |Paternal )/, "");
+}
+
 function TreeConnector() {
   return (
     <div className="flex justify-center my-2">
@@ -280,13 +313,8 @@ function LinkedChartCard({ rel }: { rel: ProfileRelationship }) {
       </Link>
       <div className="flex flex-wrap gap-1 mb-2">
         <span className={`rounded-full px-1.5 py-0.5 text-xs font-medium ${badge?.classes ?? "bg-gray-100 text-gray-600"}`}>
-          {badge?.label ?? rel.relationship}
+          {badge?.label ? shortLabel(badge.label) : rel.relationship}
         </span>
-        {rel.biological && (
-          <span className="rounded-full bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-600 border border-green-200">
-            bio
-          </span>
-        )}
       </div>
       <div className="border-t border-indigo-100 pt-1.5">
         {rel.conditions.length === 0 ? (
@@ -321,6 +349,67 @@ function LinkedChartCard({ rel }: { rel: ProfileRelationship }) {
   );
 }
 
+function DerivedChartCard({ item }: { item: Extract<ChartItem, { kind: "derived" }> }) {
+  const [expanded, setExpanded] = useState(false);
+  const MAX_CONDITIONS = 4;
+  const visible = expanded ? item.conditions : item.conditions.slice(0, MAX_CONDITIONS);
+  const extra = item.conditions.length - MAX_CONDITIONS;
+  return (
+    <div className="w-44 shrink-0 rounded-xl border border-indigo-200 bg-indigo-50/40 p-3 shadow-sm hover:border-indigo-400 hover:shadow-md transition-all">
+      {item.profileId ? (
+        <Link href={`/profiles/${item.profileId}`} className="block mb-1.5">
+          <div className="font-semibold text-gray-900 text-sm leading-tight hover:text-indigo-600">{item.name}</div>
+        </Link>
+      ) : (
+        <div className="font-semibold text-gray-900 text-sm leading-tight mb-1.5">{item.name}</div>
+      )}
+      <div className="flex flex-wrap gap-1 mb-2">
+        <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700">
+          {item.label}
+        </span>
+        <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-500">
+          via {item.via}
+        </span>
+      </div>
+      <div className="border-t border-indigo-100 pt-1.5">
+        {item.conditions.length === 0 ? (
+          <p className="text-xs text-gray-300 italic">No conditions</p>
+        ) : (
+          <>
+            <ul className="space-y-0.5">
+              {visible.map((c, i) => (
+                <li key={i} className="text-xs text-gray-600 leading-tight">• {c.name}</li>
+              ))}
+            </ul>
+            {extra > 0 && !expanded && (
+              <button onClick={() => setExpanded(true)} className="mt-1 text-xs text-indigo-500 hover:text-indigo-700 font-medium">
+                +{extra} more
+              </button>
+            )}
+            {expanded && (
+              <button onClick={() => setExpanded(false)} className="mt-1 text-xs text-gray-400 hover:text-gray-600">
+                Show less
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function UnifiedChartCard({ item }: { item: ChartItem }) {
+  if (item.kind === "manual") return <ChartCard member={item.member} />;
+  if (item.kind === "linked") return <LinkedChartCard rel={item.rel} />;
+  return <DerivedChartCard item={item} />;
+}
+
+function chartItemKey(item: ChartItem): string {
+  if (item.kind === "manual") return `manual-${item.member.id}`;
+  if (item.kind === "linked") return `linked-${item.rel.id}`;
+  return item.key;
+}
+
 export default function FamilyHistoryPage() {
   const { activeProfileId } = useProfile();
   const [members, setMembers] = useState<FamilyMember[]>([]);
@@ -340,6 +429,16 @@ export default function FamilyHistoryPage() {
   const [linking, setLinking] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
 
+  const [expandedInherited, setExpandedInherited] = useState<Set<string>>(new Set());
+
+  function toggleInherited(relId: string) {
+    setExpandedInherited((prev) => {
+      const next = new Set(prev);
+      next.has(relId) ? next.delete(relId) : next.add(relId);
+      return next;
+    });
+  }
+
   // Edit relationship state
   const [editingRelId, setEditingRelId] = useState<string | null>(null);
   const [editRelType, setEditRelType] = useState<ProfileRelationshipType>("PARENT");
@@ -352,7 +451,7 @@ export default function FamilyHistoryPage() {
     setError(null);
     Promise.all([
       fetch(`/api/family-members?profileId=${activeProfileId}`).then((r) => r.json()),
-      fetch(`/api/profile-relationships?profileId=${activeProfileId}`).then((r) => r.json()),
+      fetch(`/api/profile-relationships?profileId=${activeProfileId}&includeInherited=true`).then((r) => r.json()),
       fetch("/api/profiles").then((r) => r.json()),
     ])
       .then(([membersData, relsData, profilesData]) => {
@@ -377,23 +476,129 @@ export default function FamilyHistoryPage() {
 
   // Chart view groupings
   const chartGroups = useMemo(() => {
-    const grandparents = members.filter((m) => ["GRANDFATHER", "GRANDMOTHER"].includes(m.relationship));
-    const extended = members.filter((m) => ["AUNT", "UNCLE"].includes(m.relationship));
-    const parents = members.filter((m) => m.relationship === "PARENT");
-    const siblings = members.filter((m) => m.relationship === "SIBLING");
+    // Manual entries
+    const manualGrandparents = members.filter((m) => ["GRANDFATHER", "GRANDMOTHER"].includes(m.relationship));
+    const manualExtended = members.filter((m) => ["AUNT", "UNCLE"].includes(m.relationship));
+    const manualParents = members.filter((m) => ["PARENT", "FATHER", "MOTHER"].includes(m.relationship));
+    const manualSiblings = members.filter((m) => ["SIBLING", "BROTHER", "SISTER", "HALF_BROTHER", "HALF_SISTER"].includes(m.relationship));
+
+    // Linked profiles categorised by relationship
     const linkedChildren = relationships.filter((r) => CHILD_RELATIONSHIP_TYPES.includes(r.relationship));
+    const linkedParents = relationships.filter((r) =>
+      ["FATHER", "MOTHER", "PARENT"].includes(r.relationship) && r.biological
+    );
+    const linkedSiblings = relationships.filter((r) =>
+      ["BROTHER", "SISTER", "SIBLING", "HALF_BROTHER", "HALF_SISTER", "HALF_SIBLING"].includes(r.relationship)
+    );
+    const linkedGrandparents = relationships.filter((r) =>
+      ["MATERNAL_GRANDMOTHER", "MATERNAL_GRANDFATHER", "PATERNAL_GRANDMOTHER", "PATERNAL_GRANDFATHER", "GRANDPARENT"].includes(r.relationship)
+    );
+    const linkedExtended = relationships.filter((r) =>
+      ["MATERNAL_AUNT", "MATERNAL_UNCLE", "PATERNAL_AUNT", "PATERNAL_UNCLE", "AUNT_UNCLE"].includes(r.relationship)
+    );
+
+    // Derived relatives from parents' inherited data (one level deep)
+    const directProfileIds = new Set(relationships.map((r) => r.toProfileId));
+
+    type DerivedEntry = { key: string; name: string; profileId?: string; conditions: Array<{ name: string }>; via: string; side: FamilySide | null; label: string };
+    const derivedGrandparents: DerivedEntry[] = [];
+    const derivedExtended: DerivedEntry[] = [];
+
+    function gpLabel(rel: string): string {
+      if (rel === "FATHER") return "Grandfather";
+      if (rel === "MOTHER") return "Grandmother";
+      return "Grandparent";
+    }
+    function extLabel(rel: string): string {
+      if (rel === "BROTHER" || rel === "HALF_BROTHER") return "Uncle";
+      if (rel === "SISTER" || rel === "HALF_SISTER") return "Aunt";
+      return "Aunt / Uncle";
+    }
+
+    for (const parentRel of linkedParents) {
+      if (!parentRel.inherited) continue;
+      const side: FamilySide | null =
+        parentRel.relationship === "FATHER" ? "PATERNAL" :
+        parentRel.relationship === "MOTHER" ? "MATERNAL" : null;
+      const via = parentRel.toProfile.name;
+
+      // From parent's linked profiles (FATHER/MOTHER/PARENT → grandparent; siblings → aunt/uncle)
+      for (const gp of parentRel.inherited.linkedProfiles) {
+        if (directProfileIds.has(gp.toProfileId)) continue;
+        if (["FATHER", "MOTHER", "PARENT"].includes(gp.relationship)) {
+          derivedGrandparents.push({ key: `derived-lp-${gp.toProfileId}`, name: gp.toProfile.name, profileId: gp.toProfileId, conditions: gp.conditions, via, side, label: gpLabel(gp.relationship) });
+        } else if (["BROTHER", "HALF_BROTHER", "SISTER", "HALF_SISTER", "SIBLING"].includes(gp.relationship)) {
+          derivedExtended.push({ key: `derived-lp-${gp.toProfileId}`, name: gp.toProfile.name, profileId: gp.toProfileId, conditions: gp.conditions, via, side, label: extLabel(gp.relationship) });
+        }
+      }
+
+      // From parent's manual family members — only PARENT/FATHER/MOTHER and SIBLING/BROTHER/SISTER
+      // (GRANDFATHER/GRANDMOTHER/AUNT/UNCLE would be great-grandparents — skip)
+      for (const fm of parentRel.inherited.familyMembers) {
+        if (["PARENT", "FATHER", "MOTHER"].includes(fm.relationship)) {
+          derivedGrandparents.push({ key: `derived-fm-${fm.id}`, name: fm.name, conditions: fm.conditions, via, side, label: gpLabel(fm.relationship) });
+        } else if (["SIBLING", "BROTHER", "SISTER", "HALF_BROTHER", "HALF_SISTER"].includes(fm.relationship)) {
+          derivedExtended.push({ key: `derived-fm-${fm.id}`, name: fm.name, conditions: fm.conditions, via, side, label: extLabel(fm.relationship) });
+        }
+      }
+    }
+
+    // Build ChartItem arrays
+    const toManual = (m: FamilyMember): ChartItem => ({ kind: "manual", member: m });
+    const toLinked = (r: ProfileRelationship): ChartItem => ({ kind: "linked", rel: r });
+    const toDerived = (d: DerivedEntry): ChartItem => ({ kind: "derived", key: d.key, name: d.name, profileId: d.profileId, conditions: d.conditions, via: d.via, label: d.label });
+
+    const maternalGrandparents: ChartItem[] = [
+      ...manualGrandparents.filter((m) => m.side === "MATERNAL").map(toManual),
+      ...linkedGrandparents.filter((r) => ["MATERNAL_GRANDMOTHER", "MATERNAL_GRANDFATHER"].includes(r.relationship)).map(toLinked),
+      ...derivedGrandparents.filter((g) => g.side === "MATERNAL").map(toDerived),
+    ];
+    const paternalGrandparents: ChartItem[] = [
+      ...manualGrandparents.filter((m) => m.side === "PATERNAL").map(toManual),
+      ...linkedGrandparents.filter((r) => ["PATERNAL_GRANDMOTHER", "PATERNAL_GRANDFATHER"].includes(r.relationship)).map(toLinked),
+      ...derivedGrandparents.filter((g) => g.side === "PATERNAL").map(toDerived),
+    ];
+    const unknownGrandparents: ChartItem[] = [
+      ...manualGrandparents.filter((m) => !m.side).map(toManual),
+      ...linkedGrandparents.filter((r) => r.relationship === "GRANDPARENT").map(toLinked),
+      ...derivedGrandparents.filter((g) => !g.side).map(toDerived),
+    ];
+    const maternalExtended: ChartItem[] = [
+      ...manualExtended.filter((m) => m.side === "MATERNAL").map(toManual),
+      ...linkedExtended.filter((r) => ["MATERNAL_AUNT", "MATERNAL_UNCLE"].includes(r.relationship)).map(toLinked),
+      ...derivedExtended.filter((e) => e.side === "MATERNAL").map(toDerived),
+    ];
+    const paternalExtended: ChartItem[] = [
+      ...manualExtended.filter((m) => m.side === "PATERNAL").map(toManual),
+      ...linkedExtended.filter((r) => ["PATERNAL_AUNT", "PATERNAL_UNCLE"].includes(r.relationship)).map(toLinked),
+      ...derivedExtended.filter((e) => e.side === "PATERNAL").map(toDerived),
+    ];
+    const unknownExtended: ChartItem[] = [
+      ...manualExtended.filter((m) => !m.side).map(toManual),
+      ...linkedExtended.filter((r) => r.relationship === "AUNT_UNCLE").map(toLinked),
+      ...derivedExtended.filter((e) => !e.side).map(toDerived),
+    ];
+    const parents: ChartItem[] = [
+      ...manualParents.map(toManual),
+      ...linkedParents.map(toLinked),
+    ];
+    const siblings: ChartItem[] = [
+      ...manualSiblings.map(toManual),
+      ...linkedSiblings.map(toLinked),
+    ];
+
     return {
-      maternalGrandparents: grandparents.filter((m) => m.side === "MATERNAL"),
-      paternalGrandparents: grandparents.filter((m) => m.side === "PATERNAL"),
-      unknownGrandparents: grandparents.filter((m) => !m.side),
-      maternalExtended: extended.filter((m) => m.side === "MATERNAL"),
-      paternalExtended: extended.filter((m) => m.side === "PATERNAL"),
-      unknownExtended: extended.filter((m) => !m.side),
+      maternalGrandparents,
+      paternalGrandparents,
+      unknownGrandparents,
+      maternalExtended,
+      paternalExtended,
+      unknownExtended,
       parents,
       siblings,
       linkedChildren,
-      hasGrandparents: grandparents.length > 0,
-      hasExtended: extended.length > 0,
+      hasGrandparents: maternalGrandparents.length > 0 || paternalGrandparents.length > 0 || unknownGrandparents.length > 0,
+      hasExtended: maternalExtended.length > 0 || paternalExtended.length > 0 || unknownExtended.length > 0,
       hasChildren: linkedChildren.length > 0,
     };
   }, [members, relationships]);
@@ -453,7 +658,7 @@ export default function FamilyHistoryPage() {
       if (!res.ok) return;
       const updated = await res.json();
       // Re-fetch to get updated conditions based on new biological flag
-      const fresh = await fetch(`/api/profile-relationships?profileId=${activeProfileId}`).then((r) => r.json());
+      const fresh = await fetch(`/api/profile-relationships?profileId=${activeProfileId}&includeInherited=true`).then((r) => r.json());
       setRelationships(Array.isArray(fresh) ? fresh : []);
       setEditingRelId(null);
     } finally {
@@ -512,8 +717,8 @@ export default function FamilyHistoryPage() {
 
       {activeProfileId && !loading && (
         <>
-          {/* ── Linked Profiles ───────────────────────────────────────────────── */}
-          <section>
+          {/* ── Linked Profiles (list view only) ─────────────────────────────── */}
+          {view === "list" && <section>
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-semibold text-gray-700">Linked Profiles</h2>
               {linkableProfiles.length > 0 && (
@@ -709,6 +914,75 @@ export default function FamilyHistoryPage() {
                               Non-biological — conditions not surfaced
                             </p>
                           )}
+                          {rel.biological && rel.inherited && (() => {
+                            const dedupedLinked = rel.inherited.linkedProfiles.filter(
+                              (p) => !linkedProfileIds.has(p.toProfileId)
+                            );
+                            const total = rel.inherited.familyMembers.length + dedupedLinked.length;
+                            if (total === 0) return null;
+                            const isOpen = expandedInherited.has(rel.id);
+                            return (
+                              <div className="mt-3 border-t border-gray-100 pt-3">
+                                <button
+                                  onClick={() => toggleInherited(rel.id)}
+                                  className="flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                                >
+                                  <svg className={`w-3 h-3 transition-transform ${isOpen ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                  </svg>
+                                  Family of {rel.toProfile.name} · {total} {total === 1 ? "relative" : "relatives"}
+                                </button>
+                                {isOpen && (
+                                  <div className="mt-2 pl-4 space-y-3 border-l-2 border-indigo-100">
+                                    {rel.inherited.familyMembers.map((fm) => {
+                                      const fmBadge = MANUAL_BADGE[fm.relationship];
+                                      return (
+                                        <div key={fm.id}>
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-sm font-medium text-gray-700">{fm.name}</span>
+                                            <span className={`rounded-full px-1.5 py-0.5 text-xs font-medium ${fmBadge?.classes ?? "bg-gray-100 text-gray-600"}`}>
+                                              {fmBadge?.label ?? fm.relationship}
+                                            </span>
+                                            {fm.side && (
+                                              <span className="text-xs text-gray-400">
+                                                {fm.side === "MATERNAL" ? "Maternal" : "Paternal"}
+                                              </span>
+                                            )}
+                                          </div>
+                                          <ConditionPills conditions={fm.conditions} />
+                                        </div>
+                                      );
+                                    })}
+                                    {dedupedLinked.map((lp) => {
+                                      const lpBadge = PROFILE_BADGE[lp.relationship];
+                                      return (
+                                        <div key={lp.id}>
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <Link href={`/profiles/${lp.toProfileId}`} className="text-sm font-medium text-gray-700 hover:text-indigo-600 hover:underline">
+                                              {lp.toProfile.name}
+                                            </Link>
+                                            <span className={`rounded-full px-1.5 py-0.5 text-xs font-medium ${lpBadge?.classes ?? "bg-gray-100 text-gray-600"}`}>
+                                              {lpBadge?.label ?? lp.relationship}
+                                            </span>
+                                            {lp.biological && (
+                                              <span className="rounded-full bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-600 border border-green-200">
+                                                bio
+                                              </span>
+                                            )}
+                                          </div>
+                                          {lp.biological ? (
+                                            <ConditionPills conditions={lp.conditions} />
+                                          ) : (
+                                            <p className="text-xs text-gray-400 italic">Non-biological — conditions not surfaced</p>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </>
                       )}
                     </div>
@@ -716,17 +990,19 @@ export default function FamilyHistoryPage() {
                 })}
               </div>
             )}
-          </section>
+          </section>}
 
-          {/* ── Manual Entries ────────────────────────────────────────────────── */}
+          {/* ── Chart / Manual Entries ────────────────────────────────────────── */}
           <section>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold text-gray-700">Manual Entries</h2>
-            </div>
+            {view === "list" && (
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold text-gray-700">Manual Entries</h2>
+              </div>
+            )}
 
             {view === "chart" ? (
               /* ── Chart view ─────────────────────────────────────────────── */
-              members.length === 0 && !chartGroups.hasChildren ? (
+              !chartGroups.hasGrandparents && !chartGroups.hasExtended && chartGroups.parents.length === 0 && chartGroups.siblings.length === 0 && !chartGroups.hasChildren ? (
                 <div className="rounded-xl border border-dashed border-gray-200 bg-white p-8 text-center">
                   <p className="text-gray-500 mb-3">No family members added yet.</p>
                   <Link
@@ -752,14 +1028,14 @@ export default function FamilyHistoryPage() {
                       }`}>
                         <div className="text-xs font-medium text-rose-400 mb-2">Maternal</div>
                         <div className="flex flex-wrap gap-2">
-                          {chartGroups.maternalGrandparents.map((m) => <ChartCard key={m.id} member={m} />)}
+                          {chartGroups.maternalGrandparents.map((item) => <UnifiedChartCard key={chartItemKey(item)} item={item} />)}
                           {chartGroups.maternalGrandparents.length === 0 && (
                             <p className="text-xs text-gray-300 italic">None recorded</p>
                           )}
                         </div>
                       </div>
                       <div className="flex flex-col items-center gap-2 pt-6 min-w-0">
-                        {chartGroups.unknownGrandparents.map((m) => <ChartCard key={m.id} member={m} />)}
+                        {chartGroups.unknownGrandparents.map((item) => <UnifiedChartCard key={chartItemKey(item)} item={item} />)}
                         {chartGroups.unknownGrandparents.length === 0 && (
                           <div className="w-px h-8 bg-gray-200" />
                         )}
@@ -771,7 +1047,7 @@ export default function FamilyHistoryPage() {
                       }`}>
                         <div className="text-xs font-medium text-sky-400 mb-2">Paternal</div>
                         <div className="flex flex-wrap gap-2">
-                          {chartGroups.paternalGrandparents.map((m) => <ChartCard key={m.id} member={m} />)}
+                          {chartGroups.paternalGrandparents.map((item) => <UnifiedChartCard key={chartItemKey(item)} item={item} />)}
                           {chartGroups.paternalGrandparents.length === 0 && (
                             <p className="text-xs text-gray-300 italic">None recorded</p>
                           )}
@@ -796,14 +1072,14 @@ export default function FamilyHistoryPage() {
                       }`}>
                         <div className="text-xs font-medium text-rose-400 mb-2">Maternal</div>
                         <div className="flex flex-wrap gap-2">
-                          {chartGroups.maternalExtended.map((m) => <ChartCard key={m.id} member={m} />)}
+                          {chartGroups.maternalExtended.map((item) => <UnifiedChartCard key={chartItemKey(item)} item={item} />)}
                           {chartGroups.maternalExtended.length === 0 && (
                             <p className="text-xs text-gray-300 italic">None recorded</p>
                           )}
                         </div>
                       </div>
                       <div className="flex flex-col items-center gap-2 pt-6 min-w-0">
-                        {chartGroups.unknownExtended.map((m) => <ChartCard key={m.id} member={m} />)}
+                        {chartGroups.unknownExtended.map((item) => <UnifiedChartCard key={chartItemKey(item)} item={item} />)}
                         {chartGroups.unknownExtended.length === 0 && (
                           <div className="w-px h-8 bg-gray-200" />
                         )}
@@ -815,7 +1091,7 @@ export default function FamilyHistoryPage() {
                       }`}>
                         <div className="text-xs font-medium text-sky-400 mb-2">Paternal</div>
                         <div className="flex flex-wrap gap-2">
-                          {chartGroups.paternalExtended.map((m) => <ChartCard key={m.id} member={m} />)}
+                          {chartGroups.paternalExtended.map((item) => <UnifiedChartCard key={chartItemKey(item)} item={item} />)}
                           {chartGroups.paternalExtended.length === 0 && (
                             <p className="text-xs text-gray-300 italic">None recorded</p>
                           )}
@@ -833,7 +1109,7 @@ export default function FamilyHistoryPage() {
                       Parents
                     </div>
                     <div className="flex flex-wrap gap-3 justify-center">
-                      {chartGroups.parents.map((m) => <ChartCard key={m.id} member={m} />)}
+                      {chartGroups.parents.map((item) => <UnifiedChartCard key={chartItemKey(item)} item={item} />)}
                     </div>
                     {chartGroups.siblings.length > 0 && <TreeConnector />}
                   </>
@@ -846,7 +1122,7 @@ export default function FamilyHistoryPage() {
                       Siblings
                     </div>
                     <div className="flex flex-wrap gap-3 justify-center">
-                      {chartGroups.siblings.map((m) => <ChartCard key={m.id} member={m} />)}
+                      {chartGroups.siblings.map((item) => <UnifiedChartCard key={chartItemKey(item)} item={item} />)}
                     </div>
                     {chartGroups.hasChildren && <TreeConnector />}
                   </>

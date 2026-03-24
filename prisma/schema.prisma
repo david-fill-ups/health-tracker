@@ -80,8 +80,16 @@ enum FamilySide {
 }
 
 enum FamilyRelationship {
+  // Legacy (kept for existing records)
   PARENT
   SIBLING
+  // Current — gendered
+  FATHER
+  MOTHER
+  BROTHER
+  SISTER
+  HALF_BROTHER
+  HALF_SISTER
   GRANDFATHER
   GRANDMOTHER
   AUNT

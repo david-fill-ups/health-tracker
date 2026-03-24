@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { Toast } from "@/components/ui/Toast";
 
-type FamilyRelationship = "PARENT" | "SIBLING" | "GRANDFATHER" | "GRANDMOTHER" | "AUNT" | "UNCLE" | "SON" | "DAUGHTER";
+type FamilyRelationship = "PARENT" | "SIBLING" | "FATHER" | "MOTHER" | "BROTHER" | "SISTER" | "HALF_BROTHER" | "HALF_SISTER" | "GRANDFATHER" | "GRANDMOTHER" | "AUNT" | "UNCLE" | "SON" | "DAUGHTER";
 type FamilySide = "MATERNAL" | "PATERNAL";
 
 const SIDE_APPLICABLE: FamilyRelationship[] = ["GRANDFATHER", "GRANDMOTHER", "AUNT", "UNCLE"];
@@ -88,6 +88,7 @@ export default function EditFamilyMemberPage({ params }: { params: Promise<{ id:
         return;
       }
       setMemberSaved(true);
+      router.push("/family-history");
     } finally {
       setSavingMember(false);
     }
@@ -233,14 +234,35 @@ export default function EditFamilyMemberPage({ params }: { params: Promise<{ id:
             }}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           >
-            <option value="PARENT">Parent</option>
-            <option value="SIBLING">Sibling</option>
-            <option value="GRANDFATHER">Grandfather</option>
-            <option value="GRANDMOTHER">Grandmother</option>
-            <option value="AUNT">Aunt</option>
-            <option value="UNCLE">Uncle</option>
-            <option value="SON">Son</option>
-            <option value="DAUGHTER">Daughter</option>
+            <optgroup label="Parents">
+              <option value="FATHER">Father</option>
+              <option value="MOTHER">Mother</option>
+            </optgroup>
+            <optgroup label="Siblings">
+              <option value="BROTHER">Brother</option>
+              <option value="SISTER">Sister</option>
+              <option value="HALF_BROTHER">Half-Brother</option>
+              <option value="HALF_SISTER">Half-Sister</option>
+            </optgroup>
+            <optgroup label="Grandparents">
+              <option value="GRANDFATHER">Grandfather</option>
+              <option value="GRANDMOTHER">Grandmother</option>
+            </optgroup>
+            <optgroup label="Aunts &amp; Uncles">
+              <option value="AUNT">Aunt</option>
+              <option value="UNCLE">Uncle</option>
+            </optgroup>
+            <optgroup label="Children">
+              <option value="SON">Son</option>
+              <option value="DAUGHTER">Daughter</option>
+            </optgroup>
+            {/* Legacy values — shown only when existing record uses them */}
+            {["PARENT", "SIBLING"].includes(relationship) && (
+              <optgroup label="Legacy">
+                <option value="PARENT">Parent (legacy)</option>
+                <option value="SIBLING">Sibling (legacy)</option>
+              </optgroup>
+            )}
           </select>
         </div>
 

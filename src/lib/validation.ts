@@ -268,7 +268,11 @@ export const UpdateHealthMetricSchema = CreateHealthMetricSchema.omit({ profileI
 // ── Family Member ────────────────────────────────────────────────────────────
 
 export const FamilyRelationshipEnum = z.enum([
-  "PARENT", "SIBLING", "GRANDFATHER", "GRANDMOTHER", "AUNT", "UNCLE", "SON", "DAUGHTER",
+  // Legacy (existing records)
+  "PARENT", "SIBLING",
+  // Current — gendered
+  "FATHER", "MOTHER", "BROTHER", "SISTER", "HALF_BROTHER", "HALF_SISTER",
+  "GRANDFATHER", "GRANDMOTHER", "AUNT", "UNCLE", "SON", "DAUGHTER",
 ]);
 
 export const FamilySideEnum = z.enum(["MATERNAL", "PATERNAL"]);

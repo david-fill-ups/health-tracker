@@ -3,6 +3,37 @@ import { assertProfileAccess, hasProfileAccess, PermissionError } from "@/lib/pe
 import { logAudit } from "@/lib/audit";
 import type { ProfileRelationshipType } from "@/generated/prisma/enums";
 
+import type { Sex } from "@/generated/prisma/enums";
+
+/** Returns the inverse relationship type for auto-mirroring, or null if not applicable. */
+function computeInverse(
+  relationship: ProfileRelationshipType,
+  fromSex: Sex,
+  toSex: Sex
+): ProfileRelationshipType | null {
+  switch (relationship) {
+    case "FATHER":
+    case "MOTHER":
+      // fromProfile is the child; toProfile is the parent — give toProfile SON or DAUGHTER
+      return fromSex === "FEMALE" ? "DAUGHTER" : "SON";
+    case "SON":
+    case "DAUGHTER":
+      // fromProfile is the parent; toProfile is the child — give toProfile FATHER or MOTHER
+      return toSex === "FEMALE" ? "MOTHER" : "FATHER";
+    case "BROTHER":
+    case "SISTER":
+      return fromSex === "FEMALE" ? "SISTER" : "BROTHER";
+    case "HALF_BROTHER":
+    case "HALF_SISTER":
+      return fromSex === "FEMALE" ? "HALF_SISTER" : "HALF_BROTHER";
+    case "SPOUSE":
+      return "SPOUSE";
+    default:
+      // Grandparents, aunts/uncles, step/in-law — too complex to infer automatically
+      return null;
+  }
+}
+
 export interface CreateProfileRelationshipInput {
   linkedProfileId: string;
   relationship: ProfileRelationshipType;
@@ -34,7 +65,10 @@ const BIOLOGICAL_DEFAULTS: Record<ProfileRelationshipType, boolean> = {
 };
 
 const INHERITABLE_FAMILY_RELATIONSHIPS = new Set([
-  "PARENT", "GRANDFATHER", "GRANDMOTHER", "SIBLING", "AUNT", "UNCLE",
+  // Only one level deep: parent-tier and sibling-tier entries
+  // (GRANDFATHER/GRANDMOTHER/AUNT/UNCLE would be great-grandparents — skip)
+  "PARENT", "FATHER", "MOTHER",
+  "SIBLING", "BROTHER", "SISTER", "HALF_BROTHER", "HALF_SISTER",
 ]);
 
 const INHERITABLE_PROFILE_RELATIONSHIPS = new Set([
@@ -133,6 +167,40 @@ export async function createProfileRelationship(
     relationship: input.relationship,
     biological,
   });
+
+  // Auto-create the inverse relationship if the user also owns the linked profile
+  const ownsLinked = await hasProfileAccess(userId, input.linkedProfileId, "OWNER");
+  if (ownsLinked) {
+    const [fromProfile, toProfile] = await Promise.all([
+      prisma.profile.findUnique({ where: { id: fromProfileId }, select: { sex: true } }),
+      prisma.profile.findUnique({ where: { id: input.linkedProfileId }, select: { sex: true } }),
+    ]);
+    if (fromProfile && toProfile) {
+      const inverseType = computeInverse(input.relationship, fromProfile.sex, toProfile.sex);
+      if (inverseType) {
+        const existingInverse = await prisma.profileRelationship.findUnique({
+          where: { fromProfileId_toProfileId: { fromProfileId: input.linkedProfileId, toProfileId: fromProfileId } },
+        });
+        if (!existingInverse) {
+          const inverseRel = await prisma.profileRelationship.create({
+            data: {
+              fromProfileId: input.linkedProfileId,
+              toProfileId: fromProfileId,
+              relationship: inverseType,
+              biological,
+            },
+          });
+          await logAudit(userId, input.linkedProfileId, "CREATE_PROFILE_RELATIONSHIP", "ProfileRelationship", inverseRel.id, {
+            linkedProfileId: fromProfileId,
+            relationship: inverseType,
+            biological,
+            auto: true,
+          });
+        }
+      }
+    }
+  }
+
   return { ...rel, conditions: [] };
 }
 
