@@ -5,19 +5,35 @@ import { prisma } from "@/lib/prisma";
 import { authConfig } from "../auth.config";
 import { logAudit } from "@/lib/audit";
 
+// Strip session-related adapter methods so NextAuth v5 beta uses JWT sessions
+// end-to-end. User and account management (createUser, linkAccount, etc.) still
+// goes through Prisma so the createUser event and invitation logic still fires.
+const { createSession, getSessionAndUser, updateSession, deleteSession, ...jwtAdapter } =
+  PrismaAdapter(prisma) as ReturnType<typeof PrismaAdapter> & Record<string, unknown>;
+
 export const { auth, handlers, signIn, signOut } = NextAuth({
   ...authConfig,
-  adapter: PrismaAdapter(prisma),
+  adapter: jwtAdapter,
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
     }),
   ],
+  session: { strategy: "jwt" },
   callbacks: {
     ...authConfig.callbacks,
-    session({ session, user }) {
-      session.user.id = user.id;
+    jwt({ token, user }) {
+      // user is present on first sign-in (populated by the adapter's getUser/createUser)
+      if (user?.id) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    session({ session, token }) {
+      if (token?.id) {
+        session.user.id = token.id as string;
+      }
       return session;
     },
   },
