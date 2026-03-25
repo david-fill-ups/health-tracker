@@ -34,7 +34,7 @@ export interface Visit {
   location?: Location | null;
 }
 
-const VISIT_TYPE_LABELS: Record<VisitType, string> = {
+export const VISIT_TYPE_LABELS: Record<VisitType, string> = {
   ROUTINE: "Routine",
   LAB: "Lab",
   SPECIALIST: "Specialist",
@@ -44,21 +44,21 @@ const VISIT_TYPE_LABELS: Record<VisitType, string> = {
   OTHER: "Other",
 };
 
-const STATUS_STYLES: Record<VisitStatus, string> = {
+export const STATUS_STYLES: Record<VisitStatus, string> = {
   PENDING: "bg-amber-100 text-amber-700",
   SCHEDULED: "bg-blue-100 text-blue-700",
   COMPLETED: "bg-green-100 text-green-700",
   CANCELLED: "bg-gray-100 text-gray-500",
 };
 
-const STATUS_LABELS: Record<VisitStatus, string> = {
+export const STATUS_LABELS: Record<VisitStatus, string> = {
   PENDING: "Pending",
   SCHEDULED: "Scheduled",
   COMPLETED: "Completed",
   CANCELLED: "Cancelled",
 };
 
-function formatDate(iso: string) {
+export function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
@@ -67,7 +67,7 @@ function formatDate(iso: string) {
   });
 }
 
-function formatDueMonth(ym: string) {
+export function formatDueMonth(ym: string) {
   const [year, month] = ym.split("-");
   return new Date(Number(year), Number(month) - 1).toLocaleDateString(undefined, {
     year: "numeric",

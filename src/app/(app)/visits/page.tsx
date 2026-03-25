@@ -2,8 +2,13 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
-import { VisitCard, type Visit } from "@/components/visits/VisitCard";
+import {
+  VisitCard, type Visit,
+  VISIT_TYPE_LABELS, STATUS_STYLES, STATUS_LABELS,
+  formatDate, formatDueMonth,
+} from "@/components/visits/VisitCard";
 import type { VisitStatus, VisitType } from "@/generated/prisma/enums";
 import { CardSkeleton } from "@/components/ui/Skeleton";
 
@@ -16,23 +21,20 @@ const STATUS_TABS: Array<{ label: string; value: VisitStatus | "ALL" }> = [
 ];
 
 const VISIT_TYPES: VisitType[] = ["ROUTINE", "LAB", "SPECIALIST", "URGENT", "TELEHEALTH", "PROCEDURE", "OTHER"];
-const VISIT_TYPE_LABELS: Record<VisitType, string> = {
-  ROUTINE: "Routine", LAB: "Lab", SPECIALIST: "Specialist", URGENT: "Urgent",
-  TELEHEALTH: "Telehealth", PROCEDURE: "Procedure", OTHER: "Other",
-};
 
 type GroupBy = "none" | "year" | "doctor" | "facility" | "specialty" | "type";
 const GROUP_BY_OPTIONS: Array<{ label: string; value: GroupBy }> = [
-  { label: "Provider (Doctor)", value: "doctor" },
   { label: "None", value: "none" },
-  { label: "Year", value: "year" },
+  { label: "Provider (Doctor)", value: "doctor" },
   { label: "Provider (Facility)", value: "facility" },
   { label: "Office / Specialty", value: "specialty" },
   { label: "Visit Type", value: "type" },
+  { label: "Year", value: "year" },
 ];
 
 export default function VisitsPage() {
   const { activeProfileId } = useProfile();
+  const router = useRouter();
 
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(false);
@@ -173,7 +175,7 @@ export default function VisitsPage() {
 
     function getKey(v: Visit): string {
       switch (groupBy) {
-        case "doctor": return v.doctor?.name ?? "No Doctor";
+        case "doctor": return v.doctor?.name ?? v.facility?.name ?? "Other";
         case "facility": return v.facility?.name ?? "No Facility";
         case "specialty": return v.specialty || "No Specialty";
         case "type": return VISIT_TYPE_LABELS[v.type];
@@ -358,25 +360,86 @@ export default function VisitsPage() {
             <>
               {groupedVisits.map(([groupName, groupVisits]) => {
                 const isExpanded = expandedGroups.has(groupName);
+
+                // Year grouping: collapsible header only, no summary card
+                if (groupBy === "year") {
+                  return (
+                    <section key={groupName} className="space-y-3">
+                      <button
+                        onClick={() => toggleGroup(groupName)}
+                        className="w-full flex items-center justify-between rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm hover:bg-gray-50 transition-colors"
+                      >
+                        <span className="font-semibold text-gray-900">{groupName}</span>
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <span>{groupVisits.length} visit{groupVisits.length !== 1 ? "s" : ""}</span>
+                          <span>{isExpanded ? "▴" : "▾"}</span>
+                        </div>
+                      </button>
+                      {isExpanded && groupVisits.map((v) => (
+                        <VisitCard key={v.id} visit={v} />
+                      ))}
+                    </section>
+                  );
+                }
+
+                // Named-entity groups: summary card showing the last visit
                 const lastVisit = groupVisits[0];
                 const rest = groupVisits.slice(1);
+                const isFacilityFallback = groupBy === "doctor" && !lastVisit.doctor && !!lastVisit.facility;
+                const lastVisitDateLabel = lastVisit.date
+                  ? formatDate(lastVisit.date)
+                  : lastVisit.dueMonth
+                  ? `Due ${formatDueMonth(lastVisit.dueMonth)}`
+                  : "No date";
+
                 return (
                   <section key={groupName} className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">
-                        {groupName}
-                      </h2>
-                      {rest.length > 0 && (
-                        <button
-                          onClick={() => toggleGroup(groupName)}
-                          className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
-                        >
-                          {isExpanded ? "Show less" : `+${rest.length} more`}
-                          <span className="text-sm">{isExpanded ? "▴" : "▾"}</span>
-                        </button>
-                      )}
+                    <div
+                      onClick={() => router.push(`/visits/${lastVisit.id}`)}
+                      className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:bg-gray-50 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 space-y-1 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {isFacilityFallback && (
+                              <span className="text-xs font-medium text-indigo-500 bg-indigo-50 border border-indigo-100 rounded px-1.5 py-0.5 shrink-0">Facility</span>
+                            )}
+                            <span className="font-semibold text-gray-900">{groupName}</span>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm text-gray-500">Last Visit: {lastVisitDateLabel}</span>
+                            {groupBy !== "type" && (
+                              <span className="bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 text-xs font-medium shrink-0">
+                                {VISIT_TYPE_LABELS[lastVisit.type]}
+                              </span>
+                            )}
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium shrink-0 ${STATUS_STYLES[lastVisit.status]}`}>
+                              {STATUS_LABELS[lastVisit.status]}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-x-3 text-sm text-gray-500">
+                            {groupBy !== "doctor" && !isFacilityFallback && lastVisit.doctor && (
+                              <span>{lastVisit.doctor.name}</span>
+                            )}
+                            {groupBy !== "facility" && !isFacilityFallback && lastVisit.facility && (
+                              <span>{lastVisit.facility.name}</span>
+                            )}
+                            {groupBy !== "specialty" && lastVisit.specialty && (
+                              <span>{lastVisit.specialty}</span>
+                            )}
+                          </div>
+                        </div>
+                        {rest.length > 0 && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleGroup(groupName); }}
+                            className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors shrink-0 mt-0.5"
+                          >
+                            {isExpanded ? "Show less" : `+${rest.length} more`}
+                            <span className="text-sm">{isExpanded ? "▴" : "▾"}</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <VisitCard visit={lastVisit} />
                     {isExpanded && rest.map((v) => (
                       <VisitCard key={v.id} visit={v} />
                     ))}

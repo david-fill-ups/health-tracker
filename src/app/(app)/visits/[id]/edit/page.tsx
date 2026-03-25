@@ -39,12 +39,11 @@ export default function EditVisitPage() {
         if (res.status === 404) { setNotFound(true); return; }
         if (res.ok) {
           const v: VisitRaw = await res.json();
-          // Convert ISO date to datetime-local format
           let dateStr = "";
           if (v.date) {
             const d = new Date(v.date);
-            // Format: YYYY-MM-DDTHH:MM
-            dateStr = d.toISOString().slice(0, 16);
+            const pad = (n: number) => String(n).padStart(2, "0");
+            dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
           }
           setInitial({
             id: v.id,

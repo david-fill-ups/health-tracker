@@ -29,12 +29,16 @@ export async function getVaccinationRecommendations(userId: string, profileId: s
   });
 
   const declinedNames = new Set<string>();
+  const naturalNames = new Set<string>();
   const byName = new Map<string, Date[]>();
   for (const v of vaccinations) {
     const key = v.name.toLowerCase();
     if (v.source === "DECLINED") {
       declinedNames.add(key);
       continue;
+    }
+    if (v.source === "NATURAL") {
+      naturalNames.add(key);
     }
     byName.set(key, [...(byName.get(key) ?? []), v.date]);
   }
@@ -43,6 +47,8 @@ export async function getVaccinationRecommendations(userId: string, profileId: s
   const recommendations = recs.map((r) => {
     const allNames = [r.vaccine, ...r.aliases].map((n) => n.toLowerCase());
     if (allNames.some((n) => declinedNames.has(n))) return { ...r, status: "exempt" as const };
+    if (allNames.some((n) => naturalNames.has(n)))
+      return { ...r, status: "completed" as const, nextDueDate: null, notes: "Natural immunity documented" };
     return r;
   });
 
