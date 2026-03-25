@@ -45,7 +45,7 @@ export function ProfileCard({
             {profile.name}
           </Link>
           <p className="mt-0.5 text-sm text-gray-500">
-            Born {new Date(profile.birthDate).toLocaleDateString()} &middot;{" "}
+            Born {new Date(profile.birthDate).toLocaleDateString(undefined, { timeZone: "UTC" })} &middot;{" "}
             {profile.sex.replace(/_/g, " ").toLowerCase()}{" "}
             {profile.state && <>&middot; {profile.state}</>}
           </p>

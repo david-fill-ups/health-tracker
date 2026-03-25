@@ -72,7 +72,7 @@ export async function createVaccination(
   profileId: string,
   input: CreateVaccinationInput
 ) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   const { name, date, source, facilityId, lotNumber, notes } = input;
   const vaccination = await prisma.vaccination.create({
     data: {
@@ -108,7 +108,7 @@ export async function updateVaccination(
     select: { profileId: true },
   });
   if (!vaccination) throw new Error("Vaccination not found");
-  await assertProfileAccess(userId, vaccination.profileId, "OWNER");
+  await assertProfileAccess(userId, vaccination.profileId, "WRITE");
   const { name, date, source, facilityId, lotNumber, notes } = input;
   const updated = await prisma.vaccination.update({
     where: { id },
@@ -124,7 +124,7 @@ export async function deleteVaccination(userId: string, id: string) {
     select: { profileId: true },
   });
   if (!vaccination) throw new Error("Vaccination not found");
-  await assertProfileAccess(userId, vaccination.profileId, "OWNER");
+  await assertProfileAccess(userId, vaccination.profileId, "WRITE");
   await logAudit(userId, vaccination.profileId, "DELETE_VACCINATION", "Vaccination", id);
   await prisma.vaccination.delete({ where: { id } });
 }

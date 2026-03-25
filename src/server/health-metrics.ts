@@ -36,7 +36,7 @@ export async function createHealthMetric(
   profileId: string,
   input: CreateHealthMetricInput
 ) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   const { metricType, value, unit, measuredAt, notes } = input;
   const metric = await prisma.healthMetric.create({
     data: { metricType, value, unit, measuredAt, notes, profileId },
@@ -51,7 +51,7 @@ export async function updateHealthMetric(
   metricId: string,
   input: Partial<CreateHealthMetricInput>
 ) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   const { metricType, value, unit, measuredAt, notes } = input;
   const metric = await prisma.healthMetric.update({
     where: { id: metricId, profileId },
@@ -66,7 +66,7 @@ export async function deleteHealthMetric(
   profileId: string,
   metricId: string
 ) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   await logAudit(userId, profileId, "DELETE_HEALTH_METRIC", "HealthMetric", metricId);
   return prisma.healthMetric.delete({ where: { id: metricId, profileId } });
 }

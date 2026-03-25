@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use, type FormEvent } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { Toast } from "@/components/ui/Toast";
@@ -15,6 +15,7 @@ export default function EditConditionPage({
   const { activeProfileId } = useProfile();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,7 +38,28 @@ export default function EditConditionPage({
       .finally(() => setLoading(false));
   }, [id, activeProfileId]);
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleDelete() {
+    if (!activeProfileId) return;
+    if (!confirm("Delete this condition? This cannot be undone.")) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/conditions/${id}?profileId=${activeProfileId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Failed to delete condition");
+        return;
+      }
+      router.push("/conditions");
+      router.refresh();
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!activeProfileId) return;
     setSubmitting(true);
@@ -145,20 +167,30 @@ export default function EditConditionPage({
           />
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex items-center justify-between">
+          <div className="flex gap-3">
+            <button
+              type="submit"
+              disabled={submitting || deleting}
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {saved ? "Saved!" : submitting ? "Saving…" : "Save changes"}
+            </button>
+            <a
+              href="/conditions"
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </a>
+          </div>
           <button
-            type="submit"
-            disabled={submitting}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+            type="button"
+            onClick={handleDelete}
+            disabled={deleting || submitting}
+            className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
           >
-            {saved ? "Saved!" : submitting ? "Saving…" : "Save changes"}
+            {deleting ? "Deleting…" : "Delete condition"}
           </button>
-          <a
-            href="/conditions"
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            Cancel
-          </a>
         </div>
       </form>
       <Toast message={saved ? "Saved successfully" : null} onDismiss={() => setSaved(false)} />

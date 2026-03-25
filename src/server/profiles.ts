@@ -21,9 +21,8 @@ export async function getProfilesForUser(userId: string) {
 
   return results.map(({ access, ...profile }) => ({
     ...profile,
-    // Only the OWNER should see the calendarToken — shared/read-only members
-    // should not be able to subscribe to the calendar feed.
-    calendarToken: access[0]?.permission === "OWNER" ? profile.calendarToken : undefined,
+    // OWNER and WRITE users can subscribe to the calendar feed; READ_ONLY cannot.
+    calendarToken: access[0]?.permission !== "READ_ONLY" ? profile.calendarToken : undefined,
   }));
 }
 
@@ -37,7 +36,8 @@ export async function getProfileById(userId: string, profileId: string) {
   const profile = await prisma.profile.findUnique({ where: { id: profileId } });
   if (!profile) return null;
 
-  return access.permission === "OWNER"
+  // OWNER and WRITE users can subscribe to the calendar feed; READ_ONLY cannot.
+  return access.permission !== "READ_ONLY"
     ? profile
     : { ...profile, calendarToken: undefined };
 }

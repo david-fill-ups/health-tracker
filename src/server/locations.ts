@@ -42,7 +42,7 @@ export async function createLocation(
   input: CreateLocationInput
 ) {
   const profileId = await getProfileIdForFacility(facilityId);
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   const { name, address1, address2, city, state, zip, phone, active } = input;
   const location = await prisma.location.create({ data: { name, address1, address2, city, state, zip, phone, active, facilityId } });
   await logAudit(userId, profileId, "CREATE_LOCATION", "Location", location.id, { name: location.name, facilityId });
@@ -56,7 +56,7 @@ export async function updateLocation(
   input: Partial<CreateLocationInput>
 ) {
   const profileId = await getProfileIdForFacility(facilityId);
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   const { name, address1, address2, city, state, zip, phone, active } = input;
   const location = await prisma.location.update({ where: { id: locationId, facilityId }, data: { name, address1, address2, city, state, zip, phone, active } });
   await logAudit(userId, profileId, "UPDATE_LOCATION", "Location", locationId);
@@ -69,7 +69,7 @@ export async function deleteLocation(
   locationId: string
 ) {
   const profileId = await getProfileIdForFacility(facilityId);
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   await logAudit(userId, profileId, "DELETE_LOCATION", "Location", locationId);
   return prisma.location.delete({ where: { id: locationId, facilityId } });
 }

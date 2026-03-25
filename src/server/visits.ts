@@ -44,7 +44,7 @@ export async function getVisitById(userId: string, profileId: string, visitId: s
 }
 
 export async function createVisit(userId: string, profileId: string, input: CreateVisitInput) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   const { doctorId, facilityId, locationId, date, dueMonth, type, reason, specialty, notes, documentUrl, status } = input;
   const visit = await prisma.visit.create({ data: { doctorId, facilityId, locationId, date, dueMonth, type, reason, specialty, notes, documentUrl, status, profileId } });
   await logAudit(userId, profileId, "CREATE_VISIT", "Visit", visit.id, { type: visit.type });
@@ -57,7 +57,7 @@ export async function updateVisit(
   visitId: string,
   input: Partial<CreateVisitInput>
 ) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   const { doctorId, facilityId, locationId, date, dueMonth, type, reason, specialty, notes, documentUrl, status } = input;
   const visit = await prisma.visit.update({ where: { id: visitId, profileId }, data: { doctorId, facilityId, locationId, date, dueMonth, type, reason, specialty, notes, documentUrl, status } });
   await logAudit(userId, profileId, "UPDATE_VISIT", "Visit", visitId);
@@ -65,7 +65,7 @@ export async function updateVisit(
 }
 
 export async function deleteVisit(userId: string, profileId: string, visitId: string) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   await logAudit(userId, profileId, "DELETE_VISIT", "Visit", visitId);
   return prisma.visit.delete({ where: { id: visitId, profileId } });
 }

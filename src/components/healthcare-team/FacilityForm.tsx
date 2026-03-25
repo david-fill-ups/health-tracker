@@ -10,6 +10,7 @@ interface FacilityFormData {
   websiteUrl: string;
   portalUrl: string;
   phone: string;
+  notes: string;
   active: boolean;
 }
 
@@ -21,6 +22,7 @@ interface ExistingFacility {
   websiteUrl: string;
   portalUrl: string;
   phone: string;
+  notes: string;
   active: boolean;
 }
 
@@ -39,6 +41,7 @@ export function FacilityForm({ profileId, initial, onSuccess, onCancel }: Props)
     websiteUrl: initial?.websiteUrl ?? "",
     portalUrl: initial?.portalUrl ?? "",
     phone: initial?.phone ?? "",
+    notes: initial?.notes ?? "",
     active: initial?.active ?? true,
   });
   const [saving, setSaving] = useState(false);
@@ -62,6 +65,7 @@ export function FacilityForm({ profileId, initial, onSuccess, onCancel }: Props)
       websiteUrl: form.websiteUrl || null,
       portalUrl: form.portalUrl || null,
       phone: form.phone || null,
+      notes: form.notes || undefined,
       active: form.active,
     };
 
@@ -166,6 +170,16 @@ export function FacilityForm({ profileId, initial, onSuccess, onCancel }: Props)
             value={form.portalUrl}
             onChange={(e) => set("portalUrl", e.target.value)}
             placeholder="https://"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+
+        <div className="sm:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+          <textarea
+            value={form.notes}
+            onChange={(e) => set("notes", e.target.value)}
+            rows={3}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>

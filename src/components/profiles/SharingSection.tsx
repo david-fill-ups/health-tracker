@@ -89,6 +89,25 @@ export function SharingSection({ profileId, currentUserId, isOwnerProfile = fals
   }
 
   async function handleChangePermission(targetUserId: string, newPermission: string) {
+    const target = members.find((m) => m.user.id === targetUserId);
+    const isSelf = targetUserId === currentUserId;
+
+    if (!isSelf && newPermission === "OWNER") {
+      const name = target?.user.name ?? target?.user.email ?? "this person";
+      if (!confirm(`Make ${name} a co-owner?\n\nThey will have full access including sharing settings. Your own access level will remain unchanged.\n\nIf you want to step down yourself, change your own permission separately after this.`)) {
+        load();
+        return;
+      }
+    }
+
+    if (isSelf && target?.permission === "OWNER" && newPermission !== "OWNER") {
+      const loseEdit = newPermission === "READ_ONLY" ? "edit health data or " : "";
+      if (!confirm(`Step down from Owner?\n\nYou will lose the ability to ${loseEdit}manage sharing settings. Another owner will need to restore your access if you change your mind.\n\nContinue?`)) {
+        load();
+        return;
+      }
+    }
+
     await fetch(`/api/profiles/${profileId}/access/${targetUserId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },

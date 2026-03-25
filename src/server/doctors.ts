@@ -28,7 +28,7 @@ export async function createDoctor(
   profileId: string,
   input: CreateDoctorInput
 ) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   const { name, specialty, facilityId, rating, websiteUrl, portalUrl, phone, notes, active } = input;
   const doctor = await prisma.doctor.create({ data: { name, specialty, facilityId, rating, websiteUrl, portalUrl, phone, notes, active, profileId } });
   await logAudit(userId, profileId, "CREATE_DOCTOR", "Doctor", doctor.id, { name: doctor.name });
@@ -41,7 +41,7 @@ export async function updateDoctor(
   doctorId: string,
   input: Partial<CreateDoctorInput>
 ) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   const { name, specialty, facilityId, rating, websiteUrl, portalUrl, phone, notes, active } = input;
   const doctor = await prisma.doctor.update({ where: { id: doctorId, profileId }, data: { name, specialty, facilityId, rating, websiteUrl, portalUrl, phone, notes, active } });
   await logAudit(userId, profileId, "UPDATE_DOCTOR", "Doctor", doctorId);
@@ -53,7 +53,7 @@ export async function deleteDoctor(
   profileId: string,
   doctorId: string
 ) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   await logAudit(userId, profileId, "DELETE_DOCTOR", "Doctor", doctorId);
   return prisma.doctor.delete({ where: { id: doctorId, profileId } });
 }

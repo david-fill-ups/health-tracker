@@ -38,7 +38,7 @@ export async function createFamilyMember(
   profileId: string,
   input: CreateFamilyMemberInput
 ) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   const member = await prisma.familyMember.create({ data: { profileId, ...input } });
   await logAudit(userId, profileId, "CREATE_FAMILY_MEMBER", "FamilyMember", member.id, {
     name: member.name,
@@ -53,7 +53,7 @@ export async function updateFamilyMember(
   memberId: string,
   input: Partial<CreateFamilyMemberInput>
 ) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   const member = await prisma.familyMember.update({
     where: { id: memberId, profileId },
     data: input,
@@ -63,7 +63,7 @@ export async function updateFamilyMember(
 }
 
 export async function deleteFamilyMember(userId: string, profileId: string, memberId: string) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   await logAudit(userId, profileId, "DELETE_FAMILY_MEMBER", "FamilyMember", memberId);
   return prisma.familyMember.delete({ where: { id: memberId, profileId } });
 }
@@ -74,7 +74,7 @@ export async function createFamilyCondition(
   memberId: string,
   input: CreateFamilyConditionInput
 ) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   const member = await prisma.familyMember.findUnique({
     where: { id: memberId, profileId },
     select: { id: true },
@@ -97,7 +97,7 @@ export async function updateFamilyCondition(
   conditionId: string,
   input: Partial<CreateFamilyConditionInput>
 ) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   const existing = await prisma.familyCondition.findFirst({
     where: { id: conditionId, familyMemberId: memberId, familyMember: { profileId } },
   });
@@ -113,7 +113,7 @@ export async function deleteFamilyCondition(
   memberId: string,
   conditionId: string
 ) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   const existing = await prisma.familyCondition.findFirst({
     where: { id: conditionId, familyMemberId: memberId, familyMember: { profileId } },
   });

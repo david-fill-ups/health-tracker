@@ -28,7 +28,7 @@ export async function createAllergy(
   profileId: string,
   input: CreateAllergyInput
 ) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   const { allergen, category, diagnosisDate, whealSize, notes } = input;
   const allergy = await prisma.allergy.create({ data: { allergen, category, diagnosisDate, whealSize, notes, profileId } });
   await logAudit(userId, profileId, "CREATE_ALLERGY", "Allergy", allergy.id, { allergen: allergy.allergen });
@@ -41,7 +41,7 @@ export async function updateAllergy(
   allergyId: string,
   input: Partial<CreateAllergyInput>
 ) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   const { allergen, category, diagnosisDate, whealSize, notes } = input;
   const allergy = await prisma.allergy.update({ where: { id: allergyId, profileId }, data: { allergen, category, diagnosisDate, whealSize, notes } });
   await logAudit(userId, profileId, "UPDATE_ALLERGY", "Allergy", allergyId);
@@ -49,7 +49,7 @@ export async function updateAllergy(
 }
 
 export async function deleteAllergy(userId: string, profileId: string, allergyId: string) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   await logAudit(userId, profileId, "DELETE_ALLERGY", "Allergy", allergyId);
   return prisma.allergy.delete({ where: { id: allergyId, profileId } });
 }

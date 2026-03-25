@@ -33,7 +33,7 @@ export async function createPortal(
   profileId: string,
   input: CreatePortalInput
 ) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   const { name, organization, url, facilityId, notes, active } = input;
   const portal = await prisma.portal.create({ data: { name, organization, url, facilityId, notes, active, profileId } });
   await logAudit(userId, profileId, "CREATE_PORTAL", "Portal", portal.id, { name: portal.name });
@@ -46,7 +46,7 @@ export async function updatePortal(
   portalId: string,
   input: Partial<CreatePortalInput>
 ) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   const { name, organization, url, facilityId, notes, active } = input;
   const portal = await prisma.portal.update({ where: { id: portalId, profileId }, data: { name, organization, url, facilityId, notes, active } });
   await logAudit(userId, profileId, "UPDATE_PORTAL", "Portal", portalId);
@@ -54,7 +54,7 @@ export async function updatePortal(
 }
 
 export async function deletePortal(userId: string, profileId: string, portalId: string) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   await logAudit(userId, profileId, "DELETE_PORTAL", "Portal", portalId);
   return prisma.portal.delete({ where: { id: portalId, profileId } });
 }

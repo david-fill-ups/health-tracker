@@ -23,7 +23,7 @@ export async function createCondition(
   profileId: string,
   input: CreateConditionInput
 ) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   const { name, diagnosisDate, status, notes } = input;
   const condition = await prisma.condition.create({ data: { name, diagnosisDate, status, notes, profileId } });
   await logAudit(userId, profileId, "CREATE_CONDITION", "Condition", condition.id, { name: condition.name });
@@ -45,7 +45,7 @@ export async function updateCondition(
   conditionId: string,
   input: Partial<CreateConditionInput>
 ) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   const { name, diagnosisDate, status, notes } = input;
   const condition = await prisma.condition.update({ where: { id: conditionId, profileId }, data: { name, diagnosisDate, status, notes } });
   await logAudit(userId, profileId, "UPDATE_CONDITION", "Condition", conditionId);
@@ -57,7 +57,7 @@ export async function deleteCondition(
   profileId: string,
   conditionId: string
 ) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   await logAudit(userId, profileId, "DELETE_CONDITION", "Condition", conditionId);
   return prisma.condition.delete({ where: { id: conditionId, profileId } });
 }

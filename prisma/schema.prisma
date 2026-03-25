@@ -244,6 +244,7 @@ model Facility {
   websiteUrl String?
   portalUrl  String?
   phone      String?
+  notes      String?
   active     Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

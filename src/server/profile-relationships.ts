@@ -146,7 +146,7 @@ export async function createProfileRelationship(
   fromProfileId: string,
   input: CreateProfileRelationshipInput
 ) {
-  await assertProfileAccess(userId, fromProfileId, "OWNER");
+  await assertProfileAccess(userId, fromProfileId, "WRITE");
   if (fromProfileId === input.linkedProfileId) {
     throw new Error("Cannot link a profile to itself");
   }
@@ -210,7 +210,7 @@ export async function updateProfileRelationship(
   relId: string,
   input: { relationship?: ProfileRelationshipType; biological?: boolean }
 ) {
-  await assertProfileAccess(userId, fromProfileId, "OWNER");
+  await assertProfileAccess(userId, fromProfileId, "WRITE");
   const existing = await prisma.profileRelationship.findUnique({
     where: { id: relId, fromProfileId },
   });
@@ -229,7 +229,7 @@ export async function deleteProfileRelationship(
   fromProfileId: string,
   relId: string
 ) {
-  await assertProfileAccess(userId, fromProfileId, "OWNER");
+  await assertProfileAccess(userId, fromProfileId, "WRITE");
   const existing = await prisma.profileRelationship.findUnique({
     where: { id: relId, fromProfileId },
   });

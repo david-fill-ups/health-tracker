@@ -8,19 +8,19 @@ import { logAudit } from "@/lib/audit";
 import type { ProfilePermission } from "@/generated/prisma/enums";
 
 export async function getProfileAccessDetails(userId: string, profileId: string) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  const members = await prisma.profileAccess.findMany({
+    where: { profileId },
+    include: { user: { select: { id: true, name: true, email: true, image: true } } },
+    orderBy: { createdAt: "asc" },
+  });
 
-  const [members, pending] = await Promise.all([
-    prisma.profileAccess.findMany({
-      where: { profileId },
-      include: { user: { select: { id: true, name: true, email: true, image: true } } },
-      orderBy: { createdAt: "asc" },
-    }),
-    prisma.profileInvitation.findMany({
-      where: { profileId },
-      orderBy: { createdAt: "asc" },
-    }),
-  ]);
+  const callerAccess = members.find((m) => m.userId === userId);
+  if (!callerAccess) throw new PermissionError("UNAUTHORIZED", 401);
+
+  // Pending invitations expose email addresses — only show to owners
+  const pending = callerAccess.permission === "OWNER"
+    ? await prisma.profileInvitation.findMany({ where: { profileId }, orderBy: { createdAt: "asc" } })
+    : [];
 
   return { members, pending };
 }
@@ -33,8 +33,9 @@ export async function addProfileAccess(
 ) {
   await assertProfileAccess(userId, profileId, "OWNER");
 
+  const normalizedEmail = email.toLowerCase().trim();
   const target = await prisma.user.findUnique({
-    where: { email },
+    where: { email: normalizedEmail },
     select: { id: true },
   });
 
@@ -59,11 +60,11 @@ export async function addProfileAccess(
   } else {
     // No account yet — create a pending invitation
     await prisma.profileInvitation.upsert({
-      where: { profileId_email: { profileId, email } },
-      create: { profileId, email, permission, invitedBy: userId },
+      where: { profileId_email: { profileId, email: normalizedEmail } },
+      create: { profileId, email: normalizedEmail, permission, invitedBy: userId },
       update: { permission, invitedBy: userId },
     });
-    await logAudit(userId, profileId, "SHARE_PROFILE_INVITE", "ProfileInvitation", undefined, { email, permission });
+    await logAudit(userId, profileId, "SHARE_PROFILE_INVITE", "ProfileInvitation", undefined, { email: normalizedEmail, permission });
     return { type: "invited" as const };
   }
 }

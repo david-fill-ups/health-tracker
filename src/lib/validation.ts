@@ -168,6 +168,7 @@ export const CreateFacilitySchema = z.object({
   websiteUrl: optStr500,
   portalUrl: optStr500,
   phone: optPhone,
+  notes: z.string().max(2000).optional(),
   active: z.boolean().optional(),
 });
 
