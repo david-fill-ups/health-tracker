@@ -17,11 +17,8 @@ export const authConfig: NextAuthConfig = {
       const isLoginPage = nextUrl.pathname.startsWith("/login");
       const isApiAuth = nextUrl.pathname.startsWith("/api/auth");
       const isPublicCalendar = nextUrl.pathname.startsWith("/api/calendar");
-      const isDebugPage = nextUrl.pathname.startsWith("/debug");
-      const isApiDebug = nextUrl.pathname.startsWith("/api/debug");
-
-      // Public routes: login page, auth API, calendar feed (token-protected), debug pages
-      if (isApiAuth || isPublicCalendar || isDebugPage || isApiDebug) return true;
+      // Public routes: login page, auth API, calendar feed (token-protected)
+      if (isApiAuth || isPublicCalendar) return true;
       if (isLoginPage) {
         // Redirect logged-in users away from login
         if (isLoggedIn) {
