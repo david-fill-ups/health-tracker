@@ -91,6 +91,11 @@ export default function HealthcareTeamPage() {
   const inactiveFacilities = facilities.filter((f) => !f.active);
   const inactiveDoctors = doctors.filter((d) => !d.active);
 
+  // Active facilities that have at least one inactive doctor (show in both sections)
+  const activeFacilitiesWithInactiveDoctors = activeFacilities.filter(
+    (f) => inactiveDoctors.some((d) => d.facilityId === f.id)
+  );
+
   // Group active doctors by facilityId
   const activeDoctorsByFacility = new Map<string, Doctor[]>();
   const independentDoctors: Doctor[] = [];
@@ -210,6 +215,22 @@ export default function HealthcareTeamPage() {
               {inactiveOpen && (
                 <div className="mt-3 space-y-4">
                   {inactiveFacilities.map((f) => {
+                    const facilityDoctors = inactiveDoctorsByFacility.get(f.id) ?? [];
+                    return (
+                      <div key={f.id} className="space-y-1">
+                        <FacilityCard facility={toFacilityCardProps(f)} />
+                        {facilityDoctors.length > 0 && (
+                          <div className="ml-6 space-y-1 border-l-2 border-gray-100 pl-4">
+                            {facilityDoctors.map((d) => (
+                              <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {/* Active facilities with some inactive providers */}
+                  {activeFacilitiesWithInactiveDoctors.map((f) => {
                     const facilityDoctors = inactiveDoctorsByFacility.get(f.id) ?? [];
                     return (
                       <div key={f.id} className="space-y-1">

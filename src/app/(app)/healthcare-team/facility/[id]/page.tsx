@@ -33,6 +33,7 @@ interface FacilityDetail {
   websiteUrl: string | null;
   portalUrl: string | null;
   phone: string | null;
+  notes: string | null;
   active: boolean;
   _count: { visits: number };
   visits: VisitSummary[];
@@ -84,6 +85,10 @@ export default function FacilityDetailPage({ params }: { params: Promise<{ id: s
 
   async function handleToggleActive() {
     if (!activeProfileId || !facility) return;
+    if (facility.active && facility.doctors.some((d) => d.active)) {
+      alert("All providers at this facility must be marked inactive before the facility can be marked inactive.");
+      return;
+    }
     setToggling(true);
     const res = await fetch(`/api/facilities/${id}?profileId=${activeProfileId}`, {
       method: "PUT",
@@ -183,6 +188,9 @@ export default function FacilityDetailPage({ params }: { params: Promise<{ id: s
                 </a>
               </p>
             )}
+            {facility.notes && (
+              <p><span className="font-medium text-gray-500">Notes:</span> {facility.notes}</p>
+            )}
           </div>
           <div className="flex gap-2 shrink-0">
             <button
@@ -220,6 +228,7 @@ export default function FacilityDetailPage({ params }: { params: Promise<{ id: s
                 websiteUrl: facility.websiteUrl ?? "",
                 portalUrl: facility.portalUrl ?? "",
                 phone: facility.phone ?? "",
+                notes: facility.notes ?? "",
                 active: facility.active,
               }}
               onSuccess={handleEditSuccess}

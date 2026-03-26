@@ -57,6 +57,7 @@ export default function ProviderDetailPage({ params }: { params: Promise<{ id: s
   const [doctor, setDoctor] = useState<DoctorDetail | null>(null);
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [allSpecialties, setAllSpecialties] = useState<string[]>([]);
+  const [allDoctors, setAllDoctors] = useState<{ id: string; facilityId: string | null; active: boolean }[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -81,6 +82,11 @@ export default function ProviderDetailPage({ params }: { params: Promise<{ id: s
             allDocs.map((d: { specialty?: string | null }) => d.specialty).filter(Boolean)
           )] as string[];
           setAllSpecialties(specs);
+          setAllDoctors(allDocs.map((d: { id: string; facilityId?: string | null; active: boolean }) => ({
+            id: d.id,
+            facilityId: d.facilityId ?? null,
+            active: d.active,
+          })));
         }
       })
       .finally(() => setLoading(false));
@@ -96,6 +102,7 @@ export default function ProviderDetailPage({ params }: { params: Promise<{ id: s
   async function handleToggleActive() {
     if (!activeProfileId || !doctor) return;
     setToggling(true);
+    const markingInactive = doctor.active;
     const res = await fetch(`/api/doctors/${id}?profileId=${activeProfileId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -104,6 +111,25 @@ export default function ProviderDetailPage({ params }: { params: Promise<{ id: s
     if (res.ok) {
       const updated = await res.json();
       setDoctor((prev) => prev ? { ...prev, active: updated.active } : prev);
+
+      if (markingInactive && doctor.facilityId) {
+        const siblingsAllInactive = allDoctors
+          .filter((d) => d.facilityId === doctor.facilityId && d.id !== doctor.id)
+          .every((d) => !d.active);
+        if (siblingsAllInactive) {
+          const facilityName = doctor.facility?.name ?? "this facility";
+          const markFacility = confirm(
+            `All providers at ${facilityName} are now inactive. Mark the facility as inactive too?`
+          );
+          if (markFacility) {
+            await fetch(`/api/facilities/${doctor.facilityId}?profileId=${activeProfileId}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ active: false }),
+            });
+          }
+        }
+      }
     }
     setToggling(false);
   }

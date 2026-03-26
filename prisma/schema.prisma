@@ -236,18 +236,20 @@ model ProfileInvitation {
 // ─── Healthcare Team ──────────────────────────────────────────────────────────
 
 model Facility {
-  id         String   @id @default(cuid())
-  profileId  String
-  name       String
-  type       String   @default("Clinic")
-  rating     Float?
-  websiteUrl String?
-  portalUrl  String?
-  phone      String?
-  notes      String?
-  active     Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id            String    @id @default(cuid())
+  profileId     String
+  name          String
+  type          String    @default("Clinic")
+  npiNumber     String?
+  npiLastSynced DateTime?
+  rating        Float?
+  websiteUrl    String?
+  portalUrl     String?
+  phone         String?
+  notes         String?
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   profile      Profile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
   locations    Location[]
@@ -280,19 +282,23 @@ model Location {
 }
 
 model Doctor {
-  id         String   @id @default(cuid())
-  profileId  String
-  name       String
-  specialty  String?
-  facilityId String?
-  rating     Float?
-  websiteUrl String?
-  portalUrl  String?
-  phone      String?
-  notes      String?
-  active     Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id            String    @id @default(cuid())
+  profileId     String
+  name          String
+  specialty     String?
+  facilityId    String?
+  npiNumber     String?
+  credential    String?
+  photo         String?
+  npiLastSynced DateTime?
+  rating        Float?
+  websiteUrl    String?
+  portalUrl     String?
+  phone         String?
+  notes         String?
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   profile     Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
   facility    Facility?    @relation(fields: [facilityId], references: [id])

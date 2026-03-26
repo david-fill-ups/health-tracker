@@ -22,9 +22,9 @@ export async function getNeedToSchedule(userId: string, profileId: string) {
 }
 
 export interface CreateVisitInput {
-  doctorId?: string;
-  facilityId?: string;
-  locationId?: string;
+  doctorId?: string | null;
+  facilityId?: string | null;
+  locationId?: string | null;
   date?: Date;
   dueMonth?: string;
   type?: VisitType;

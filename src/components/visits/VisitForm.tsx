@@ -42,6 +42,8 @@ interface Doctor {
   id: string;
   name: string;
   specialty?: string | null;
+  active: boolean;
+  facilityId?: string | null;
 }
 
 interface Location {
@@ -136,9 +138,9 @@ export function VisitForm({ profileId, initial, onSuccess, onCancel }: Props) {
       profileId,
       type: form.type,
       status: form.status,
-      doctorId: form.doctorId || undefined,
-      facilityId: form.facilityId || undefined,
-      locationId: form.locationId || undefined,
+      doctorId: form.doctorId || null,
+      facilityId: form.facilityId || null,
+      locationId: form.locationId || null,
       reason: form.reason || undefined,
       specialty: form.specialty || undefined,
       notes: form.notes || undefined,
@@ -287,16 +289,63 @@ export function VisitForm({ profileId, initial, onSuccess, onCancel }: Props) {
           <label className="block text-sm font-medium text-gray-700 mb-1">Doctor</label>
           <select
             value={form.doctorId}
-            onChange={(e) => set("doctorId", e.target.value)}
+            onChange={(e) => {
+              const doctorId = e.target.value;
+              const doctor = doctors.find((d) => d.id === doctorId);
+              setForm((f) => ({
+                ...f,
+                doctorId,
+                facilityId: doctor?.facilityId ? doctor.facilityId : f.facilityId,
+              }));
+            }}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="">— None —</option>
-            {doctors.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-                {d.specialty ? ` (${d.specialty})` : ""}
-              </option>
-            ))}
+            {(() => {
+              const activeFacility = doctors.filter((d) => d.active && d.facilityId === form.facilityId && form.facilityId);
+              const activeOther = doctors.filter((d) => d.active && (d.facilityId !== form.facilityId || !form.facilityId));
+              const inactive = doctors.filter((d) => !d.active);
+              const renderOption = (d: Doctor) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}{d.specialty ? ` (${d.specialty})` : ""}
+                </option>
+              );
+              if (form.facilityId) {
+                return (
+                  <>
+                    {activeFacility.length > 0 && (
+                      <optgroup label="Active at this facility">
+                        {activeFacility.map(renderOption)}
+                      </optgroup>
+                    )}
+                    {activeOther.length > 0 && (
+                      <optgroup label="Other active">
+                        {activeOther.map(renderOption)}
+                      </optgroup>
+                    )}
+                    {inactive.length > 0 && (
+                      <optgroup label="Inactive / Former">
+                        {inactive.map(renderOption)}
+                      </optgroup>
+                    )}
+                  </>
+                );
+              }
+              return (
+                <>
+                  {activeOther.length > 0 && (
+                    <optgroup label="Active">
+                      {activeOther.map(renderOption)}
+                    </optgroup>
+                  )}
+                  {inactive.length > 0 && (
+                    <optgroup label="Inactive / Former">
+                      {inactive.map(renderOption)}
+                    </optgroup>
+                  )}
+                </>
+              );
+            })()}
           </select>
         </div>
 

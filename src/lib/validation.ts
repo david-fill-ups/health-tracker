@@ -31,6 +31,8 @@ const optStr500 = z.string().max(500).nullish();
 const optPhone = z.string().max(30).nullish();
 const optDate = z.coerce.date().optional();
 const id = z.string().min(1);
+const optNpi = z.string().regex(/^\d{10}$/, "NPI must be 10 digits").nullish();
+const optCredential = z.string().max(50).nullish();
 
 // ── Enums ──────────────────────────────────────────────────────────────────────
 
@@ -115,7 +117,11 @@ export const CreateVisitSchema = z.object({
   status: VisitStatusEnum.optional(),
 });
 
-export const UpdateVisitSchema = CreateVisitSchema.omit({ profileId: true }).partial();
+export const UpdateVisitSchema = CreateVisitSchema.omit({ profileId: true }).partial().extend({
+  doctorId: z.string().min(1).nullish(),
+  facilityId: z.string().min(1).nullish(),
+  locationId: z.string().min(1).nullish(),
+});
 
 // ── Medication ─────────────────────────────────────────────────────────────────
 
