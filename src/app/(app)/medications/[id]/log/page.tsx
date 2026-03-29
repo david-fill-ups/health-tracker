@@ -12,12 +12,18 @@ export default function LogDosePage({
   const { id } = use(params);
   const { activeProfileId } = useProfile();
   const [medicationName, setMedicationName] = useState<string | null>(null);
+  const [medicationDosage, setMedicationDosage] = useState<string | null>(null);
+  const [medicationType, setMedicationType] = useState<string | null>(null);
 
   useEffect(() => {
     if (!activeProfileId) return;
     fetch(`/api/medications/${id}?profileId=${activeProfileId}`)
       .then((r) => r.json())
-      .then((data) => setMedicationName(data?.name ?? null))
+      .then((data) => {
+        setMedicationName(data?.name ?? null);
+        setMedicationDosage(data?.dosage ?? null);
+        setMedicationType(data?.medicationType ?? null);
+      })
       .catch(() => {});
   }, [id, activeProfileId]);
 
@@ -35,7 +41,12 @@ export default function LogDosePage({
       {!activeProfileId ? (
         <p className="text-sm text-gray-500">Select a profile first.</p>
       ) : (
-        <MedicationLogForm medicationId={id} profileId={activeProfileId} />
+        <MedicationLogForm
+          medicationId={id}
+          profileId={activeProfileId}
+          medicationDosage={medicationDosage}
+          medicationType={medicationType}
+        />
       )}
     </div>
   );

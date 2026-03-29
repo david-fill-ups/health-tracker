@@ -1,11 +1,19 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 interface MedicationLogFormProps {
   medicationId: string;
   profileId: string;
+  medicationDosage?: string | null;
+  medicationType?: string | null;
+}
+
+function parseMedicationDosage(s: string): { dosage: string; unit: string } {
+  const match = s.trim().match(/^(\d+(?:\.\d+)?)\s*(.*)$/);
+  if (match) return { dosage: match[1], unit: match[2].trim() };
+  return { dosage: "", unit: s.trim() };
 }
 
 const INJECTION_SITES = [
@@ -24,7 +32,9 @@ function nowLocal() {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function MedicationLogForm({ medicationId, profileId }: MedicationLogFormProps) {
+export function MedicationLogForm({ medicationId, profileId, medicationDosage, medicationType }: MedicationLogFormProps) {
+  const isDevice = medicationType === "DEVICE";
+  const isInjectable = medicationType === "INJECTABLE";
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +42,13 @@ export function MedicationLogForm({ medicationId, profileId }: MedicationLogForm
   const [date, setDate] = useState(nowLocal());
   const [dosage, setDosage] = useState("");
   const [unit, setUnit] = useState("");
+
+  useEffect(() => {
+    if (!medicationDosage) return;
+    const parsed = parseMedicationDosage(medicationDosage);
+    if (parsed.dosage) setDosage(parsed.dosage);
+    if (parsed.unit) setUnit(parsed.unit);
+  }, [medicationDosage]);
   const [injectionSite, setInjectionSite] = useState("");
   const [weight, setWeight] = useState("");
   const [notes, setNotes] = useState("");
@@ -92,54 +109,58 @@ export function MedicationLogForm({ medicationId, profileId }: MedicationLogForm
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Dosage</label>
-          <input
-            type="number"
-            step="any"
-            min="0"
-            value={dosage}
-            onChange={(e) => setDosage(e.target.value)}
-            placeholder="e.g. 2.5"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          />
+      {!isDevice && (
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Dosage</label>
+            <input
+              type="number"
+              step="any"
+              min="0"
+              value={dosage}
+              onChange={(e) => setDosage(e.target.value)}
+              placeholder="e.g. 2.5"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+            <input
+              type="text"
+              list="unit-suggestions"
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+              placeholder="mg, mL, units…"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+            <datalist id="unit-suggestions">
+              <option value="mg" />
+              <option value="mL" />
+              <option value="units" />
+              <option value="mcg" />
+              <option value="IU" />
+            </datalist>
+          </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
-          <input
-            type="text"
-            list="unit-suggestions"
-            value={unit}
-            onChange={(e) => setUnit(e.target.value)}
-            placeholder="mg, mL, units…"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          />
-          <datalist id="unit-suggestions">
-            <option value="mg" />
-            <option value="mL" />
-            <option value="units" />
-            <option value="mcg" />
-            <option value="IU" />
-          </datalist>
-        </div>
-      </div>
+      )}
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Injection site</label>
-        <select
-          value={injectionSite}
-          onChange={(e) => setInjectionSite(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-        >
-          <option value="">— Not applicable —</option>
-          {INJECTION_SITES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-      </div>
+      {isInjectable && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Injection site</label>
+          <select
+            value={injectionSite}
+            onChange={(e) => setInjectionSite(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          >
+            <option value="">— Select site —</option>
+            {INJECTION_SITES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">

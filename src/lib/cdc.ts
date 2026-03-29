@@ -14,6 +14,7 @@ export interface CdcVaccineSchedule {
   vaccine: string;
   aliases: string[];
   description?: string;
+  notScheduled?: boolean;
   ageGroups: CdcAgeGroup[];
 }
 
@@ -22,7 +23,7 @@ export interface CdcSchedule {
   schedules: CdcVaccineSchedule[];
 }
 
-export type VaccinationStatus = "up_to_date" | "due" | "overdue" | "not_applicable" | "completed" | "exempt";
+export type VaccinationStatus = "up_to_date" | "due" | "overdue" | "not_applicable" | "completed" | "exempt" | "not_scheduled";
 
 export interface VaccinationRecommendation {
   vaccine: string;
@@ -61,15 +62,26 @@ export function getVaccinationStatus(
   profileAgeMonths: number,
   vaccinationDates: Date[]
 ): VaccinationRecommendation {
+  const sortedDates = [...vaccinationDates].sort((a, b) => b.getTime() - a.getTime());
+  const lastDose = sortedDates[0] ?? null;
+
+  if (vaccine.notScheduled) {
+    return {
+      vaccine: vaccine.vaccine,
+      aliases: vaccine.aliases,
+      status: "not_scheduled",
+      lastDoseDate: lastDose,
+      nextDueDate: null,
+      notes: "No longer on the CDC recommended immunization schedule",
+    };
+  }
+
   // Find the age group that applies to this profile
   const ageGroup = vaccine.ageGroups.find((ag) => {
     const meetsMin = profileAgeMonths >= ag.minAgeMonths;
     const meetsMax = ag.maxAgeMonths === null || profileAgeMonths <= ag.maxAgeMonths;
     return meetsMin && meetsMax;
   });
-
-  const sortedDates = [...vaccinationDates].sort((a, b) => b.getTime() - a.getTime());
-  const lastDose = sortedDates[0] ?? null;
 
   if (!ageGroup) {
     if (lastDose) {

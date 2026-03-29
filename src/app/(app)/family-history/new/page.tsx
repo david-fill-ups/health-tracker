@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, useMemo, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { Toast } from "@/components/ui/Toast";
@@ -8,7 +8,11 @@ import { Toast } from "@/components/ui/Toast";
 type FamilyRelationship = "FATHER" | "MOTHER" | "BROTHER" | "SISTER" | "HALF_BROTHER" | "HALF_SISTER" | "GRANDFATHER" | "GRANDMOTHER" | "AUNT" | "UNCLE" | "SON" | "DAUGHTER";
 type FamilySide = "MATERNAL" | "PATERNAL";
 
+type ExistingMember = { relationship: FamilyRelationship; side?: FamilySide | null };
+
 const SIDE_APPLICABLE: FamilyRelationship[] = ["GRANDFATHER", "GRANDMOTHER", "AUNT", "UNCLE"];
+// Relationships where only one member per side is meaningful (used for smart defaults + disabling)
+const UNIQUE_PER_SIDE: FamilyRelationship[] = ["GRANDFATHER", "GRANDMOTHER"];
 
 export default function NewFamilyMemberPage() {
   const router = useRouter();
@@ -18,15 +22,71 @@ export default function NewFamilyMemberPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [name, setName] = useState("");
-  const [relationship, setRelationship] = useState<FamilyRelationship>("FATHER");
+  const [relationship, setRelationship] = useState<FamilyRelationship | "">("");
   const [side, setSide] = useState<FamilySide | "">("");
   const [notes, setNotes] = useState("");
 
-  const showSide = SIDE_APPLICABLE.includes(relationship);
+  const [existingMembers, setExistingMembers] = useState<ExistingMember[]>([]);
+
+  useEffect(() => {
+    if (!activeProfileId) return;
+    fetch(`/api/family-members?profileId=${activeProfileId}`)
+      .then((r) => r.json())
+      .then((data: unknown) => {
+        if (Array.isArray(data)) setExistingMembers(data as ExistingMember[]);
+      })
+      .catch(() => {}); // fail silently — smart defaults just won't apply
+  }, [activeProfileId]);
+
+  // Relationships that are fully taken and should be disabled
+  const disabledRelationships = useMemo(() => {
+    const disabled = new Set<FamilyRelationship>();
+    if (existingMembers.some((m) => m.relationship === "FATHER")) disabled.add("FATHER");
+    if (existingMembers.some((m) => m.relationship === "MOTHER")) disabled.add("MOTHER");
+    for (const rel of UNIQUE_PER_SIDE) {
+      const existing = existingMembers.filter((m) => m.relationship === rel);
+      const hasMat = existing.some((m) => m.side === "MATERNAL");
+      const hasPat = existing.some((m) => m.side === "PATERNAL");
+      if (hasMat && hasPat) disabled.add(rel);
+    }
+    return disabled;
+  }, [existingMembers]);
+
+  function getDisabledSides(rel: FamilyRelationship): Set<FamilySide> {
+    const disabled = new Set<FamilySide>();
+    if (!UNIQUE_PER_SIDE.includes(rel)) return disabled;
+    const existing = existingMembers.filter((m) => m.relationship === rel);
+    if (existing.some((m) => m.side === "MATERNAL")) disabled.add("MATERNAL");
+    if (existing.some((m) => m.side === "PATERNAL")) disabled.add("PATERNAL");
+    return disabled;
+  }
+
+  function getSmartDefaultSide(rel: FamilyRelationship): FamilySide | "" {
+    if (!UNIQUE_PER_SIDE.includes(rel)) return "";
+    const existing = existingMembers.filter((m) => m.relationship === rel);
+    const hasMat = existing.some((m) => m.side === "MATERNAL");
+    const hasPat = existing.some((m) => m.side === "PATERNAL");
+    if (hasMat && !hasPat) return "PATERNAL";
+    if (hasPat && !hasMat) return "MATERNAL";
+    return "";
+  }
+
+  const showSide = relationship !== "" && SIDE_APPLICABLE.includes(relationship as FamilyRelationship);
+  const disabledSides = relationship !== "" ? getDisabledSides(relationship as FamilyRelationship) : new Set<FamilySide>();
+
+  function handleRelationshipChange(val: string) {
+    const rel = val as FamilyRelationship | "";
+    setRelationship(rel);
+    if (!rel || !SIDE_APPLICABLE.includes(rel as FamilyRelationship)) {
+      setSide("");
+    } else {
+      setSide(getSmartDefaultSide(rel as FamilyRelationship));
+    }
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!activeProfileId) return;
+    if (!activeProfileId || !relationship) return;
     setSubmitting(true);
     setError(null);
 
@@ -97,17 +157,19 @@ export default function NewFamilyMemberPage() {
             </label>
             <select
               id="relationship"
+              required
               value={relationship}
-              onChange={(e) => {
-                const val = e.target.value as FamilyRelationship;
-                setRelationship(val);
-                if (!SIDE_APPLICABLE.includes(val)) setSide("");
-              }}
+              onChange={(e) => handleRelationshipChange(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             >
+              <option value="" disabled>— Select relationship —</option>
               <optgroup label="Parents">
-                <option value="FATHER">Father</option>
-                <option value="MOTHER">Mother</option>
+                <option value="FATHER" disabled={disabledRelationships.has("FATHER")}>
+                  Father{disabledRelationships.has("FATHER") ? " (already added)" : ""}
+                </option>
+                <option value="MOTHER" disabled={disabledRelationships.has("MOTHER")}>
+                  Mother{disabledRelationships.has("MOTHER") ? " (already added)" : ""}
+                </option>
               </optgroup>
               <optgroup label="Siblings">
                 <option value="BROTHER">Brother</option>
@@ -116,8 +178,12 @@ export default function NewFamilyMemberPage() {
                 <option value="HALF_SISTER">Half-Sister</option>
               </optgroup>
               <optgroup label="Grandparents">
-                <option value="GRANDFATHER">Grandfather</option>
-                <option value="GRANDMOTHER">Grandmother</option>
+                <option value="GRANDFATHER" disabled={disabledRelationships.has("GRANDFATHER")}>
+                  Grandfather{disabledRelationships.has("GRANDFATHER") ? " (both sides added)" : ""}
+                </option>
+                <option value="GRANDMOTHER" disabled={disabledRelationships.has("GRANDMOTHER")}>
+                  Grandmother{disabledRelationships.has("GRANDMOTHER") ? " (both sides added)" : ""}
+                </option>
               </optgroup>
               <optgroup label="Aunts &amp; Uncles">
                 <option value="AUNT">Aunt</option>
@@ -132,16 +198,22 @@ export default function NewFamilyMemberPage() {
 
           {showSide && (
             <div>
-              <label htmlFor="side" className="block text-sm font-medium text-gray-700 mb-1">Side (optional)</label>
+              <label htmlFor="side" className="block text-sm font-medium text-gray-700 mb-1">
+                Side <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
               <select
                 id="side"
                 value={side}
                 onChange={(e) => setSide(e.target.value as FamilySide | "")}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               >
-                <option value="">Unknown</option>
-                <option value="MATERNAL">Maternal</option>
-                <option value="PATERNAL">Paternal</option>
+                <option value="">—</option>
+                <option value="MATERNAL" disabled={disabledSides.has("MATERNAL")}>
+                  Maternal{disabledSides.has("MATERNAL") ? " (already added)" : ""}
+                </option>
+                <option value="PATERNAL" disabled={disabledSides.has("PATERNAL")}>
+                  Paternal{disabledSides.has("PATERNAL") ? " (already added)" : ""}
+                </option>
               </select>
             </div>
           )}
@@ -161,7 +233,7 @@ export default function NewFamilyMemberPage() {
           <div className="flex gap-3">
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !relationship}
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
             >
               {saved ? "Saved!" : submitting ? "Saving…" : "Add family member"}

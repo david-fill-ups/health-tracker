@@ -146,9 +146,12 @@ export async function POST(req: Request, { params }: Params) {
             profileId,
             name: f.name,
             type: f.type,
+            npiNumber: f.npiNumber ?? undefined,
+            rating: f.rating != null ? Number(f.rating) : undefined,
             websiteUrl: f.websiteUrl ?? undefined,
             portalUrl: f.portalUrl ?? undefined,
             phone: f.phone ?? undefined,
+            notes: f.notes ?? undefined,
             active: f.active ?? true,
           },
         });
@@ -195,6 +198,10 @@ export async function POST(req: Request, { params }: Params) {
             name: d.name,
             specialty: d.specialty ?? undefined,
             facilityId: d.facilityId ? (idMap.get(d.facilityId) ?? undefined) : undefined,
+            npiNumber: d.npiNumber ?? undefined,
+            credential: d.credential ?? undefined,
+            photo: d.photo ?? undefined,
+            rating: d.rating != null ? Number(d.rating) : undefined,
             websiteUrl: d.websiteUrl ?? undefined,
             portalUrl: d.portalUrl ?? undefined,
             phone: d.phone ?? undefined,
@@ -300,6 +307,7 @@ export async function POST(req: Request, { params }: Params) {
               data: {
                 profileId,
                 name: m.name,
+                medicationType: m.medicationType ?? undefined,
                 dosage: m.dosage ?? undefined,
                 frequency: m.frequency ?? undefined,
                 prescribingDoctorId: m.prescribingDoctorId
@@ -319,6 +327,7 @@ export async function POST(req: Request, { params }: Params) {
             data: {
               profileId,
               name: m.name,
+              medicationType: m.medicationType ?? undefined,
               dosage: m.dosage ?? undefined,
               frequency: m.frequency ?? undefined,
               prescribingDoctorId: m.prescribingDoctorId
@@ -400,6 +409,7 @@ export async function POST(req: Request, { params }: Params) {
             profileId,
             name: v.name,
             date: new Date(v.date),
+            source: v.source ?? undefined,
             facilityId: v.facilityId ? (idMap.get(v.facilityId) ?? undefined) : undefined,
             lotNumber: v.lotNumber ?? undefined,
             notes: v.notes ?? undefined,
@@ -455,6 +465,7 @@ export async function POST(req: Request, { params }: Params) {
             url: p.url,
             facilityId: p.facilityId ? (idMap.get(p.facilityId) ?? undefined) : undefined,
             notes: p.notes ?? undefined,
+            active: p.active ?? true,
           },
         });
         imported.portals++;

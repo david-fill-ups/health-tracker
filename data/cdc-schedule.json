@@ -195,9 +195,18 @@
     },
     {
       "vaccine": "Pneumococcal (PCV15/PCV20)",
-      "aliases": ["Pneumonia", "Prevnar", "PCV", "PPSV23"],
+      "aliases": ["Pneumonia", "Prevnar", "PCV", "PPSV23", "Pneumococcal"],
       "description": "Protects against pneumococcal disease caused by Streptococcus pneumoniae bacteria, which can lead to pneumonia, bacterial meningitis, and bloodstream infections (bacteremia). Older adults and immunocompromised individuals are at highest risk for severe disease.",
       "ageGroups": [
+        {
+          "label": "Infants and children (2 months through 5 years)",
+          "minAgeMonths": 2,
+          "maxAgeMonths": 71,
+          "frequency": "series",
+          "intervalMonths": null,
+          "doses": 4,
+          "notes": "4-dose series at 2, 4, 6, and 12-15 months"
+        },
         {
           "label": "Adults 65+",
           "minAgeMonths": 780,
@@ -288,6 +297,13 @@
           "notes": "3-4 dose series depending on brand, starting at 2 months"
         }
       ]
+    },
+    {
+      "vaccine": "Rotavirus",
+      "aliases": ["RV1", "RV5", "Rotarix", "RotaTeq"],
+      "notScheduled": true,
+      "description": "Previously recommended for infants as a 2- or 3-dose series to protect against rotavirus gastroenteritis, the leading cause of severe diarrhea in young children. Rotavirus was removed from the CDC childhood immunization schedule in 2025. Discuss with your child's pediatrician.",
+      "ageGroups": []
     },
     {
       "vaccine": "Polio (IPV)",

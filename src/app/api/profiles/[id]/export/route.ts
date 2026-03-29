@@ -61,9 +61,12 @@ export async function GET(_req: Request, { params }: Params) {
         id: f.id,
         name: f.name,
         type: f.type,
+        npiNumber: f.npiNumber ?? null,
+        rating: f.rating ?? null,
         websiteUrl: f.websiteUrl ?? null,
         portalUrl: f.portalUrl ?? null,
         phone: f.phone ?? null,
+        notes: f.notes ?? null,
         active: f.active,
         locations: f.locations.map((l) => ({
           id: l.id,
@@ -82,6 +85,10 @@ export async function GET(_req: Request, { params }: Params) {
         name: d.name,
         specialty: d.specialty ?? null,
         facilityId: d.facilityId ?? null,
+        npiNumber: d.npiNumber ?? null,
+        credential: d.credential ?? null,
+        photo: d.photo ?? null,
+        rating: d.rating ?? null,
         websiteUrl: d.websiteUrl ?? null,
         portalUrl: d.portalUrl ?? null,
         phone: d.phone ?? null,
@@ -103,6 +110,7 @@ export async function GET(_req: Request, { params }: Params) {
       })),
       medications: medications.map((m) => ({
         name: m.name,
+        medicationType: m.medicationType,
         dosage: m.dosage ?? null,
         frequency: m.frequency ?? null,
         prescribingDoctorId: m.prescribingDoctorId ?? null,
@@ -128,6 +136,7 @@ export async function GET(_req: Request, { params }: Params) {
       vaccinations: vaccinations.map((v) => ({
         name: v.name,
         date: v.date.toISOString(),
+        source: v.source,
         facilityId: v.facilityId ?? null,
         lotNumber: v.lotNumber ?? null,
         notes: v.notes ?? null,
@@ -145,6 +154,7 @@ export async function GET(_req: Request, { params }: Params) {
         url: p.url,
         facilityId: p.facilityId ?? null,
         notes: p.notes ?? null,
+        active: p.active,
       })),
       healthMetrics: healthMetrics.map((m) => ({
         metricType: m.metricType,

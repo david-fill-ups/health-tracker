@@ -5,7 +5,7 @@ import Link from "next/link";
 
 interface Recommendation {
   vaccine: string;
-  status: "up_to_date" | "due" | "overdue" | "not_applicable" | "completed" | "exempt";
+  status: "up_to_date" | "due" | "overdue" | "not_applicable" | "completed" | "exempt" | "not_scheduled";
   nextDueDate: string | null;
   notes: string;
 }
@@ -17,6 +17,7 @@ const STATUS_STYLES: Record<string, string> = {
   not_applicable: "bg-gray-100 text-gray-500",
   completed: "bg-blue-100 text-blue-700",
   exempt: "bg-gray-100 text-gray-500",
+  not_scheduled: "bg-violet-100 text-violet-700",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -26,6 +27,7 @@ const STATUS_LABELS: Record<string, string> = {
   not_applicable: "N/A",
   completed: "Completed",
   exempt: "Declined",
+  not_scheduled: "Not CDC-Scheduled",
 };
 
 export function VaccinationStatus({ activeProfileId }: { activeProfileId: string | null }) {

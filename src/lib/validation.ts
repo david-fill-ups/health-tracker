@@ -125,12 +125,33 @@ export const UpdateVisitSchema = CreateVisitSchema.omit({ profileId: true }).par
 
 // ── Medication ─────────────────────────────────────────────────────────────────
 
+export const MedicationTypeEnum = z.enum([
+  "ORAL",
+  "INJECTABLE",
+  "TOPICAL",
+  "INHALER",
+  "SUPPLEMENT",
+  "DEVICE",
+  "OTHER",
+]);
+
+export const MEDICATION_TYPE_LABELS: Record<z.infer<typeof MedicationTypeEnum>, string> = {
+  ORAL: "Oral (Pill / Tablet)",
+  INJECTABLE: "Injectable",
+  TOPICAL: "Topical (Cream / Patch)",
+  INHALER: "Inhaler",
+  SUPPLEMENT: "Supplement",
+  DEVICE: "Device / Equipment",
+  OTHER: "Other",
+};
+
 export const CreateMedicationSchema = z.object({
   profileId: id,
   name: name255,
+  medicationType: MedicationTypeEnum.optional(),
   dosage: optStr255,
   frequency: z.string().max(255).optional(),
-  prescribingDoctorId: z.string().min(1).optional(),
+  prescribingDoctorId: z.string().min(1).nullish(),
   startDate: optDate,
   endDate: optDate,
   instructions: z.string().max(2000).optional(),
@@ -170,6 +191,8 @@ export const UpdateConditionSchema = CreateConditionSchema.omit({ profileId: tru
 export const CreateFacilitySchema = z.object({
   name: name255,
   type: z.string().min(1).max(100),
+  npiNumber: optNpi,
+  npiLastSynced: z.coerce.date().nullish(),
   rating: z.number().min(0).max(5).optional(),
   websiteUrl: optStr500,
   portalUrl: optStr500,
@@ -186,6 +209,10 @@ export const CreateDoctorSchema = z.object({
   name: name255,
   specialty: optStr255,
   facilityId: z.string().min(1).optional(),
+  npiNumber: optNpi,
+  credential: optCredential,
+  photo: optStr500,
+  npiLastSynced: z.coerce.date().nullish(),
   rating: z.number().min(0).max(5).optional(),
   websiteUrl: optStr500,
   portalUrl: optStr500,
@@ -195,6 +222,15 @@ export const CreateDoctorSchema = z.object({
 });
 
 export const UpdateDoctorSchema = CreateDoctorSchema.partial();
+
+// ── NPI Search ─────────────────────────────────────────────────────────────────
+
+export const NpiSearchSchema = z.object({
+  q: z.string().min(2).max(100),
+  type: z.enum(["individual", "organization"]).optional(),
+  state: z.string().max(2).optional(),
+  limit: z.coerce.number().int().min(1).max(20).optional().default(10),
+});
 
 // ── Location ───────────────────────────────────────────────────────────────────
 

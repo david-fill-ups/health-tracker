@@ -2,17 +2,24 @@
 
 import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { MEDICATION_TYPE_LABELS } from "@/lib/validation";
 
 interface Doctor {
   id: string;
   name: string;
 }
 
+const MEDICATION_TYPES = Object.entries(MEDICATION_TYPE_LABELS) as [
+  keyof typeof MEDICATION_TYPE_LABELS,
+  string,
+][];
+
 interface MedicationFormProps {
   profileId: string;
   /** When provided, the form operates in edit mode */
   initialValues?: {
     name: string;
+    medicationType: string | null;
     dosage: string | null;
     frequency: string | null;
     prescribingDoctorId: string | null;
@@ -31,6 +38,7 @@ export function MedicationForm({ profileId, initialValues, medicationId }: Medic
   const [error, setError] = useState<string | null>(null);
 
   const [name, setName] = useState(initialValues?.name ?? "");
+  const [medicationType, setMedicationType] = useState(initialValues?.medicationType ?? "ORAL");
   const [dosage, setDosage] = useState(initialValues?.dosage ?? "");
   const [frequency, setFrequency] = useState(initialValues?.frequency ?? "");
   const [prescribingDoctorId, setPrescribingDoctorId] = useState(
@@ -56,6 +64,7 @@ export function MedicationForm({ profileId, initialValues, medicationId }: Medic
     const body = {
       profileId,
       name,
+      medicationType,
       dosage: dosage || null,
       frequency: frequency || null,
       prescribingDoctorId: prescribingDoctorId || null,
@@ -114,15 +123,30 @@ export function MedicationForm({ profileId, initialValues, medicationId }: Medic
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Current Dosage</label>
-        <input
-          type="text"
-          value={dosage}
-          onChange={(e) => setDosage(e.target.value)}
+        <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+        <select
+          value={medicationType}
+          onChange={(e) => setMedicationType(e.target.value)}
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          placeholder="e.g. 500mg, 10mg/0.5mL"
-        />
+        >
+          {MEDICATION_TYPES.map(([value, label]) => (
+            <option key={value} value={value}>{label}</option>
+          ))}
+        </select>
       </div>
+
+      {medicationType !== "DEVICE" && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Current Dosage</label>
+          <input
+            type="text"
+            value={dosage}
+            onChange={(e) => setDosage(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            placeholder="e.g. 500mg, 10mg/0.5mL"
+          />
+        </div>
+      )}
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Frequency</label>

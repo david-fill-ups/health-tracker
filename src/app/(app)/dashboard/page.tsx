@@ -5,6 +5,8 @@ import { UpcomingVisits } from "@/components/dashboard/UpcomingVisits";
 import { NeedToSchedule } from "@/components/dashboard/NeedToSchedule";
 import { UpcomingDoses } from "@/components/dashboard/UpcomingDoses";
 import { VaccinationStatus } from "@/components/dashboard/VaccinationStatus";
+import { ActiveConditions } from "@/components/dashboard/ActiveConditions";
+import { Allergies } from "@/components/dashboard/Allergies";
 
 export default function DashboardPage() {
   const { activeProfileId } = useProfile();
@@ -29,6 +31,8 @@ export default function DashboardPage() {
         <NeedToSchedule activeProfileId={activeProfileId} />
         <UpcomingDoses activeProfileId={activeProfileId} />
         <VaccinationStatus activeProfileId={activeProfileId} />
+        <ActiveConditions activeProfileId={activeProfileId} />
+        <Allergies activeProfileId={activeProfileId} />
       </div>
     </div>
   );

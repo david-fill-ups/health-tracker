@@ -25,6 +25,7 @@ const COMPLIANCE_BADGE: Record<string, { label: string; classes: string }> = {
   not_applicable: { label: "N/A", classes: "bg-gray-100 text-gray-500" },
   completed: { label: "Completed", classes: "bg-blue-100 text-blue-700" },
   exempt: { label: "Declined", classes: "bg-gray-100 text-gray-500" },
+  not_scheduled: { label: "Not CDC-Scheduled", classes: "bg-violet-100 text-violet-700" },
 };
 
 export default function VaccinationsPage() {
@@ -89,6 +90,7 @@ export default function VaccinationsPage() {
     not_applicable: 3,
     completed: 4,
     exempt: 5,
+    not_scheduled: 6,
   };
 
   const vaccinationGroups = useMemo(() => {
@@ -112,7 +114,7 @@ export default function VaccinationsPage() {
   const unrecordedVaccines = useMemo(() => {
     const recordedNames = new Set(vaccinationGroups.map((g) => g.name.toLowerCase()));
     return recommendations.filter((r) => {
-      if (r.status === "not_applicable" || r.status === "exempt") return false;
+      if (r.status === "not_applicable" || r.status === "exempt" || r.status === "not_scheduled") return false;
       const allNames = [r.vaccine, ...(r.aliases ?? [])].map((n) => n.toLowerCase());
       return !allNames.some((n) => recordedNames.has(n));
     });

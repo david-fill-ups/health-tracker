@@ -358,19 +358,30 @@ model Visit {
 
 // ─── Medications ──────────────────────────────────────────────────────────────
 
+enum MedicationType {
+  ORAL
+  INJECTABLE
+  TOPICAL
+  INHALER
+  SUPPLEMENT
+  DEVICE
+  OTHER
+}
+
 model Medication {
-  id                  String    @id @default(cuid())
+  id                  String         @id @default(cuid())
   profileId           String
   name                String
+  medicationType      MedicationType @default(ORAL)
   dosage              String?
   frequency           String?
   prescribingDoctorId String?
   startDate           DateTime?
   endDate             DateTime?
   instructions        String?
-  active              Boolean   @default(true)
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  active              Boolean        @default(true)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
 
   profile           Profile         @relation(fields: [profileId], references: [id], onDelete: Cascade)
   prescribingDoctor Doctor?         @relation(fields: [prescribingDoctorId], references: [id])

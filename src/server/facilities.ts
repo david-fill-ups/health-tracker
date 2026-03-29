@@ -21,10 +21,13 @@ export async function getFacilitiesForProfile(userId: string, profileId: string)
 export interface CreateFacilityInput {
   name: string;
   type: string;
+  npiNumber?: string | null;
+  npiLastSynced?: Date | null;
   rating?: number | null;
   websiteUrl?: string | null;
   portalUrl?: string | null;
   phone?: string | null;
+  notes?: string | null;
   active?: boolean;
 }
 
@@ -34,8 +37,8 @@ export async function createFacility(
   input: CreateFacilityInput
 ) {
   await assertProfileAccess(userId, profileId, "WRITE");
-  const { name, type, websiteUrl, portalUrl, phone, notes, active } = input;
-  const facility = await prisma.facility.create({ data: { name, type, rating: input.rating, websiteUrl, portalUrl, phone, notes, active, profileId } });
+  const { name, type, npiNumber, npiLastSynced, websiteUrl, portalUrl, phone, notes, active } = input;
+  const facility = await prisma.facility.create({ data: { name, type, npiNumber, npiLastSynced, rating: input.rating, websiteUrl, portalUrl, phone, notes, active, profileId } });
   await logAudit(userId, profileId, "CREATE_FACILITY", "Facility", facility.id, { name: facility.name });
   return facility;
 }
@@ -47,8 +50,8 @@ export async function updateFacility(
   input: Partial<CreateFacilityInput>
 ) {
   await assertProfileAccess(userId, profileId, "WRITE");
-  const { name, type, rating, websiteUrl, portalUrl, phone, notes, active } = input;
-  const facility = await prisma.facility.update({ where: { id: facilityId, profileId }, data: { name, type, rating, websiteUrl, portalUrl, phone, notes, active } });
+  const { name, type, npiNumber, npiLastSynced, rating, websiteUrl, portalUrl, phone, notes, active } = input;
+  const facility = await prisma.facility.update({ where: { id: facilityId, profileId }, data: { name, type, npiNumber, npiLastSynced, rating, websiteUrl, portalUrl, phone, notes, active } });
   await logAudit(userId, profileId, "UPDATE_FACILITY", "Facility", facilityId);
   return facility;
 }

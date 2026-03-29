@@ -46,7 +46,6 @@ export async function GET(
     status: 200,
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
-      "Content-Disposition": `attachment; filename="health-${profileId}.ics"`,
       // Prevent caching so calendar apps always get fresh data
       "Cache-Control": "no-cache, no-store, must-revalidate",
     },

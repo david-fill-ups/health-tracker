@@ -111,6 +111,7 @@ export function buildOpenApiSpec(): AnyObj {
       { name: "Import / Export", description: "JSON data portability for health profiles" },
       { name: "Calendar", description: "iCal feed for upcoming visits" },
       { name: "Account", description: "Account management" },
+      { name: "NPI Lookup", description: "Search the US National Provider Identifier (NPI) Registry to auto-fill doctor and facility records" },
     ],
     paths: {
       // ─── Profiles ─────────────────────────────────────────────────────────────
@@ -1278,6 +1279,81 @@ export function buildOpenApiSpec(): AnyObj {
             },
             "401": resp("Missing or invalid token"),
             "404": resp("Profile not found"),
+          },
+        },
+      },
+
+      // ─── NPI Lookup ───────────────────────────────────────────────────────────
+
+      "/api/npi": {
+        get: {
+          operationId: "npiSearch",
+          summary: "Search NPI Registry",
+          description:
+            "Server-side proxy to the US National Provider Identifier (NPI) Registry. Returns shaped provider or organization records for auto-filling doctor and facility forms. No API key required — the NPI Registry is public, but this endpoint requires an authenticated session.",
+          tags: ["NPI Lookup"],
+          parameters: [
+            queryParam("q", "Name search query (last name, 'Last, First', or organization name)", true),
+            {
+              name: "type",
+              in: "query" as const,
+              required: false,
+              description: "Provider type: 'individual' (NPI-1) or 'organization' (NPI-2). Defaults to organization if omitted.",
+              schema: { type: "string", enum: ["individual", "organization"] },
+            },
+            queryParam("state", "Optional 2-character US state filter (e.g. MA, CA)"),
+            {
+              name: "limit",
+              in: "query" as const,
+              required: false,
+              description: "Max results to return (1–20, default 10).",
+              schema: { type: "integer", minimum: 1, maximum: 20, default: 10 },
+            },
+          ],
+          responses: {
+            "200": {
+              description: "Array of shaped NPI results",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      results: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            npiNumber: { type: "string", description: "10-digit NPI number" },
+                            type: { type: "string", enum: ["individual", "organization"] },
+                            name: { type: "string" },
+                            specialty: { type: "string" },
+                            phone: { type: "string" },
+                            address: {
+                              type: "object",
+                              nullable: true,
+                              properties: {
+                                address1: { type: "string" },
+                                address2: { type: "string" },
+                                city: { type: "string" },
+                                state: { type: "string" },
+                                zip: { type: "string" },
+                              },
+                            },
+                            firstName: { type: "string", description: "Individual providers only" },
+                            lastName: { type: "string", description: "Individual providers only" },
+                            credential: { type: "string", description: "Individual providers only (e.g. MD, DO, NP)" },
+                          },
+                        },
+                      },
+                      total: { type: "integer", description: "Total results from NPI registry" },
+                    },
+                  },
+                },
+              },
+            },
+            "400": resp("Invalid query parameters"),
+            "401": resp("Unauthorized"),
+            "502": resp("NPI registry unavailable or unreachable"),
           },
         },
       },

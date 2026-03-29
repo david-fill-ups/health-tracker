@@ -18,9 +18,9 @@ interface Medication {
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
-function getDoseStatus(med: Medication): { label: string; color: string } {
+function getDoseStatus(med: Medication): { label: string; color: string } | null {
   if (!med.recentLog) {
-    return { label: "No logs", color: "bg-amber-100 text-amber-700" };
+    return null;
   }
   const lastDate = new Date(med.recentLog.date);
   const msSinceLast = Date.now() - lastDate.getTime();
@@ -76,15 +76,17 @@ export function UpcomingDoses({ activeProfileId }: { activeProfileId: string | n
       {!loading && meds.length > 0 && (
         <ul className="space-y-3">
           {meds.map((m) => {
-            const { label, color } = getDoseStatus(m);
+            const status = getDoseStatus(m);
             return (
               <li key={m.id} className="flex items-start justify-between gap-2">
                 <div>
                   <p className="text-sm font-medium text-gray-800">{m.name}</p>
                 </div>
-                <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${color}`}>
-                  {label}
-                </span>
+                {status && (
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${status.color}`}>
+                    {status.label}
+                  </span>
+                )}
               </li>
             );
           })}

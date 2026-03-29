@@ -66,14 +66,6 @@ export default function VisitsPage() {
     fetchVisits();
   }, [fetchVisits]);
 
-  if (!activeProfileId) {
-    return (
-      <div className="flex items-center justify-center h-48 text-gray-500">
-        Select a profile to view visits.
-      </div>
-    );
-  }
-
   // Build unique facility/doctor lists from loaded visits
   const { facilities, doctors, specialties } = useMemo(() => {
     const facilityMap = new Map<string, string>();
@@ -117,30 +109,37 @@ export default function VisitsPage() {
     setFilterDateTo("");
   }
 
+  function effectiveDate(v: Visit): string | null {
+    return v.date ?? (v.dueMonth ? `${v.dueMonth}-01` : null);
+  }
+
   function sortByDate(list: Visit[]): Visit[] {
     const now = Date.now();
     const sorted = [...list];
     if (dateSort === "asc") {
       sorted.sort((a, b) => {
-        if (!a.date && !b.date) return 0;
-        if (!a.date) return 1;
-        if (!b.date) return -1;
-        return new Date(a.date).getTime() - new Date(b.date).getTime();
+        const ad = effectiveDate(a), bd = effectiveDate(b);
+        if (!ad && !bd) return 0;
+        if (!ad) return 1;
+        if (!bd) return -1;
+        return new Date(ad).getTime() - new Date(bd).getTime();
       });
     } else if (dateSort === "desc") {
       sorted.sort((a, b) => {
-        if (!a.date && !b.date) return 0;
-        if (!a.date) return 1;
-        if (!b.date) return -1;
-        return new Date(b.date).getTime() - new Date(a.date).getTime();
+        const ad = effectiveDate(a), bd = effectiveDate(b);
+        if (!ad && !bd) return 0;
+        if (!ad) return 1;
+        if (!bd) return -1;
+        return new Date(bd).getTime() - new Date(ad).getTime();
       });
     } else {
       sorted.sort((a, b) => {
-        if (!a.date && !b.date) return 0;
-        if (!a.date) return 1;
-        if (!b.date) return -1;
-        const aTime = new Date(a.date).getTime();
-        const bTime = new Date(b.date).getTime();
+        const ad = effectiveDate(a), bd = effectiveDate(b);
+        if (!ad && !bd) return 0;
+        if (!ad) return 1;
+        if (!bd) return -1;
+        const aTime = new Date(ad).getTime();
+        const bTime = new Date(bd).getTime();
         const aFuture = aTime >= now;
         const bFuture = bTime >= now;
         if (aFuture !== bFuture) return aFuture ? -1 : 1;
@@ -154,9 +153,9 @@ export default function VisitsPage() {
   const { needsScheduling, scheduled } = useMemo(() => {
     return {
       needsScheduling: filtered.filter(
-        (v) => !v.date && (v.status === "PENDING" || v.status === "SCHEDULED")
+        (v) => !v.date && !v.dueMonth && (v.status === "PENDING" || v.status === "SCHEDULED")
       ),
-      scheduled: sortByDate(filtered.filter((v) => !!v.date)),
+      scheduled: sortByDate(filtered.filter((v) => !!v.date || !!v.dueMonth)),
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtered, dateSort]);
@@ -179,7 +178,10 @@ export default function VisitsPage() {
         case "facility": return v.facility?.name ?? "No Facility";
         case "specialty": return v.specialty || "No Specialty";
         case "type": return VISIT_TYPE_LABELS[v.type];
-        case "year": return v.date ? new Date(v.date).getFullYear().toString() : "Unscheduled";
+        case "year": {
+          const d = effectiveDate(v);
+          return d ? new Date(d).getFullYear().toString() : "Unscheduled";
+        }
         default: return "";
       }
     }
@@ -191,26 +193,35 @@ export default function VisitsPage() {
       map.get(key)!.push(v);
     }
 
-    // Within each group: most recent dated visit first, undated last
+    // Within each group: most recent visit first (dueMonth treated as 1st of month), undated last
     for (const [, group] of map) {
       group.sort((a, b) => {
-        if (!a.date && !b.date) return 0;
-        if (!a.date) return 1;
-        if (!b.date) return -1;
-        return new Date(b.date).getTime() - new Date(a.date).getTime();
+        const ad = effectiveDate(a), bd = effectiveDate(b);
+        if (!ad && !bd) return 0;
+        if (!ad) return 1;
+        if (!bd) return -1;
+        return new Date(bd).getTime() - new Date(ad).getTime();
       });
     }
 
-    // Sort groups by their most recent dated visit, groups with no dates last
+    // Sort groups by their most recent visit, groups with no dates last
     return Array.from(map.entries()).sort(([, a], [, b]) => {
-      const aDate = a.find((v) => v.date)?.date;
-      const bDate = b.find((v) => v.date)?.date;
+      const aDate = a.map(effectiveDate).find(Boolean);
+      const bDate = b.map(effectiveDate).find(Boolean);
       if (!aDate && !bDate) return 0;
       if (!aDate) return 1;
       if (!bDate) return -1;
       return new Date(bDate).getTime() - new Date(aDate).getTime();
     });
   }, [filtered, groupBy]);
+
+  if (!activeProfileId) {
+    return (
+      <div className="flex items-center justify-center h-48 text-gray-500">
+        Select a profile to view visits.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">

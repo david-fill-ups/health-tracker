@@ -18,6 +18,7 @@ export default function EditMedicationPage({
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [initialValues, setInitialValues] = useState<{
     name: string;
+    medicationType: string | null;
     dosage: string | null;
     frequency: string | null;
     prescribingDoctorId: string | null;
@@ -34,6 +35,7 @@ export default function EditMedicationPage({
       .then((data) => {
         setInitialValues({
           name: data.name ?? "",
+          medicationType: data.medicationType ?? "ORAL",
           dosage: data.dosage ?? null,
           frequency: data.frequency ?? null,
           prescribingDoctorId: data.prescribingDoctorId ?? null,

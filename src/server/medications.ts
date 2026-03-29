@@ -25,9 +25,10 @@ export async function getMedicationLogs(
 
 export interface CreateMedicationInput {
   name: string;
+  medicationType?: string;
   dosage?: string | null;
   frequency?: string;
-  prescribingDoctorId?: string;
+  prescribingDoctorId?: string | null;
   startDate?: Date;
   endDate?: Date;
   instructions?: string;
@@ -52,8 +53,8 @@ export async function createMedication(
   input: CreateMedicationInput
 ) {
   await assertProfileAccess(userId, profileId, "WRITE");
-  const { name, dosage, frequency, prescribingDoctorId, startDate, endDate, instructions, active } = input;
-  const medication = await prisma.medication.create({ data: { name, dosage, frequency, prescribingDoctorId, startDate, endDate, instructions, active, profileId } });
+  const { name, medicationType, dosage, frequency, prescribingDoctorId, startDate, endDate, instructions, active } = input;
+  const medication = await prisma.medication.create({ data: { name, medicationType: medicationType as never, dosage, frequency, prescribingDoctorId, startDate, endDate, instructions, active, profileId } });
   await logAudit(userId, profileId, "CREATE_MEDICATION", "Medication", medication.id, { name: medication.name });
   return medication;
 }
@@ -74,8 +75,8 @@ export async function updateMedication(
   input: Partial<CreateMedicationInput>
 ) {
   await assertProfileAccess(userId, profileId, "WRITE");
-  const { name, dosage, frequency, prescribingDoctorId, startDate, endDate, instructions, active } = input;
-  const medication = await prisma.medication.update({ where: { id: medicationId, profileId }, data: { name, dosage, frequency, prescribingDoctorId, startDate, endDate, instructions, active } });
+  const { name, medicationType, dosage, frequency, prescribingDoctorId, startDate, endDate, instructions, active } = input;
+  const medication = await prisma.medication.update({ where: { id: medicationId, profileId }, data: { name, medicationType: medicationType as never, dosage, frequency, prescribingDoctorId, startDate, endDate, instructions, active } });
   await logAudit(userId, profileId, "UPDATE_MEDICATION", "Medication", medicationId);
   return medication;
 }

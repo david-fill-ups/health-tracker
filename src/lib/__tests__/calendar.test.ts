@@ -46,7 +46,7 @@ describe("generateCalendarFeed", () => {
 
   it("uses doctor name as provider when available", () => {
     const visit = makeVisit({
-      doctor: { id: "d1", name: "Dr. Smith", specialty: null, facilityId: null, websiteUrl: null, portalUrl: null, phone: null, active: true, profileId: "profile-1", createdAt: new Date(), updatedAt: new Date() },
+      doctor: { id: "d1", name: "Dr. Smith", specialty: null, facilityId: null, npiNumber: null, credential: null, photo: null, npiLastSynced: null, rating: null, websiteUrl: null, portalUrl: null, phone: null, notes: null, active: true, profileId: "profile-1", createdAt: new Date(), updatedAt: new Date() },
     });
     const result = generateCalendarFeed("Jane", [visit]);
     expect(result).toContain("Dr. Smith");
@@ -55,7 +55,7 @@ describe("generateCalendarFeed", () => {
   it("falls back to facility name when no doctor", () => {
     const visit = makeVisit({
       doctor: null,
-      facility: { id: "f1", name: "City Clinic", type: "CLINIC", websiteUrl: null, portalUrl: null, phone: null, active: true, profileId: "profile-1", createdAt: new Date(), updatedAt: new Date() },
+      facility: { id: "f1", name: "City Clinic", type: "CLINIC", npiNumber: null, npiLastSynced: null, rating: null, websiteUrl: null, portalUrl: null, phone: null, notes: null, active: true, profileId: "profile-1", createdAt: new Date(), updatedAt: new Date() },
     });
     const result = generateCalendarFeed("Jane", [visit]);
     expect(result).toContain("City Clinic");
