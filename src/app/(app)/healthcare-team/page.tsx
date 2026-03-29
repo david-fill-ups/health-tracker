@@ -132,6 +132,41 @@ export default function HealthcareTeamPage() {
     return { ...f, visitCount: f._count?.visits, lastVisit: f.visits?.[0]?.date ?? null };
   }
 
+  const searchLower = search.toLowerCase();
+
+  function doctorMatchesSearch(d: Doctor): boolean {
+    if (!searchLower) return true;
+    return (
+      d.name.toLowerCase().includes(searchLower) ||
+      (d.specialty ?? "").toLowerCase().includes(searchLower) ||
+      (d.facility?.name ?? "").toLowerCase().includes(searchLower)
+    );
+  }
+
+  function facilityMatchesSearch(f: Facility): boolean {
+    if (!searchLower) return true;
+    return (
+      f.name.toLowerCase().includes(searchLower) ||
+      f.type.toLowerCase().replace(/_/g, " ").includes(searchLower)
+    );
+  }
+
+  // Derived: what's visible in the active section
+  const visibleActiveFacilities = showFilter !== "providers"
+    ? activeFacilities.filter((f) =>
+        facilityMatchesSearch(f) || (activeDoctorsByFacility.get(f.id) ?? []).some(doctorMatchesSearch)
+      )
+    : [];
+
+  const visibleIndependentDoctors = showFilter !== "facilities"
+    ? independentDoctors.filter(doctorMatchesSearch)
+    : [];
+
+  // In "providers" mode: flat list of all active matching doctors
+  const flatProviders = showFilter === "providers"
+    ? doctors.filter((d) => d.active && doctorMatchesSearch(d))
+    : [];
+
   const loading = loadingFacilities || loadingDoctors;
   return (
     <div className="space-y-6">
@@ -165,17 +200,54 @@ export default function HealthcareTeamPage() {
         </div>
       </div>
 
+      {/* Search + filter */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by name, specialty, type…"
+          className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+        />
+        <div className="flex rounded-lg border border-gray-300 overflow-hidden text-sm shrink-0">
+          {(["all", "facilities", "providers"] as const).map((opt) => (
+            <button
+              key={opt}
+              onClick={() => setShowFilter(opt)}
+              className={`px-3 py-2 capitalize transition-colors ${
+                showFilter === opt
+                  ? "bg-indigo-600 text-white"
+                  : "bg-white text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              {opt === "all" ? "All" : opt === "facilities" ? "Facilities" : "Providers"}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {loading ? (
         <p className="text-sm text-gray-400">Loading…</p>
       ) : (
         <div className="space-y-4">
-          {activeFacilities.length === 0 && independentDoctors.length === 0 && (
-            <p className="text-sm text-gray-400">No facilities or providers added yet.</p>
+          {visibleActiveFacilities.length === 0 && visibleIndependentDoctors.length === 0 && flatProviders.length === 0 && (
+            <p className="text-sm text-gray-400">
+              {search || showFilter !== "all"
+                ? "No results found."
+                : "No facilities or providers added yet."}
+            </p>
           )}
 
+          {/* Providers-only flat mode */}
+          {showFilter === "providers" && flatProviders.map((d) => (
+            <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} />
+          ))}
+
           {/* Facilities with their doctors */}
-          {activeFacilities.map((f) => {
-            const facilityDoctors = activeDoctorsByFacility.get(f.id) ?? [];
+          {showFilter !== "providers" && visibleActiveFacilities.map((f) => {
+            const facilityDoctors = showFilter === "facilities"
+              ? []
+              : (activeDoctorsByFacility.get(f.id) ?? []).filter(doctorMatchesSearch);
             return (
               <div key={f.id} className="space-y-1">
                 <FacilityCard facility={toFacilityCardProps(f)} />
@@ -190,13 +262,13 @@ export default function HealthcareTeamPage() {
             );
           })}
           {/* Independent providers */}
-          {independentDoctors.length > 0 && (
+          {visibleIndependentDoctors.length > 0 && (
             <div className="space-y-1">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">
                 Independent Providers
               </h2>
               <div className="space-y-1">
-                {independentDoctors.map((d) => (
+                {visibleIndependentDoctors.map((d) => (
                   <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} />
                 ))}
               </div>
