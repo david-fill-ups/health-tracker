@@ -260,7 +260,7 @@ describe("generateRecommendations", () => {
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBeGreaterThan(0);
     result.forEach((r) => {
-      expect(["up_to_date", "due", "overdue", "not_applicable"]).toContain(r.status);
+      expect(["up_to_date", "due", "overdue", "not_applicable", "not_scheduled"]).toContain(r.status);
     });
   });
 

@@ -41,6 +41,7 @@ export default function VisitsPage() {
   const [activeTab, setActiveTab] = useState<VisitStatus | "ALL">("ALL");
 
   // Filter state
+  const [filterSearch, setFilterSearch] = useState("");
   const [filterFacilityId, setFilterFacilityId] = useState("");
   const [filterDoctorId, setFilterDoctorId] = useState("");
   const [filterSpecialty, setFilterSpecialty] = useState("");
@@ -87,6 +88,18 @@ export default function VisitsPage() {
   const filtered = useMemo(() => {
     let result = visits;
     if (activeTab !== "ALL") result = result.filter((v) => v.status === activeTab);
+    if (filterSearch) {
+      const q = filterSearch.toLowerCase();
+      result = result.filter((v) =>
+        (v.doctor?.name ?? "").toLowerCase().includes(q) ||
+        (v.facility?.name ?? "").toLowerCase().includes(q) ||
+        VISIT_TYPE_LABELS[v.type].toLowerCase().includes(q) ||
+        (v.specialty ?? "").toLowerCase().includes(q) ||
+        (v.reason ?? "").toLowerCase().includes(q) ||
+        (v.notes ?? "").toLowerCase().includes(q) ||
+        (v.location?.name ?? "").toLowerCase().includes(q)
+      );
+    }
     if (filterFacilityId) result = result.filter((v) => v.facility?.id === filterFacilityId);
     if (filterDoctorId) result = result.filter((v) => v.doctor?.id === filterDoctorId);
     if (filterSpecialty) result = result.filter((v) =>
@@ -96,11 +109,12 @@ export default function VisitsPage() {
     if (filterDateFrom) result = result.filter((v) => v.date && v.date >= filterDateFrom);
     if (filterDateTo) result = result.filter((v) => v.date && v.date <= filterDateTo + "T23:59:59");
     return result;
-  }, [visits, activeTab, filterFacilityId, filterDoctorId, filterSpecialty, filterType, filterDateFrom, filterDateTo]);
+  }, [visits, activeTab, filterSearch, filterFacilityId, filterDoctorId, filterSpecialty, filterType, filterDateFrom, filterDateTo]);
 
-  const hasFilters = !!(filterFacilityId || filterDoctorId || filterSpecialty || filterType || filterDateFrom || filterDateTo);
+  const hasFilters = !!(filterSearch || filterFacilityId || filterDoctorId || filterSpecialty || filterType || filterDateFrom || filterDateTo);
 
   function clearFilters() {
+    setFilterSearch("");
     setFilterFacilityId("");
     setFilterDoctorId("");
     setFilterSpecialty("");
@@ -268,6 +282,15 @@ export default function VisitsPage() {
 
       {/* Advanced filters */}
       <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-3">
+        <div>
+          <input
+            type="search"
+            value={filterSearch}
+            onChange={(e) => setFilterSearch(e.target.value)}
+            placeholder="Search doctor, facility, type, reason, notes…"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          />
+        </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Facility</label>

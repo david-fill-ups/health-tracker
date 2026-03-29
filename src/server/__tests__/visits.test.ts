@@ -112,7 +112,7 @@ describe("createVisit", () => {
       status: "COMPLETED",
     });
 
-    expect(mockAssertProfileAccess).toHaveBeenCalledWith(USER_ID, PROFILE_ID, "OWNER");
+    expect(mockAssertProfileAccess).toHaveBeenCalledWith(USER_ID, PROFILE_ID, "WRITE");
     expect(mockVisitCreate).toHaveBeenCalledOnce();
     expect(mockLogAudit).toHaveBeenCalledWith(
       USER_ID,
@@ -143,7 +143,7 @@ describe("updateVisit", () => {
 
     const result = await updateVisit(USER_ID, PROFILE_ID, VISIT_ID, { status: "CANCELLED" });
 
-    expect(mockAssertProfileAccess).toHaveBeenCalledWith(USER_ID, PROFILE_ID, "OWNER");
+    expect(mockAssertProfileAccess).toHaveBeenCalledWith(USER_ID, PROFILE_ID, "WRITE");
     expect(mockVisitUpdate).toHaveBeenCalledOnce();
     expect(mockLogAudit).toHaveBeenCalledWith(USER_ID, PROFILE_ID, "UPDATE_VISIT", "Visit", VISIT_ID);
     expect(result.status).toBe("CANCELLED");

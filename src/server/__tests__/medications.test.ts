@@ -106,7 +106,7 @@ describe("createMedicationLog", () => {
       unit: "mg",
     });
 
-    expect(mockAssertProfileAccess).toHaveBeenCalledWith(USER_ID, PROFILE_ID, "OWNER");
+    expect(mockAssertProfileAccess).toHaveBeenCalledWith(USER_ID, PROFILE_ID, "WRITE");
     expect(mockLogCreate).toHaveBeenCalledOnce();
     expect(mockLogAudit).toHaveBeenCalledWith(
       USER_ID,

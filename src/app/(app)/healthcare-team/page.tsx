@@ -40,6 +40,8 @@ export default function HealthcareTeamPage() {
   const [loadingDoctors, setLoadingDoctors] = useState(false);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [inactiveOpen, setInactiveOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [showFilter, setShowFilter] = useState<"all" | "facilities" | "providers">("all");
   const addMenuRef = useRef<HTMLDivElement>(null);
 
   const fetchFacilities = useCallback(async () => {
