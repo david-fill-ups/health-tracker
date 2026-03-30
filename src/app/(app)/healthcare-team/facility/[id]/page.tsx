@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { FacilityForm } from "@/components/healthcare-team/FacilityForm";
+import { LocationForm } from "@/components/healthcare-team/LocationForm";
 import { StarRating } from "@/components/ui/StarRating";
 import type { VisitStatus, VisitType } from "@/generated/prisma/enums";
 
@@ -16,6 +17,18 @@ interface VisitSummary {
   reason: string | null;
   doctor: { id: string; name: string } | null;
   location: { id: string; name: string } | null;
+}
+
+interface Location {
+  id: string;
+  name: string;
+  address1: string | null;
+  address2: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
+  phone: string | null;
+  active: boolean;
 }
 
 interface Doctor {
@@ -38,6 +51,7 @@ interface FacilityDetail {
   _count: { visits: number };
   visits: VisitSummary[];
   doctors: Doctor[];
+  locations: Location[];
 }
 
 const VISIT_TYPE_LABELS: Record<VisitType, string> = {
@@ -64,6 +78,9 @@ export default function FacilityDetailPage({ params }: { params: Promise<{ id: s
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [addingLocation, setAddingLocation] = useState(false);
+  const [editingLocationId, setEditingLocationId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!activeProfileId || !id) return;
@@ -71,7 +88,11 @@ export default function FacilityDetailPage({ params }: { params: Promise<{ id: s
     fetch(`/api/facilities/${id}?profileId=${activeProfileId}`)
       .then(async (res) => {
         if (res.status === 404) { setNotFound(true); return; }
-        if (res.ok) setFacility(await res.json());
+        if (res.ok) {
+          const data = await res.json();
+          setFacility(data);
+          setLocations(data.locations ?? []);
+        }
       })
       .finally(() => setLoading(false));
   }, [activeProfileId, id]);
@@ -111,6 +132,12 @@ export default function FacilityDetailPage({ params }: { params: Promise<{ id: s
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ rating: newRating }),
     });
+  }
+
+  async function handleDeleteLocation(locationId: string) {
+    if (!confirm("Delete this location? This cannot be undone.")) return;
+    await fetch(`/api/locations/${locationId}?facilityId=${id}`, { method: "DELETE" });
+    setLocations((prev) => prev.filter((l) => l.id !== locationId));
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -237,6 +264,96 @@ export default function FacilityDetailPage({ params }: { params: Promise<{ id: s
           </div>
         )}
       </div>
+
+      {/* Locations */}
+      <section className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-700">Locations</h2>
+          {!addingLocation && (
+            <button
+              onClick={() => { setAddingLocation(true); setEditingLocationId(null); }}
+              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+            >
+              + Add Location
+            </button>
+          )}
+        </div>
+
+        {addingLocation && (
+          <LocationForm
+            facilityId={id}
+            onSuccess={(saved) => {
+              setLocations((prev) => [...prev, saved]);
+              setAddingLocation(false);
+            }}
+            onCancel={() => setAddingLocation(false)}
+          />
+        )}
+
+        {locations.length === 0 && !addingLocation ? (
+          <p className="text-sm text-gray-400">No locations recorded for this facility.</p>
+        ) : (
+          <div className="space-y-2">
+            {locations.map((loc) =>
+              editingLocationId === loc.id ? (
+                <LocationForm
+                  key={loc.id}
+                  facilityId={id}
+                  initial={{
+                    id: loc.id,
+                    name: loc.name,
+                    address1: loc.address1 ?? "",
+                    address2: loc.address2 ?? "",
+                    city: loc.city ?? "",
+                    state: loc.state ?? "",
+                    zip: loc.zip ?? "",
+                    phone: loc.phone ?? "",
+                    active: loc.active,
+                  }}
+                  onSuccess={(saved) => {
+                    setLocations((prev) => prev.map((l) => l.id === saved.id ? saved : l));
+                    setEditingLocationId(null);
+                  }}
+                  onCancel={() => setEditingLocationId(null)}
+                />
+              ) : (
+                <div
+                  key={loc.id}
+                  className={`rounded-xl border border-gray-200 bg-white p-3 flex items-start justify-between gap-4 ${loc.active ? "" : "opacity-50"}`}
+                >
+                  <div className="text-sm">
+                    <p className="font-medium text-gray-900">{loc.name}</p>
+                    {(loc.address1 || loc.city) && (
+                      <p className="text-gray-500 mt-0.5">
+                        {[loc.address1, loc.address2].filter(Boolean).join(", ")}
+                        {(loc.address1 || loc.address2) && (loc.city || loc.state) ? " · " : ""}
+                        {[loc.city, loc.state].filter(Boolean).join(", ")}
+                        {loc.zip ? ` ${loc.zip}` : ""}
+                      </p>
+                    )}
+                    {loc.phone && <p className="text-gray-500">{loc.phone}</p>}
+                    {!loc.active && <span className="text-xs text-gray-400">Inactive</span>}
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <button
+                      onClick={() => { setEditingLocationId(loc.id); setAddingLocation(false); }}
+                      className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteLocation(loc.id)}
+                      className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              )
+            )}
+          </div>
+        )}
+      </section>
 
       {/* Doctors */}
       {facility.doctors.length > 0 && (
