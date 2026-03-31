@@ -71,14 +71,16 @@ export function UpcomingVisits({ activeProfileId }: { activeProfileId: string | 
             const date = v.date ? new Date(v.date).toLocaleDateString() : "—";
             const type = v.type?.replace(/_/g, " ") ?? "";
             return (
-              <li key={v.id} className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-sm font-medium text-gray-800">{label}</p>
-                  {type && <p className="text-xs text-gray-500">{type}</p>}
-                </div>
-                <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                  {date}
-                </span>
+              <li key={v.id}>
+                <Link href={`/visits/${v.id}`} className="flex items-start justify-between gap-2 hover:bg-gray-50 -mx-2 px-2 py-0.5 rounded-lg transition-colors">
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">{label}</p>
+                    {type && <p className="text-xs text-gray-500">{type}</p>}
+                  </div>
+                  <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                    {date}
+                  </span>
+                </Link>
               </li>
             );
           })}

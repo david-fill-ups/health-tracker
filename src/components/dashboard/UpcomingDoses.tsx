@@ -78,15 +78,17 @@ export function UpcomingDoses({ activeProfileId }: { activeProfileId: string | n
           {meds.map((m) => {
             const status = getDoseStatus(m);
             return (
-              <li key={m.id} className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-sm font-medium text-gray-800">{m.name}</p>
-                </div>
-                {status && (
-                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${status.color}`}>
-                    {status.label}
-                  </span>
-                )}
+              <li key={m.id}>
+                <Link href={`/medications/${m.id}`} className="flex items-start justify-between gap-2 hover:bg-gray-50 -mx-2 px-2 py-0.5 rounded-lg transition-colors">
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">{m.name}</p>
+                  </div>
+                  {status && (
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${status.color}`}>
+                      {status.label}
+                    </span>
+                  )}
+                </Link>
               </li>
             );
           })}

@@ -26,11 +26,19 @@ interface HealthMetric {
   notes?: string | null;
 }
 
+interface ReferenceZone {
+  min: number;
+  max: number;
+  label: string;
+  color: string;
+}
+
 interface ReferenceRange {
   min: number;
   max: number;
   label?: string;
   unit?: string; // if set, status coloring is skipped when stored unit doesn't match
+  zones?: ReferenceZone[];
 }
 
 // Normalize metric type string for lookup: lowercase, underscores → spaces, collapse whitespace
@@ -87,17 +95,12 @@ function formatWord(word: string): string {
   return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
 }
 
-// Convert any metric type string to a readable label:
-// - snake_case → spaces
-// - abbreviations → UPPER (TSH, ALT, LDL…)
-// - special cases → mixed (SpO2, eGFR, A1C…)
-// - everything else → Title Case
+// Convert any metric type string to a readable label
 function formatMetricLabel(type: string): string {
   return type
     .replace(/_/g, " ")
     .split(" ")
     .map((word) => {
-      // Handle parenthesized segment e.g. "(Fasting)" or "(spo2)"
       const m = word.match(/^(\()(.+?)(\))$/);
       if (m) return `(${formatWord(m[2])})`;
       return formatWord(word);
@@ -105,7 +108,7 @@ function formatMetricLabel(type: string): string {
     .join(" ");
 }
 
-// Reference ranges keyed by normalized type (lowercase, spaces — underscores handled by normalizeType)
+// Reference ranges keyed by normalized type (lowercase, spaces)
 const REFERENCE_RANGES: Record<string, ReferenceRange> = {
   // ── Vitals ───────────────────────────────────────────────
   "blood pressure systolic":  { min: 90,   max: 120,  label: "Normal" },
@@ -115,55 +118,70 @@ const REFERENCE_RANGES: Record<string, ReferenceRange> = {
   "blood sugar (post-meal)":  { min: 70,   max: 140,  label: "Normal (2hr)" },
   "heart rate":               { min: 60,   max: 100,  label: "Normal resting" },
   "blood oxygen (spo2)":      { min: 95,   max: 100,  label: "Normal" },
-  "bmi":                      { min: 18.5, max: 24.9, label: "Normal" },
+  "bmi": {
+    min: 18.5, max: 24.9, label: "Normal",
+    zones: [
+      { min: 10,   max: 18.5, label: "Underweight", color: "#3b82f6" },
+      { min: 18.5, max: 24.9, label: "Normal",      color: "#10b981" },
+      { min: 24.9, max: 29.9, label: "Overweight",  color: "#f59e0b" },
+      { min: 29.9, max: 50,   label: "Obese",       color: "#ef4444" },
+    ],
+  },
 
-  // ── CBC ──────────────────────────────────────────────────
-  "wbc":         { min: 4.5,  max: 11.0, label: "Normal" },
+  // ── CBC (absolute counts) ─────────────────────────────────
+  "wbc":         { min: 4.5,  max: 11.0, label: "Normal",       unit: "k/ul" },
   "rbc":         { min: 4.5,  max: 5.9,  label: "Normal (male)" },
-  "hemoglobin":  { min: 13.5, max: 17.5, label: "Normal (male)" },
-  "hematocrit":  { min: 41,   max: 53,   label: "Normal (male)" },
+  "hemoglobin":  { min: 13.5, max: 17.5, label: "Normal (male)", unit: "g/dl" },
+  "hematocrit":  { min: 41,   max: 53,   label: "Normal (male)", unit: "%" },
   "mcv":         { min: 80,   max: 100,  label: "Normal" },
   "mch":         { min: 27,   max: 33,   label: "Normal" },
   "mchc":        { min: 32,   max: 36,   label: "Normal" },
-  "platelets":   { min: 150,  max: 400,  label: "Normal" },
-  "neutrophils": { min: 1.8,  max: 7.7,  label: "Normal" },
-  "lymphocytes": { min: 1.0,  max: 4.8,  label: "Normal" },
-  "monocytes":   { min: 0.2,  max: 0.95, label: "Normal" },
-  "eosinophils": { min: 0.0,  max: 0.5,  label: "Normal" },
-  "basophils":   { min: 0.0,  max: 0.1,  label: "Normal" },
+  "platelets":   { min: 150,  max: 400,  label: "Normal",        unit: "k/ul" },
+  "neutrophils": { min: 1.8,  max: 7.7,  label: "Normal",        unit: "k/ul" },
+  "lymphocytes": { min: 1.0,  max: 4.8,  label: "Normal",        unit: "k/ul" },
+  "monocytes":   { min: 0.2,  max: 0.95, label: "Normal",        unit: "k/ul" },
+  "eosinophils": { min: 0.0,  max: 0.5,  label: "Normal",        unit: "k/ul" },
+  "basophils":   { min: 0.0,  max: 0.1,  label: "Normal",        unit: "k/ul" },
+
+  // ── CBC differentials (percentage) ────────────────────────
+  "neutrophils (%)": { min: 40, max: 75, label: "Normal", unit: "%" },
+  "lymphocytes (%)": { min: 20, max: 45, label: "Normal", unit: "%" },
+  "monocytes (%)":   { min: 2,  max: 10, label: "Normal", unit: "%" },
+  "eosinophils (%)": { min: 1,  max: 6,  label: "Normal", unit: "%" },
+  "basophils (%)":   { min: 0,  max: 1,  label: "Normal", unit: "%" },
 
   // ── CMP / Metabolic ──────────────────────────────────────
-  "glucose":        { min: 70,  max: 100,  label: "Normal (fasting)", unit: "mg/dL" },
-  "bun":            { min: 7,   max: 25,   label: "Normal",           unit: "mg/dL" },
-  "creatinine":     { min: 0.7, max: 1.3,  label: "Normal",           unit: "mg/dL" },
+  "glucose":        { min: 70,  max: 100,  label: "Normal (fasting)", unit: "mg/dl" },
+  "bun":            { min: 7,   max: 25,   label: "Normal",           unit: "mg/dl" },
+  "creatinine":     { min: 0.7, max: 1.3,  label: "Normal",           unit: "mg/dl" },
   "egfr":           { min: 60,  max: 120,  label: "Normal" },
-  "sodium":         { min: 136, max: 145,  label: "Normal",           unit: "mmol/L" },
-  "potassium":      { min: 3.5, max: 5.1,  label: "Normal",           unit: "mmol/L" },
-  "chloride":       { min: 98,  max: 106,  label: "Normal",           unit: "mmol/L" },
-  "bicarbonate":    { min: 22,  max: 29,   label: "Normal",           unit: "mmol/L" },
-  "calcium":        { min: 8.5, max: 10.5, label: "Normal",           unit: "mg/dL" },
-  "albumin":        { min: 3.5, max: 5.0,  label: "Normal",           unit: "g/dL" },
-  "total protein":  { min: 6.3, max: 8.2,  label: "Normal",           unit: "g/dL" },
-  "bilirubin total":{ min: 0.1, max: 1.2,  label: "Normal",           unit: "mg/dL" },
-  "alp":            { min: 44,  max: 147,  label: "Normal",           unit: "IU/L" },
-  "alt":            { min: 7,   max: 40,   label: "Normal",           unit: "IU/L" },
-  "ast":            { min: 10,  max: 40,   label: "Normal",           unit: "IU/L" },
-  "ggt":            { min: 8,   max: 61,   label: "Normal",           unit: "IU/L" },
-  "uric acid":      { min: 3.4, max: 7.0,  label: "Normal (male)",    unit: "mg/dL" },
-  "phosphorus":     { min: 2.5, max: 4.5,  label: "Normal",           unit: "mg/dL" },
-  "magnesium":      { min: 1.7, max: 2.2,  label: "Normal",           unit: "mg/dL" },
+  "sodium":         { min: 136, max: 145,  label: "Normal",           unit: "mmol/l" },
+  "potassium":      { min: 3.5, max: 5.1,  label: "Normal",           unit: "mmol/l" },
+  "chloride":       { min: 98,  max: 106,  label: "Normal",           unit: "mmol/l" },
+  "bicarbonate":    { min: 22,  max: 29,   label: "Normal",           unit: "mmol/l" },
+  "calcium":        { min: 8.5, max: 10.5, label: "Normal",           unit: "mg/dl" },
+  "albumin":        { min: 3.5, max: 5.0,  label: "Normal",           unit: "g/dl" },
+  "total protein":  { min: 6.3, max: 8.2,  label: "Normal",           unit: "g/dl" },
+  "bilirubin total":{ min: 0.1, max: 1.2,  label: "Normal",           unit: "mg/dl" },
+  "alp":            { min: 44,  max: 147,  label: "Normal",           unit: "iu/l" },
+  "alt":            { min: 7,   max: 40,   label: "Normal",           unit: "iu/l" },
+  "ast":            { min: 10,  max: 40,   label: "Normal",           unit: "iu/l" },
+  "ggt":            { min: 8,   max: 61,   label: "Normal",           unit: "iu/l" },
+  "uric acid":      { min: 3.4, max: 7.0,  label: "Normal (male)",    unit: "mg/dl" },
+  "phosphorus":     { min: 2.5, max: 4.5,  label: "Normal",           unit: "mg/dl" },
+  "magnesium":      { min: 1.7, max: 2.2,  label: "Normal",           unit: "mg/dl" },
 
   // ── Lipids ───────────────────────────────────────────────
-  "total cholesterol": { min: 0,   max: 200, label: "Desirable", unit: "mg/dL" },
-  "ldl":               { min: 0,   max: 100, label: "Optimal",   unit: "mg/dL" },
-  "hdl":               { min: 40,  max: 80,  label: "Normal",    unit: "mg/dL" },
-  "triglycerides":     { min: 0,   max: 150, label: "Normal",    unit: "mg/dL" },
-  "vldl":              { min: 2,   max: 30,  label: "Normal",    unit: "mg/dL" },
+  "total cholesterol": { min: 0,   max: 200, label: "Desirable", unit: "mg/dl" },
+  "ldl":               { min: 0,   max: 100, label: "Optimal",   unit: "mg/dl" },
+  "hdl":               { min: 40,  max: 80,  label: "Normal",    unit: "mg/dl" },
+  "triglycerides":     { min: 0,   max: 150, label: "Normal",    unit: "mg/dl" },
+  "vldl":              { min: 2,   max: 30,  label: "Normal",    unit: "mg/dl" },
 
   // ── Diabetes ─────────────────────────────────────────────
   "hemoglobin a1c": { min: 4.0, max: 5.6, label: "Normal" },
   "a1c":            { min: 4.0, max: 5.6, label: "Normal" },
-  "insulin":        { min: 2.6, max: 24.9,label: "Fasting" },
+  "insulin":        { min: 2.6, max: 24.9, label: "Fasting" },
 
   // ── Thyroid ──────────────────────────────────────────────
   "tsh":                   { min: 0.4,  max: 4.0,  label: "Normal" },
@@ -192,16 +210,16 @@ const REFERENCE_RANGES: Record<string, ReferenceRange> = {
   "igf-1":              { min: 115,  max: 307,  label: "Normal" },
 
   // ── Vitamins / Minerals ──────────────────────────────────
-  "vitamin d":          { min: 30,  max: 100,  label: "Sufficient", unit: "ng/mL" },
-  "vitamin d (25-oh)":  { min: 30,  max: 100,  label: "Sufficient", unit: "ng/mL" },
-  "vitamin d 25 oh":    { min: 30,  max: 100,  label: "Sufficient", unit: "ng/mL" },
-  "b12":                { min: 200, max: 900,  label: "Normal",     unit: "pg/mL" },
-  "vitamin b12":        { min: 200, max: 900,  label: "Normal",     unit: "pg/mL" },
-  "folate":             { min: 2.7, max: 17.0, label: "Normal",     unit: "ng/mL" },
-  "folic acid":         { min: 2.7, max: 17.0, label: "Normal",     unit: "ng/mL" },
-  "ferritin":           { min: 12,  max: 300,  label: "Normal",     unit: "ng/mL" },
-  "iron":               { min: 60,  max: 170,  label: "Normal",     unit: "ug/dL" },
-  "zinc":               { min: 70,  max: 120,  label: "Normal",     unit: "ug/dL" },
+  "vitamin d":          { min: 30,  max: 100,  label: "Sufficient", unit: "ng/ml" },
+  "vitamin d (25-oh)":  { min: 30,  max: 100,  label: "Sufficient", unit: "ng/ml" },
+  "vitamin d 25 oh":    { min: 30,  max: 100,  label: "Sufficient", unit: "ng/ml" },
+  "b12":                { min: 200, max: 900,  label: "Normal",     unit: "pg/ml" },
+  "vitamin b12":        { min: 200, max: 900,  label: "Normal",     unit: "pg/ml" },
+  "folate":             { min: 2.7, max: 17.0, label: "Normal",     unit: "ng/ml" },
+  "folic acid":         { min: 2.7, max: 17.0, label: "Normal",     unit: "ng/ml" },
+  "ferritin":           { min: 12,  max: 300,  label: "Normal",     unit: "ng/ml" },
+  "iron":               { min: 60,  max: 170,  label: "Normal",     unit: "ug/dl" },
+  "zinc":               { min: 70,  max: 120,  label: "Normal",     unit: "ug/dl" },
 
   // ── Coagulation ──────────────────────────────────────────
   "inr":          { min: 0.8, max: 1.2,  label: "Normal" },
@@ -229,13 +247,18 @@ const REFERENCE_RANGES: Record<string, ReferenceRange> = {
   "total t3 (pg ml)":         { min: 2.3, max: 4.2, label: "Normal" },
 };
 
-function getReferenceRange(type: string): ReferenceRange | undefined {
-  return REFERENCE_RANGES[normalizeType(type)];
+// Get reference range for a metric type, with optional unit hint for % vs absolute CBC
+function getReferenceRange(type: string, unit?: string): ReferenceRange | undefined {
+  const key = normalizeType(type);
+  if (unit && normalizeUnit(unit) === "%") {
+    const pctKey = `${key} (%)`;
+    if (REFERENCE_RANGES[pctKey]) return REFERENCE_RANGES[pctKey];
+  }
+  return REFERENCE_RANGES[key];
 }
 
 type ValueStatus = "normal" | "borderline" | "abnormal";
 
-// Returns null when the metric's unit doesn't match the reference range's expected unit
 function getValueStatus(value: number, metricUnit: string, refRange: ReferenceRange): ValueStatus | null {
   if (refRange.unit && normalizeUnit(metricUnit) !== normalizeUnit(refRange.unit)) return null;
   if (value >= refRange.min && value <= refRange.max) return "normal";
@@ -250,7 +273,6 @@ const BADGE_STYLES: Record<ValueStatus, string> = {
   borderline: "text-amber-600 bg-amber-50",
   abnormal:   "text-red-600 bg-red-50",
 };
-// Used when units don't match — show the range as info only, no coloring
 const BADGE_NEUTRAL = "text-gray-500 bg-gray-100";
 
 const VALUE_STYLES: Record<ValueStatus, string> = {
@@ -261,16 +283,39 @@ const VALUE_STYLES: Record<ValueStatus, string> = {
 
 function getYDomain(
   values: number[],
-  refRange?: ReferenceRange
+  refRange?: ReferenceRange,
+  zones?: ReferenceZone[]
 ): [number, number] {
-  const allValues = refRange
-    ? [...values, refRange.min, refRange.max]
-    : values;
+  // When zones are present, don't pad domain to zone bounds — zones can extend beyond data
+  const refPoints = !zones && refRange ? [refRange.min, refRange.max] : [];
+  const allValues = [...values, ...refPoints];
   const dataMin = Math.min(...allValues);
   const dataMax = Math.max(...allValues);
   const range = dataMax - dataMin;
   const padding = range > 0 ? range * 0.15 : Math.abs(dataMax) * 0.1 || 1;
   return [dataMin - padding, dataMax + padding];
+}
+
+// Compute weight thresholds for each BMI zone from height (inches), for age 18+
+function getWeightBmiZones(heightIn: number, weightUnit: string): ReferenceZone[] | undefined {
+  const unit = normalizeUnit(weightUnit);
+  const isLbs = unit === "lbs" || unit === "lb" || unit === "pound" || unit === "pounds";
+  const isKg = unit === "kg" || unit === "kilogram" || unit === "kilograms";
+  // Treat empty/unknown unit as lbs (most common for self-reported weight in the US)
+  const useLbs = isLbs || (!isKg && unit === "");
+  if (!useLbs && !isKg) return undefined;
+
+  function bmiToWeight(bmi: number): number {
+    if (useLbs) return (bmi * heightIn * heightIn) / 703;
+    return bmi * Math.pow(heightIn * 0.0254, 2);
+  }
+
+  return [
+    { min: 0,                 max: bmiToWeight(18.5), label: "Underweight", color: "#3b82f6" },
+    { min: bmiToWeight(18.5), max: bmiToWeight(25),   label: "Normal",      color: "#10b981" },
+    { min: bmiToWeight(25),   max: bmiToWeight(30),   label: "Overweight",  color: "#f59e0b" },
+    { min: bmiToWeight(30),   max: bmiToWeight(60),   label: "Obese",       color: "#ef4444" },
+  ];
 }
 
 function formatDateTime(iso: string) {
@@ -315,31 +360,66 @@ export default function HealthMetricsPage() {
   const [chartDateTo, setChartDateTo] = useState("");
   const [groupBy, setGroupBy] = useState<GroupBy>("type");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  // Fetch the active profile directly for always-fresh heightIn/birthDate
+  const [currentProfile, setCurrentProfile] = useState<{ heightIn: number | null; birthDate: string } | null>(null);
+
+  // Active profile age in years (for BMI zone applicability)
+  const profileAge = useMemo(() => {
+    if (!currentProfile?.birthDate) return null;
+    return Math.floor(
+      (Date.now() - new Date(currentProfile.birthDate).getTime()) / (365.25 * 86_400_000)
+    );
+  }, [currentProfile]);
 
   useEffect(() => {
     if (!activeProfileId) return;
     setLoading(true);
-    fetch(`/api/health-metrics?profileId=${activeProfileId}`)
-      .then((r) => r.json())
-      .then((data) => setMetrics(Array.isArray(data) ? data : []))
+    Promise.all([
+      fetch(`/api/health-metrics?profileId=${activeProfileId}`).then((r) => r.json()),
+      fetch(`/api/profiles/${activeProfileId}`).then((r) => r.json()),
+    ])
+      .then(([metricsData, profileData]) => {
+        setMetrics(Array.isArray(metricsData) ? metricsData : []);
+        if (profileData?.id) {
+          setCurrentProfile({
+            heightIn: profileData.heightIn ?? null,
+            birthDate: profileData.birthDate,
+          });
+        }
+      })
       .catch(() => setMetrics([]))
       .finally(() => setLoading(false));
   }, [activeProfileId]);
 
-  // Collect unique metricTypes from ALL metrics for the dropdown
+  // Collect unique metricTypes from ALL metrics, deduplicating by normalizeType
   const filterTypes = useMemo(() => {
-    const presentTypes = Array.from(new Set(metrics.map((m) => m.metricType)));
-    return Array.from(
-      new Set([
-        ...COMMON_METRIC_TYPES.filter((t) => presentTypes.includes(t)),
-        ...presentTypes.filter((t) => !COMMON_METRIC_TYPES.includes(t as never)),
-      ])
-    );
+    const seen = new Set<string>();
+    const result: string[] = [];
+    // Common types first (if present in data)
+    for (const t of COMMON_METRIC_TYPES) {
+      const norm = normalizeType(t);
+      if (!seen.has(norm) && metrics.some((m) => normalizeType(m.metricType) === norm)) {
+        seen.add(norm);
+        result.push(t);
+      }
+    }
+    // Remaining types from data
+    for (const m of metrics) {
+      const norm = normalizeType(m.metricType);
+      if (!seen.has(norm)) {
+        seen.add(norm);
+        result.push(m.metricType);
+      }
+    }
+    return result;
   }, [metrics]);
 
-  // Apply active type filter client-side
+  // Apply active type filter client-side (normalized comparison to handle case variants)
   const displayedMetrics = useMemo(
-    () => (activeType ? metrics.filter((m) => m.metricType === activeType) : metrics),
+    () =>
+      activeType
+        ? metrics.filter((m) => normalizeType(m.metricType) === normalizeType(activeType))
+        : metrics,
     [metrics, activeType]
   );
 
@@ -358,8 +438,9 @@ export default function HealthMetricsPage() {
   const metricsByType = useMemo(() => {
     const map = new Map<string, HealthMetric[]>();
     for (const m of filteredForChart) {
-      if (!map.has(m.metricType)) map.set(m.metricType, []);
-      map.get(m.metricType)!.push(m);
+      const key = normalizeType(m.metricType);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(m);
     }
     for (const arr of map.values()) {
       arr.sort((a, b) => new Date(a.measuredAt).getTime() - new Date(b.measuredAt).getTime());
@@ -367,7 +448,7 @@ export default function HealthMetricsPage() {
     return map;
   }, [filteredForChart]);
 
-  // Group displayed metrics for table view
+  // Group displayed metrics for table view — use normalizeType as key to merge e.g. "Weight"/"weight"
   const groupedMetrics = useMemo(() => {
     if (groupBy === "none") return null;
     const map = new Map<string, HealthMetric[]>();
@@ -375,7 +456,7 @@ export default function HealthMetricsPage() {
       const key =
         groupBy === "year"
           ? new Date(m.measuredAt).getFullYear().toString()
-          : m.metricType;
+          : normalizeType(m.metricType);
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(m);
     }
@@ -516,10 +597,21 @@ export default function HealthMetricsPage() {
               date: formatDateShort(m.measuredAt),
               value: m.value,
               fullDate: formatDateTime(m.measuredAt),
+              id: m.id,
             }));
-            const refRange = getReferenceRange(type);
+            const refRange = getReferenceRange(type, unit);
             const values = chartData.map((d) => d.value);
-            const yDomain = getYDomain(values, refRange);
+
+            // For Weight: compute BMI-derived zones if height known and age ≥ 18
+            const isWeight = normalizeType(type) === "weight";
+            const weightZones =
+              isWeight && currentProfile?.heightIn && profileAge !== null && profileAge >= 18
+                ? getWeightBmiZones(currentProfile.heightIn, unit)
+                : undefined;
+            const effectiveZones = refRange?.zones ?? weightZones;
+
+            const yDomain = getYDomain(values, refRange, effectiveZones);
+
             return (
               <div key={type} className="rounded-xl border border-gray-200 bg-white p-4">
                 <div className="mb-3 flex items-center gap-2">
@@ -527,10 +619,23 @@ export default function HealthMetricsPage() {
                     {formatMetricLabel(type)}
                     <span className="ml-2 font-normal text-gray-400 text-xs">({unit})</span>
                   </h3>
-                  {refRange && (
+                  {refRange && !effectiveZones && (
                     <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
                       {refRange.label ?? "Normal"}: {refRange.min}–{refRange.max}
                     </span>
+                  )}
+                  {effectiveZones && (
+                    <div className="flex items-center gap-1">
+                      {effectiveZones.map((z) => (
+                        <span
+                          key={z.label}
+                          className="text-xs px-1.5 py-0.5 rounded-full"
+                          style={{ color: z.color, backgroundColor: `${z.color}18` }}
+                        >
+                          {z.label}
+                        </span>
+                      ))}
+                    </div>
                   )}
                 </div>
                 <ResponsiveContainer width="100%" height={200}>
@@ -558,22 +663,44 @@ export default function HealthMetricsPage() {
                         fontSize: "12px",
                       }}
                     />
-                    {refRange && (
-                      <ReferenceArea
-                        y1={refRange.min}
-                        y2={refRange.max}
-                        fill="#10b981"
-                        fillOpacity={0.08}
-                        strokeOpacity={0}
-                      />
-                    )}
+                    {effectiveZones
+                      ? effectiveZones.map((zone) => (
+                          <ReferenceArea
+                            key={zone.label}
+                            y1={zone.min}
+                            y2={zone.max}
+                            fill={zone.color}
+                            fillOpacity={0.1}
+                            strokeOpacity={0}
+                            ifOverflow="hidden"
+                          />
+                        ))
+                      : refRange && (
+                          <ReferenceArea
+                            y1={refRange.min}
+                            y2={refRange.max}
+                            fill="#10b981"
+                            fillOpacity={0.08}
+                            strokeOpacity={0}
+                            ifOverflow="hidden"
+                          />
+                        )}
                     <Line
                       type="monotone"
                       dataKey="value"
                       stroke={color}
                       strokeWidth={2}
-                      dot={{ r: 3, fill: color }}
-                      activeDot={{ r: 5 }}
+                      dot={{ r: 3, fill: color, cursor: "pointer" }}
+                      activeDot={{
+                        r: 6,
+                        cursor: "pointer",
+                        onClick: (_event: unknown, dotProps: unknown) => {
+                          const id = (dotProps as { payload?: { id?: string } })?.payload?.id;
+                          if (id) {
+                            router.push(`/health-metrics/${id}/edit`);
+                          }
+                        },
+                      }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -583,105 +710,15 @@ export default function HealthMetricsPage() {
         </div>
       ) : groupedMetrics ? (
         /* Grouped table view */
-        <div className="space-y-3">
-          {groupedMetrics.map(([groupKey, groupItems]) => {
-            const isExpanded = expandedGroups.has(groupKey);
-            const latest = groupItems[0];
-            const rest = groupItems.slice(1);
-            const refRange = groupBy === "type" ? getReferenceRange(groupKey) : undefined;
-            const label = groupBy === "type" ? formatMetricLabel(groupKey) : groupKey;
-
-            const latestStatus = refRange ? getValueStatus(latest.value, latest.unit, refRange) : null;
-            const ageLabel = getReadingAgeLabel(latest.measuredAt);
-
-            return (
-              <div key={groupKey} className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-                {/* Group header */}
-                <div
-                  className="flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer select-none"
-                  onClick={() => toggleGroup(groupKey)}
-                >
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span className="font-semibold text-gray-800 text-sm truncate">{label}</span>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0 ml-3">
-                    {refRange && (
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        latestStatus ? BADGE_STYLES[latestStatus] : BADGE_NEUTRAL
-                      }`}>
-                        {refRange.label ?? "Normal"}: {refRange.min}–{refRange.max}
-                        {latestStatus === null && refRange.unit ? ` ${refRange.unit}` : ""}
-                      </span>
-                    )}
-                    <span className={`font-semibold text-sm ${latestStatus ? VALUE_STYLES[latestStatus] : "text-gray-900"}`}>
-                      {latest.value}{" "}
-                      <span className="font-normal text-gray-400 text-xs">{latest.unit}</span>
-                    </span>
-                    <span className={`text-xs whitespace-nowrap ${ageLabel ? (ageLabel.old ? "text-amber-500" : "text-amber-400") : "text-gray-400"}`}>
-                      {formatDateShort(latest.measuredAt)}
-                      {ageLabel && <span className="ml-1 opacity-75">({ageLabel.text})</span>}
-                    </span>
-                    <span className="text-xs text-gray-400 w-14 text-right">
-                      {groupItems.length === 1
-                        ? "1 reading"
-                        : isExpanded
-                        ? "▴"
-                        : `+${rest.length} ▾`}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Expanded rows */}
-                {isExpanded && (
-                  <table className="w-full text-sm">
-                    <tbody className="divide-y divide-gray-100">
-                      {groupItems.map((m) => (
-                        <tr
-                          key={m.id}
-                          className="hover:bg-gray-50 cursor-pointer"
-                          onClick={() => router.push(`/health-metrics/${m.id}/edit`)}
-                        >
-                          <td className="px-4 py-2.5 whitespace-nowrap text-xs w-44">
-                            {(() => {
-                              const age = getReadingAgeLabel(m.measuredAt);
-                              return (
-                                <span className={age ? (age.old ? "text-amber-500" : "text-amber-400") : "text-gray-600"}>
-                                  {formatDateTime(m.measuredAt)}
-                                  {age && <span className="ml-1 opacity-75">({age.text})</span>}
-                                </span>
-                              );
-                            })()}
-                          </td>
-                          {groupBy === "year" && (
-                            <td className="px-4 py-2.5">
-                              <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
-                                {formatMetricLabel(m.metricType)}
-                              </span>
-                            </td>
-                          )}
-                          <td className="px-4 py-2.5 w-32">
-                            {(() => {
-                              const s = refRange ? getValueStatus(m.value, m.unit, refRange) : null;
-                              return (
-                                <span className={`font-semibold ${s ? VALUE_STYLES[s] : "text-gray-900"}`}>
-                                  {m.value}{" "}
-                                  <span className="font-normal text-gray-500">{m.unit}</span>
-                                </span>
-                              );
-                            })()}
-                          </td>
-                          <td className="px-4 py-2.5 text-gray-500 max-w-xs truncate">
-                            {m.notes ?? ""}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <GroupedTable
+          groupedMetrics={groupedMetrics}
+          groupBy={groupBy}
+          expandedGroups={expandedGroups}
+          toggleGroup={toggleGroup}
+          router={router}
+          currentProfile={currentProfile}
+          profileAge={profileAge}
+        />
       ) : (
         /* Flat table view (groupBy === "none") */
         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
@@ -718,6 +755,144 @@ export default function HealthMetricsPage() {
         </div>
       )}
       <Toast message={toast} onDismiss={() => setToast(null)} />
+    </div>
+  );
+}
+
+// Extracted to keep JSX manageable and allow tracking the "Older Results" separator
+function GroupedTable({
+  groupedMetrics,
+  groupBy,
+  expandedGroups,
+  toggleGroup,
+  router,
+  currentProfile,
+  profileAge,
+}: {
+  groupedMetrics: [string, HealthMetric[]][];
+  groupBy: GroupBy;
+  expandedGroups: Set<string>;
+  toggleGroup: (key: string) => void;
+  router: ReturnType<typeof useRouter>;
+  currentProfile: { heightIn: number | null; birthDate: string } | null;
+  profileAge: number | null;
+}) {
+  let emittedOldSeparator = false;
+
+  return (
+    <div className="space-y-3">
+      {groupedMetrics.map(([groupKey, groupItems]) => {
+        const isExpanded = expandedGroups.has(groupKey);
+        const latest = groupItems[0];
+        const rest = groupItems.slice(1);
+        const refRange = groupBy === "type" ? getReferenceRange(groupKey, latest.unit) : undefined;
+        const label = groupBy === "type" ? formatMetricLabel(groupKey) : groupKey;
+
+        const latestStatus = refRange ? getValueStatus(latest.value, latest.unit, refRange) : null;
+        const ageLabel = getReadingAgeLabel(latest.measuredAt);
+
+        // Insert "Older Results" separator before the first group whose latest reading is old (> 1 year)
+        const showSeparator = !emittedOldSeparator && ageLabel !== null;
+        if (showSeparator) emittedOldSeparator = true;
+
+        return (
+          <div key={groupKey}>
+            {showSeparator && (
+              <div className="flex items-center gap-3 py-2">
+                <div className="flex-1 border-t border-amber-200" />
+                <span className="text-xs font-medium text-amber-500 uppercase tracking-wide">
+                  Older Results
+                </span>
+                <div className="flex-1 border-t border-amber-200" />
+              </div>
+            )}
+            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+              {/* Group header */}
+              <div
+                className="flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer select-none"
+                onClick={() => toggleGroup(groupKey)}
+              >
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <span className="font-semibold text-gray-800 text-sm truncate">{label}</span>
+                </div>
+                <div className="flex items-center gap-3 shrink-0 ml-3">
+                  {refRange && (
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      latestStatus ? BADGE_STYLES[latestStatus] : BADGE_NEUTRAL
+                    }`}>
+                      {refRange.label ?? "Normal"}: {refRange.min}–{refRange.max}
+                      {latestStatus === null && refRange.unit ? ` ${refRange.unit}` : ""}
+                    </span>
+                  )}
+                  <span className={`font-semibold text-sm ${latestStatus ? VALUE_STYLES[latestStatus] : "text-gray-900"}`}>
+                    {latest.value}{" "}
+                    <span className="font-normal text-gray-400 text-xs">{latest.unit}</span>
+                  </span>
+                  <span className={`text-xs whitespace-nowrap ${ageLabel ? (ageLabel.old ? "text-amber-500" : "text-amber-400") : "text-gray-400"}`}>
+                    {formatDateShort(latest.measuredAt)}
+                    {ageLabel && <span className="ml-1 opacity-75">({ageLabel.text})</span>}
+                  </span>
+                  <span className="text-xs text-gray-400 w-14 text-right">
+                    {groupItems.length === 1
+                      ? "1 reading"
+                      : isExpanded
+                      ? "▴"
+                      : `+${rest.length} ▾`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Expanded rows */}
+              {isExpanded && (
+                <table className="w-full text-sm">
+                  <tbody className="divide-y divide-gray-100">
+                    {groupItems.map((m) => (
+                      <tr
+                        key={m.id}
+                        className="hover:bg-gray-50 cursor-pointer"
+                        onClick={() => router.push(`/health-metrics/${m.id}/edit`)}
+                      >
+                        <td className="px-4 py-2.5 whitespace-nowrap text-xs w-44">
+                          {(() => {
+                            const age = getReadingAgeLabel(m.measuredAt);
+                            return (
+                              <span className={age ? (age.old ? "text-amber-500" : "text-amber-400") : "text-gray-600"}>
+                                {formatDateTime(m.measuredAt)}
+                                {age && <span className="ml-1 opacity-75">({age.text})</span>}
+                              </span>
+                            );
+                          })()}
+                        </td>
+                        {groupBy === "year" && (
+                          <td className="px-4 py-2.5">
+                            <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                              {formatMetricLabel(m.metricType)}
+                            </span>
+                          </td>
+                        )}
+                        <td className="px-4 py-2.5 w-32">
+                          {(() => {
+                            const s = refRange ? getValueStatus(m.value, m.unit, refRange) : null;
+                            return (
+                              <span className={`font-semibold ${s ? VALUE_STYLES[s] : "text-gray-900"}`}>
+                                {m.value}{" "}
+                                <span className="font-normal text-gray-500">{m.unit}</span>
+                              </span>
+                            );
+                          })()}
+                        </td>
+                        <td className="px-4 py-2.5 text-gray-500 max-w-xs truncate">
+                          {m.notes ?? ""}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

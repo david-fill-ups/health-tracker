@@ -118,6 +118,25 @@ export async function updateVaccination(
   return updated;
 }
 
+export async function renameVaccinationGroup(
+  userId: string,
+  profileId: string,
+  oldName: string,
+  newName: string
+) {
+  await assertProfileAccess(userId, profileId, "WRITE");
+  const { count } = await prisma.vaccination.updateMany({
+    where: { profileId, name: oldName },
+    data: { name: newName },
+  });
+  await logAudit(userId, profileId, "UPDATE_VACCINATION", "Vaccination", profileId, {
+    oldName,
+    newName,
+    count,
+  });
+  return { count };
+}
+
 export async function deleteVaccination(userId: string, id: string) {
   const vaccination = await prisma.vaccination.findUnique({
     where: { id },

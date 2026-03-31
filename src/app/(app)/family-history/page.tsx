@@ -439,12 +439,6 @@ export default function FamilyHistoryPage() {
     });
   }
 
-  // Edit relationship state
-  const [editingRelId, setEditingRelId] = useState<string | null>(null);
-  const [editRelType, setEditRelType] = useState<ProfileRelationshipType>("PARENT");
-  const [editBiological, setEditBiological] = useState(true);
-  const [editingSaving, setEditingSaving] = useState(false);
-
   useEffect(() => {
     if (!activeProfileId) return;
     setLoading(true);
@@ -640,42 +634,6 @@ export default function FamilyHistoryPage() {
     }
   }
 
-  function startEditRel(rel: ProfileRelationship) {
-    setEditingRelId(rel.id);
-    setEditRelType(rel.relationship);
-    setEditBiological(rel.biological);
-  }
-
-  async function saveEditRel(relId: string) {
-    if (!activeProfileId) return;
-    setEditingSaving(true);
-    try {
-      const res = await fetch(`/api/profile-relationships/${relId}?profileId=${activeProfileId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profileId: activeProfileId, relationship: editRelType, biological: editBiological }),
-      });
-      if (!res.ok) return;
-      const updated = await res.json();
-      // Re-fetch to get updated conditions based on new biological flag
-      const fresh = await fetch(`/api/profile-relationships?profileId=${activeProfileId}&includeInherited=true`).then((r) => r.json());
-      setRelationships(Array.isArray(fresh) ? fresh : []);
-      setEditingRelId(null);
-    } finally {
-      setEditingSaving(false);
-    }
-  }
-
-  async function handleUnlinkProfile(relId: string) {
-    if (!activeProfileId || !confirm("Remove this profile link?")) return;
-    const res = await fetch(`/api/profile-relationships/${relId}?profileId=${activeProfileId}`, {
-      method: "DELETE",
-    });
-    if (res.ok) {
-      setRelationships((prev) => prev.filter((r) => r.id !== relId));
-    }
-  }
-
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -818,90 +776,18 @@ export default function FamilyHistoryPage() {
               <div className="space-y-3">
                 {relationships.map((rel) => {
                   const badge = PROFILE_BADGE[rel.relationship];
-                  const isEditing = editingRelId === rel.id;
                   return (
                     <div key={rel.id} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-                      {isEditing ? (
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Relationship</label>
-                              <select
-                                value={editRelType}
-                                onChange={(e) => {
-                                  const val = e.target.value as ProfileRelationshipType;
-                                  setEditRelType(val);
-                                  setEditBiological(BIOLOGICAL_DEFAULTS[val] ?? false);
-                                }}
-                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                              >
-                                {PROFILE_RELATIONSHIP_GROUPS.map((group) => (
-                                  <optgroup key={group.label} label={group.label}>
-                                    {group.options.map((r) => (
-                                      <option key={r} value={r}>{PROFILE_BADGE[r as ProfileRelationshipType]?.label ?? r}</option>
-                                    ))}
-                                  </optgroup>
-                                ))}
-                              </select>
-                            </div>
-                            {!NON_BIOLOGICAL_PROFILE_TYPES.has(editRelType) && (
-                              <div className="flex items-end pb-1">
-                                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={editBiological}
-                                    onChange={(e) => setEditBiological(e.target.checked)}
-                                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                  />
-                                  Biological relationship
-                                </label>
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => saveEditRel(rel.id)}
-                              disabled={editingSaving}
-                              className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-                            >
-                              {editingSaving ? "Saving…" : "Save"}
-                            </button>
-                            <button
-                              onClick={() => setEditingRelId(null)}
-                              className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="flex items-center justify-between gap-2 flex-wrap">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-semibold text-gray-900">{rel.toProfile.name}</span>
-                              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${badge?.classes ?? "bg-gray-100 text-gray-600"}`}>
-                                {badge?.label ?? rel.relationship}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-gray-900">{rel.toProfile.name}</span>
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${badge?.classes ?? "bg-gray-100 text-gray-600"}`}>
+                              {badge?.label ?? rel.relationship}
+                            </span>
+                            {rel.biological && (
+                              <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-600 border border-green-200">
+                                biological
                               </span>
-                              {rel.biological && (
-                                <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-600 border border-green-200">
-                                  biological
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => startEditRel(rel)}
-                                className="text-xs text-gray-500 hover:text-indigo-600"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleUnlinkProfile(rel.id)}
-                                className="text-xs text-red-400 hover:text-red-600"
-                              >
-                                Unlink
-                              </button>
-                            </div>
+                            )}
                           </div>
                           {rel.biological ? (
                             rel.conditions.length > 0 ? (
@@ -916,7 +802,7 @@ export default function FamilyHistoryPage() {
                           )}
                           {rel.biological && rel.inherited && (() => {
                             const dedupedLinked = rel.inherited.linkedProfiles.filter(
-                              (p) => !linkedProfileIds.has(p.toProfileId)
+                              (p) => !linkedProfileIds.has(p.toProfileId) && p.toProfileId !== activeProfileId
                             );
                             const total = rel.inherited.familyMembers.length + dedupedLinked.length;
                             if (total === 0) return null;
@@ -983,8 +869,6 @@ export default function FamilyHistoryPage() {
                               </div>
                             );
                           })()}
-                        </>
-                      )}
                     </div>
                   );
                 })}

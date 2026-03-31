@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { UpcomingVisits } from "@/components/dashboard/UpcomingVisits";
 import { NeedToSchedule } from "@/components/dashboard/NeedToSchedule";
@@ -7,9 +8,11 @@ import { UpcomingDoses } from "@/components/dashboard/UpcomingDoses";
 import { VaccinationStatus } from "@/components/dashboard/VaccinationStatus";
 import { ActiveConditions } from "@/components/dashboard/ActiveConditions";
 import { Allergies } from "@/components/dashboard/Allergies";
+import { DocumentImportModal } from "@/components/import/DocumentImportModal";
 
 export default function DashboardPage() {
   const { activeProfileId } = useProfile();
+  const [importOpen, setImportOpen] = useState(false);
 
   if (!activeProfileId) {
     return (
@@ -25,7 +28,15 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <button
+          onClick={() => setImportOpen(true)}
+          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 shrink-0"
+        >
+          Import Documents
+        </button>
+      </div>
       <div className="grid gap-6 sm:grid-cols-2">
         <UpcomingVisits activeProfileId={activeProfileId} />
         <NeedToSchedule activeProfileId={activeProfileId} />
@@ -34,6 +45,12 @@ export default function DashboardPage() {
         <ActiveConditions activeProfileId={activeProfileId} />
         <Allergies activeProfileId={activeProfileId} />
       </div>
+
+      <DocumentImportModal
+        isOpen={importOpen}
+        onClose={() => setImportOpen(false)}
+        defaultProfileId={activeProfileId ?? undefined}
+      />
     </div>
   );
 }

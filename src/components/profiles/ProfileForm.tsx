@@ -10,11 +10,19 @@ interface ProfileFormData {
   birthDate: string;
   sex: string;
   state: string;
+  heightFt: string;
+  heightInPart: string;
   notes: string;
 }
 
-interface Profile extends ProfileFormData {
+interface Profile {
   id: string;
+  name: string;
+  birthDate: string;
+  sex: string;
+  state: string;
+  heightIn?: number | null;
+  notes: string;
 }
 
 const SEX_OPTIONS = [
@@ -88,6 +96,8 @@ export function ProfileForm({ profile }: { profile?: Profile }) {
     birthDate: profile?.birthDate ?? `${new Date().getFullYear() - 30}-01-01`,
     sex: profile?.sex ?? "PREFER_NOT_TO_SAY",
     state: profile?.state ?? "",
+    heightFt: profile?.heightIn ? Math.floor(profile.heightIn / 12).toString() : "",
+    heightInPart: profile?.heightIn ? (profile.heightIn % 12).toString() : "",
     notes: profile?.notes ?? "",
   });
   const [saving, setSaving] = useState(false);
@@ -110,9 +120,16 @@ export function ProfileForm({ profile }: { profile?: Profile }) {
     const url = isEdit ? `/api/profiles/${profile.id}` : "/api/profiles";
     const method = isEdit ? "PUT" : "POST";
 
+    const totalInches = (form.heightFt || form.heightInPart)
+      ? (parseInt(form.heightFt || "0") * 12) + parseInt(form.heightInPart || "0")
+      : undefined;
+
     const body = {
-      ...form,
+      name: form.name,
+      birthDate: form.birthDate,
+      sex: form.sex,
       state: form.state || undefined,
+      heightIn: totalInches || undefined,
       notes: form.notes || undefined,
     };
 
@@ -372,6 +389,32 @@ export function ProfileForm({ profile }: { profile?: Profile }) {
               </option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700">Height</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min="0"
+              max="9"
+              value={form.heightFt}
+              onChange={(e) => set("heightFt", e.target.value)}
+              className="w-20 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              placeholder="5"
+            />
+            <span className="text-sm text-gray-500">ft</span>
+            <input
+              type="number"
+              min="0"
+              max="11"
+              value={form.heightInPart}
+              onChange={(e) => set("heightInPart", e.target.value)}
+              className="w-20 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              placeholder="10"
+            />
+            <span className="text-sm text-gray-500">in</span>
+          </div>
         </div>
 
         <div>

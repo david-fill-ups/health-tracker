@@ -20,7 +20,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex w-56 flex-col border-r border-gray-200 bg-white">
+    <aside className="hidden md:flex w-56 flex-col border-r border-gray-200 bg-white">
       <div className="flex h-16 items-center px-4 border-b border-gray-200">
         <span className="text-lg font-bold text-indigo-600">Health Tracker</span>
       </div>

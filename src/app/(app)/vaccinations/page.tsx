@@ -120,10 +120,29 @@ export default function VaccinationsPage() {
     });
   }, [recommendations, vaccinationGroups]);
 
-  function getComplianceBadge(groupName: string) {
+  function fmtMonth(d: Date | string | null): string | null {
+    if (!d) return null;
+    return new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "short" });
+  }
+
+  function getComplianceBadge(groupName: string): ({ label: string; classes: string; subtitle: string | null }) | null {
     const rec = recByName.get(groupName.toLowerCase());
     if (!rec || rec.status === "not_applicable") return null;
-    return COMPLIANCE_BADGE[rec.status] ?? null;
+    const base = COMPLIANCE_BADGE[rec.status];
+    if (!base) return null;
+
+    let subtitle: string | null = null;
+    if (rec.status === "overdue" && rec.nextDueDate) {
+      subtitle = `Was due ${fmtMonth(rec.nextDueDate)}`;
+    } else if (rec.status === "due" && rec.nextDueDate) {
+      subtitle = `Due ${fmtMonth(rec.nextDueDate)}`;
+    } else if (rec.status === "up_to_date" && rec.nextDueDate) {
+      subtitle = `Next due ${fmtMonth(rec.nextDueDate)}`;
+    } else if (rec.status === "completed" && rec.lastDoseDate) {
+      subtitle = `Last dose ${fmtMonth(rec.lastDoseDate)}`;
+    }
+
+    return { ...base, subtitle };
   }
 
   async function checkTravel(e: React.FormEvent) {
@@ -323,22 +342,27 @@ export default function VaccinationsPage() {
                 return (
                   <div key={name} className="rounded-xl border border-gray-200 bg-white overflow-hidden">
                     <div className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50">
-                      <span className="flex items-center gap-2">
-                        <Link
-                          href={`/vaccinations/${vaccineToSlug(name)}`}
-                          className="font-semibold text-gray-900 hover:text-indigo-600"
-                        >
-                          {name}
-                        </Link>
-                        {badge && (
-                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${badge.classes}`}>
-                            {badge.label}
-                          </span>
+                      <div className="flex flex-col min-w-0">
+                        <span className="flex items-center gap-2">
+                          <Link
+                            href={`/vaccinations/${vaccineToSlug(name)}`}
+                            className="font-semibold text-gray-900 hover:text-indigo-600"
+                          >
+                            {name}
+                          </Link>
+                          {badge && (
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${badge.classes}`}>
+                              {badge.label}
+                            </span>
+                          )}
+                        </span>
+                        {badge?.subtitle && (
+                          <span className="text-xs text-gray-400 mt-0.5">{badge.subtitle}</span>
                         )}
-                      </span>
+                      </div>
                       <button
                         onClick={() => toggleGroup(name)}
-                        className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600"
+                        className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 shrink-0"
                       >
                         {items.length} {items.length === 1 ? "dose" : "doses"}
                         <span className="text-xs">{isOpen ? "▲" : "▼"}</span>

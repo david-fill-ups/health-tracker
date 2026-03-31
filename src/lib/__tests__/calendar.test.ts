@@ -104,4 +104,21 @@ describe("generateCalendarFeed", () => {
     const result = generateCalendarFeed("John Doe", []);
     expect(result).toContain("John Doe");
   });
+
+  it("outputs UTC Z times when no timezone is provided", () => {
+    const result = generateCalendarFeed("Jane", [makeVisit()]);
+    expect(result).toContain("DTSTART:20260415T100000Z");
+  });
+
+  it("outputs TZID when timezone is provided", () => {
+    const result = generateCalendarFeed("Jane", [makeVisit()], "America/New_York");
+    expect(result).toContain("TZID=America/New_York");
+    expect(result).not.toContain("DTSTART:20260415T100000Z");
+  });
+
+  it("uses hyphen (not em dash) in calendar name", () => {
+    const result = generateCalendarFeed("Jane", []);
+    expect(result).toContain("Jane - Health Tracker");
+    expect(result).not.toContain("Jane \u2014 Health Tracker");
+  });
 });

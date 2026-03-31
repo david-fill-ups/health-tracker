@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import {
   VisitCard, type Visit,
@@ -32,25 +32,51 @@ const GROUP_BY_OPTIONS: Array<{ label: string; value: GroupBy }> = [
   { label: "Year", value: "year" },
 ];
 
-export default function VisitsPage() {
+function VisitsPageInner() {
   const { activeProfileId } = useProfile();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<VisitStatus | "ALL">("ALL");
+  const [activeTab, setActiveTab] = useState<VisitStatus | "ALL">(
+    (searchParams.get("status") as VisitStatus | "ALL") ?? "ALL"
+  );
 
-  // Filter state
-  const [filterSearch, setFilterSearch] = useState("");
-  const [filterFacilityId, setFilterFacilityId] = useState("");
-  const [filterDoctorId, setFilterDoctorId] = useState("");
-  const [filterSpecialty, setFilterSpecialty] = useState("");
-  const [filterType, setFilterType] = useState<VisitType | "">("");
-  const [filterDateFrom, setFilterDateFrom] = useState("");
-  const [filterDateTo, setFilterDateTo] = useState("");
-  const [dateSort, setDateSort] = useState<"asc" | "desc" | null>(null);
-  const [groupBy, setGroupBy] = useState<GroupBy>("doctor");
+  // Filter state — initialized from URL
+  const [filterSearch, setFilterSearch] = useState(searchParams.get("search") ?? "");
+  const [filterFacilityId, setFilterFacilityId] = useState(searchParams.get("facility") ?? "");
+  const [filterDoctorId, setFilterDoctorId] = useState(searchParams.get("doctor") ?? "");
+  const [filterSpecialty, setFilterSpecialty] = useState(searchParams.get("specialty") ?? "");
+  const [filterType, setFilterType] = useState<VisitType | "">(
+    (searchParams.get("type") as VisitType | "") ?? ""
+  );
+  const [filterDateFrom, setFilterDateFrom] = useState(searchParams.get("from") ?? "");
+  const [filterDateTo, setFilterDateTo] = useState(searchParams.get("to") ?? "");
+  const [dateSort, setDateSort] = useState<"asc" | "desc" | null>(
+    (searchParams.get("sort") as "asc" | "desc") ?? null
+  );
+  const [groupBy, setGroupBy] = useState<GroupBy>(
+    (searchParams.get("group") as GroupBy) ?? "doctor"
+  );
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+  // Sync filter state to URL so back-navigation restores it
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (activeTab !== "ALL") params.set("status", activeTab);
+    if (filterSearch) params.set("search", filterSearch);
+    if (filterFacilityId) params.set("facility", filterFacilityId);
+    if (filterDoctorId) params.set("doctor", filterDoctorId);
+    if (filterSpecialty) params.set("specialty", filterSpecialty);
+    if (filterType) params.set("type", filterType);
+    if (filterDateFrom) params.set("from", filterDateFrom);
+    if (filterDateTo) params.set("to", filterDateTo);
+    if (dateSort) params.set("sort", dateSort);
+    if (groupBy !== "doctor") params.set("group", groupBy);
+    const query = params.toString();
+    router.replace(`/visits${query ? `?${query}` : ""}`, { scroll: false });
+  }, [activeTab, filterSearch, filterFacilityId, filterDoctorId, filterSpecialty, filterType, filterDateFrom, filterDateTo, dateSort, groupBy]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchVisits = useCallback(async () => {
     if (!activeProfileId) return;
@@ -236,6 +262,7 @@ export default function VisitsPage() {
       </div>
     );
   }
+
 
   return (
     <div className="space-y-5">
@@ -534,5 +561,13 @@ export default function VisitsPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function VisitsPage() {
+  return (
+    <Suspense>
+      <VisitsPageInner />
+    </Suspense>
   );
 }

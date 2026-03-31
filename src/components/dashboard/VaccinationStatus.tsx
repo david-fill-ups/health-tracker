@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { vaccineToSlug } from "@/lib/cdc";
 
 interface Recommendation {
   vaccine: string;
@@ -83,13 +84,15 @@ export function VaccinationStatus({ activeProfileId }: { activeProfileId: string
       {activeProfileId && !loading && actionable.length > 0 && (
         <ul className="space-y-2">
           {actionable.map((r) => (
-            <li key={r.vaccine} className="flex items-center justify-between gap-2">
-              <span className="text-sm text-gray-800">{r.vaccine}</span>
-              <span
-                className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[r.status]}`}
-              >
-                {STATUS_LABELS[r.status]}
-              </span>
+            <li key={r.vaccine}>
+              <Link href={`/vaccinations/${vaccineToSlug(r.vaccine)}`} className="flex items-center justify-between gap-2 hover:bg-gray-50 -mx-2 px-2 py-0.5 rounded-lg transition-colors">
+                <span className="text-sm text-gray-800">{r.vaccine}</span>
+                <span
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[r.status]}`}
+                >
+                  {STATUS_LABELS[r.status]}
+                </span>
+              </Link>
             </li>
           ))}
         </ul>

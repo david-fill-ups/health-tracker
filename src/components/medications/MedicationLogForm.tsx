@@ -8,6 +8,7 @@ interface MedicationLogFormProps {
   profileId: string;
   medicationDosage?: string | null;
   medicationType?: string | null;
+  returnTo?: string;
 }
 
 function parseMedicationDosage(s: string): { dosage: string; unit: string } {
@@ -32,7 +33,7 @@ function nowLocal() {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function MedicationLogForm({ medicationId, profileId, medicationDosage, medicationType }: MedicationLogFormProps) {
+export function MedicationLogForm({ medicationId, profileId, medicationDosage, medicationType, returnTo = "/medications" }: MedicationLogFormProps) {
   const isDevice = medicationType === "DEVICE";
   const isInjectable = medicationType === "INJECTABLE";
   const router = useRouter();
@@ -81,7 +82,7 @@ export function MedicationLogForm({ medicationId, profileId, medicationDosage, m
         return;
       }
 
-      router.push("/medications");
+      router.push(returnTo);
       router.refresh();
     } finally {
       setSubmitting(false);
@@ -105,7 +106,7 @@ export function MedicationLogForm({ medicationId, profileId, medicationDosage, m
           required
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
       </div>
 
@@ -120,7 +121,7 @@ export function MedicationLogForm({ medicationId, profileId, medicationDosage, m
               value={dosage}
               onChange={(e) => setDosage(e.target.value)}
               placeholder="e.g. 2.5"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
           </div>
           <div>
@@ -131,7 +132,7 @@ export function MedicationLogForm({ medicationId, profileId, medicationDosage, m
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
               placeholder="mg, mL, units…"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
             <datalist id="unit-suggestions">
               <option value="mg" />
@@ -150,7 +151,7 @@ export function MedicationLogForm({ medicationId, profileId, medicationDosage, m
           <select
             value={injectionSite}
             onChange={(e) => setInjectionSite(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           >
             <option value="">— Select site —</option>
             {INJECTION_SITES.map((s) => (
@@ -173,7 +174,7 @@ export function MedicationLogForm({ medicationId, profileId, medicationDosage, m
           value={weight}
           onChange={(e) => setWeight(e.target.value)}
           placeholder="Optional"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
       </div>
 
@@ -183,22 +184,22 @@ export function MedicationLogForm({ medicationId, profileId, medicationDosage, m
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={3}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           placeholder="Any observations, side effects, etc."
         />
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row">
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+          className="w-full sm:w-auto rounded-lg bg-green-600 px-4 py-3 sm:py-2 text-base sm:text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
         >
           {submitting ? "Saving…" : "Log dose"}
         </button>
         <a
-          href="/medications"
-          className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          href={returnTo}
+          className="w-full sm:w-auto text-center rounded-lg border border-gray-300 px-4 py-3 sm:py-2 text-base sm:text-sm font-medium text-gray-700 hover:bg-gray-50"
         >
           Cancel
         </a>

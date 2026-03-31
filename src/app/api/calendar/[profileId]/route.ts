@@ -15,6 +15,7 @@ export async function GET(
   const { profileId } = await params;
   const { searchParams } = new URL(req.url);
   const token = searchParams.get("token");
+  const tz = searchParams.get("tz") ?? undefined;
 
   if (!token) {
     return new NextResponse("Missing token", { status: 401 });
@@ -40,7 +41,7 @@ export async function GET(
     orderBy: { date: "asc" },
   });
 
-  const icsContent = generateCalendarFeed(profile.name, visits);
+  const icsContent = generateCalendarFeed(profile.name, visits, tz);
 
   return new NextResponse(icsContent, {
     status: 200,

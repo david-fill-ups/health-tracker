@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useProfile } from "@/components/layout/ProfileProvider";
+import { DocumentImportModal } from "@/components/import/DocumentImportModal";
 import type { VisitStatus, VisitType } from "@/generated/prisma/enums";
 
 const VISIT_TYPE_LABELS: Record<VisitType, string> = {
@@ -72,6 +73,7 @@ export default function VisitDetailPage() {
   const [visit, setVisit] = useState<Visit | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   useEffect(() => {
     if (!activeProfileId || !id) return;
@@ -130,12 +132,20 @@ export default function VisitDetailPage() {
               </span>
             </div>
           </div>
-          <button
-            onClick={() => router.push(`/visits/${id}/edit`)}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 shrink-0"
-          >
-            Edit
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setImportOpen(true)}
+              className="rounded-lg border border-indigo-300 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-50"
+            >
+              Import Documents
+            </button>
+            <button
+              onClick={() => router.push(`/visits/${id}/edit`)}
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            >
+              Edit
+            </button>
+          </div>
         </div>
 
         {/* Details grid */}
@@ -215,6 +225,13 @@ export default function VisitDetailPage() {
           )}
         </dl>
       </div>
+      <DocumentImportModal
+        isOpen={importOpen}
+        onClose={() => setImportOpen(false)}
+        defaultProfileId={visit.profileId}
+        visitId={id}
+        visitDate={visit.date?.slice(0, 10) ?? undefined}
+      />
     </div>
   );
 }

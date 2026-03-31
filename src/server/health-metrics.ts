@@ -61,6 +61,27 @@ export async function updateHealthMetric(
   return metric;
 }
 
+export async function getDistinctMetricInfo(userId: string, profileId: string) {
+  await assertProfileAccess(userId, profileId);
+  // Get all distinct (metricType, unit) combos, most-recent first
+  const entries = await prisma.healthMetric.findMany({
+    where: { profileId },
+    select: { metricType: true, unit: true },
+    orderBy: { measuredAt: "desc" },
+    distinct: ["metricType", "unit"],
+  });
+  // Group: first occurrence of each metricType = last used unit
+  const map: Record<string, { lastUnit: string; units: string[] }> = {};
+  for (const e of entries) {
+    if (!map[e.metricType]) {
+      map[e.metricType] = { lastUnit: e.unit, units: [e.unit] };
+    } else {
+      map[e.metricType].units.push(e.unit);
+    }
+  }
+  return map;
+}
+
 export async function deleteHealthMetric(
   userId: string,
   profileId: string,

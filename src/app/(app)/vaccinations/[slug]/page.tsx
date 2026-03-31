@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { getVaccineBySlug, getCdcLastUpdated, vaccineToSlug } from "@/lib/cdc";
-import type { CdcVaccineSchedule } from "@/lib/cdc";
+import type { CdcVaccineSchedule, VaccinationRecommendation } from "@/lib/cdc";
 
 type VaccinationSource = "ADMINISTERED" | "NATURAL" | "DECLINED";
 
@@ -32,9 +32,14 @@ const FREQUENCY_LABEL: Record<string, string> = {
 
 export default function VaccineInfoPage() {
   const { slug } = useParams<{ slug: string }>();
+  const router = useRouter();
   const { activeProfileId } = useProfile();
   const [records, setRecords] = useState<VaccinationRecord[]>([]);
+  const [recommendation, setRecommendation] = useState<VaccinationRecommendation | null>(null);
   const [loading, setLoading] = useState(false);
+  const [renamingActive, setRenamingActive] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+  const [renaming, setRenaming] = useState(false);
 
   const vaccineInfo: CdcVaccineSchedule | null = getVaccineBySlug(slug);
   const cdcLastUpdated = getCdcLastUpdated();
@@ -42,21 +47,85 @@ export default function VaccineInfoPage() {
   useEffect(() => {
     if (!activeProfileId) return;
     setLoading(true);
-    fetch(`/api/vaccinations?profileId=${activeProfileId}`)
-      .then((r) => r.json())
-      .then((data: VaccinationRecord[]) => {
-        if (!Array.isArray(data)) return;
-        // Match by canonical name and all aliases
-        const allNames = vaccineInfo
-          ? [vaccineInfo.vaccine, ...vaccineInfo.aliases].map((n) => n.toLowerCase())
-          : [decodeURIComponent(slug).toLowerCase()];
-        setRecords(data.filter((v) => allNames.includes(v.name.toLowerCase())));
+    Promise.all([
+      fetch(`/api/vaccinations?profileId=${activeProfileId}`).then((r) => r.json()),
+      fetch(`/api/vaccinations/recommendations?profileId=${activeProfileId}`).then((r) => r.json()),
+    ])
+      .then(([vaxData, recData]) => {
+        if (Array.isArray(vaxData)) {
+          if (vaccineInfo) {
+            const allNames = [vaccineInfo.vaccine, ...vaccineInfo.aliases].map((n) => n.toLowerCase());
+            setRecords(vaxData.filter((v: VaccinationRecord) => allNames.includes(v.name.toLowerCase())));
+          } else {
+            setRecords(vaxData.filter((v: VaccinationRecord) => vaccineToSlug(v.name) === slug));
+          }
+        }
+        if (Array.isArray(recData?.recommendations)) {
+          const allNames = vaccineInfo
+            ? [vaccineInfo.vaccine, ...vaccineInfo.aliases].map((n) => n.toLowerCase())
+            : [decodeURIComponent(slug).toLowerCase()];
+          const match = recData.recommendations.find((r: VaccinationRecommendation) =>
+            [r.vaccine, ...(r.aliases ?? [])].map((n) => n.toLowerCase()).some((n) => allNames.includes(n))
+          );
+          setRecommendation(match ?? null);
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [activeProfileId, slug, vaccineInfo]);
 
-  const displayName = vaccineInfo?.vaccine ?? decodeURIComponent(slug).replace(/-/g, " ");
+  const displayName = vaccineInfo?.vaccine ?? records[0]?.name ?? decodeURIComponent(slug).replace(/-/g, " ");
+  // Only allow renaming custom-named vaccines (no CDC entry) that have records
+  const canRename = !vaccineInfo && records.length > 0;
+
+  const STATUS_BADGE: Record<string, { label: string; classes: string }> = {
+    up_to_date: { label: "Up to date", classes: "bg-green-100 text-green-700" },
+    due:        { label: "Due",         classes: "bg-amber-100 text-amber-700" },
+    overdue:    { label: "Overdue",     classes: "bg-red-100 text-red-700" },
+    completed:  { label: "Completed",   classes: "bg-blue-100 text-blue-700" },
+    exempt:     { label: "Declined",    classes: "bg-gray-100 text-gray-500" },
+  };
+  function fmtMonth(d: Date | string | null): string | null {
+    if (!d) return null;
+    return new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "short" });
+  }
+  const statusBadge = (() => {
+    if (!recommendation || recommendation.status === "not_applicable" || recommendation.status === "not_scheduled") return null;
+    const base = STATUS_BADGE[recommendation.status];
+    if (!base) return null;
+    let subtitle: string | null = null;
+    if (recommendation.status === "overdue" && recommendation.nextDueDate)
+      subtitle = `Was due ${fmtMonth(recommendation.nextDueDate)}`;
+    else if (recommendation.status === "due" && recommendation.nextDueDate)
+      subtitle = `Due ${fmtMonth(recommendation.nextDueDate)}`;
+    else if (recommendation.status === "up_to_date" && recommendation.nextDueDate)
+      subtitle = `Next due ${fmtMonth(recommendation.nextDueDate)}`;
+    else if (recommendation.status === "completed" && recommendation.lastDoseDate)
+      subtitle = `Last dose ${fmtMonth(recommendation.lastDoseDate)}`;
+    return { ...base, subtitle };
+  })();
+
+  async function handleRename(e: { preventDefault(): void }) {
+    e.preventDefault();
+    const newName = renameValue.trim();
+    if (!newName || newName === displayName || !activeProfileId) {
+      setRenamingActive(false);
+      return;
+    }
+    setRenaming(true);
+    try {
+      const res = await fetch("/api/vaccinations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profileId: activeProfileId, oldName: displayName, newName }),
+      });
+      if (res.ok) {
+        router.replace(`/vaccinations/${vaccineToSlug(newName)}`);
+      }
+    } finally {
+      setRenaming(false);
+    }
+  }
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -64,9 +133,55 @@ export default function VaccineInfoPage() {
         <Link href="/vaccinations" className="text-sm text-indigo-600 hover:underline">
           ← Back to Vaccinations
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-gray-900">{displayName}</h1>
+        {renamingActive ? (
+          <form onSubmit={handleRename} className="mt-2 flex items-center gap-2">
+            <input
+              autoFocus
+              type="text"
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              className="flex-1 rounded-lg border border-indigo-400 px-3 py-1.5 text-2xl font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+            <button
+              type="submit"
+              disabled={renaming}
+              className="text-sm font-medium text-indigo-600 hover:text-indigo-800 disabled:opacity-50"
+            >
+              {renaming ? "Saving…" : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setRenamingActive(false)}
+              className="text-sm text-gray-400 hover:text-gray-600"
+            >
+              Cancel
+            </button>
+          </form>
+        ) : (
+          <div className="mt-2 flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-gray-900">{displayName}</h1>
+            {canRename && (
+              <button
+                onClick={() => { setRenameValue(displayName); setRenamingActive(true); }}
+                className="text-sm text-gray-400 hover:text-gray-600"
+              >
+                Rename
+              </button>
+            )}
+          </div>
+        )}
         {vaccineInfo?.aliases && vaccineInfo.aliases.length > 0 && (
           <p className="mt-1 text-sm text-gray-400">Also known as: {vaccineInfo.aliases.join(", ")}</p>
+        )}
+        {statusBadge && (
+          <div className="mt-2 flex items-center gap-2">
+            <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusBadge.classes}`}>
+              {statusBadge.label}
+            </span>
+            {statusBadge.subtitle && (
+              <span className="text-sm text-gray-500">{statusBadge.subtitle}</span>
+            )}
+          </div>
         )}
       </div>
 
@@ -137,7 +252,7 @@ export default function VaccineInfoPage() {
                 <li key={v.id} className="py-2.5 flex items-center justify-between gap-4">
                   <div>
                     <p className="text-sm text-gray-800">
-                      {new Date(v.date + "T00:00:00").toLocaleDateString(undefined, {
+                      {new Date(v.date).toLocaleDateString(undefined, {
                         year: "numeric",
                         month: "long",
                         day: "numeric",

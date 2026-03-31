@@ -28,10 +28,10 @@ export interface CreateVisitInput {
   date?: Date;
   dueMonth?: string;
   type?: VisitType;
-  reason?: string;
-  specialty?: string;
-  notes?: string;
-  documentUrl?: string;
+  reason?: string | null;
+  specialty?: string | null;
+  notes?: string | null;
+  documentUrl?: string | null;
   status?: VisitStatus;
 }
 

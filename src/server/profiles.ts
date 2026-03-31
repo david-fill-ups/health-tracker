@@ -47,6 +47,7 @@ export interface CreateProfileInput {
   birthDate: Date;
   sex: Sex;
   state?: string;
+  heightIn?: number;
   notes?: string;
 }
 
@@ -64,6 +65,7 @@ export async function createProfile(
       birthDate: input.birthDate,
       sex: input.sex,
       state: input.state,
+      heightIn: input.heightIn,
       notes: input.notes,
       calendarToken: randomBytes(20).toString("hex"),
       userId,
@@ -85,10 +87,10 @@ export async function updateProfile(
   await assertProfileAccess(userId, profileId, "OWNER");
   // Explicitly enumerate allowed fields — prevents mass assignment of system
   // fields (userId, calendarToken, etc.) from the raw request body.
-  const { name, birthDate, sex, state, notes } = input;
+  const { name, birthDate, sex, state, heightIn, notes } = input;
   const profile = await prisma.profile.update({
     where: { id: profileId },
-    data: { name, birthDate, sex, state, notes },
+    data: { name, birthDate, sex, state, heightIn, notes },
   });
   await logAudit(userId, profileId, "UPDATE_PROFILE", "Profile", profileId);
   return profile;

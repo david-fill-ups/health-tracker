@@ -30,8 +30,8 @@ export default function LogDosePage({
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <a href="/medications" className="text-sm text-indigo-600 hover:underline">
-          ← Back to Medications
+        <a href={`/medications/${id}`} className="text-sm text-indigo-600 hover:underline">
+          ← Back to Medication
         </a>
         <h1 className="mt-2 text-2xl font-bold text-gray-900">
           Log dose{medicationName ? ` — ${medicationName}` : ""}
@@ -46,6 +46,7 @@ export default function LogDosePage({
           profileId={activeProfileId}
           medicationDosage={medicationDosage}
           medicationType={medicationType}
+          returnTo={`/medications/${id}`}
         />
       )}
     </div>

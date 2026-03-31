@@ -2,6 +2,7 @@ import { signOut } from "@/auth";
 import Image from "next/image";
 import Link from "next/link";
 import { ProfileSwitcher } from "./ProfileSwitcher";
+import { MobileSidebar } from "./MobileSidebar";
 
 interface User {
   name?: string | null;
@@ -11,8 +12,9 @@ interface User {
 
 export function TopNav({ user }: { user: User }) {
   return (
-    <header className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6">
+    <header className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 md:px-6">
       <div className="flex items-center gap-2">
+        <MobileSidebar />
         <ProfileSwitcher />
       </div>
       <div className="flex items-center gap-3">

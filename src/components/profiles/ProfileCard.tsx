@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { CopyButton } from "./CopyButton";
+import { DocumentImportModal } from "@/components/import/DocumentImportModal";
 
 interface Profile {
   id: string;
@@ -15,7 +17,11 @@ interface Profile {
 
 function calendarUrl(profileId: string, token: string) {
   const host = typeof window !== "undefined" ? window.location.host : "";
-  return `webcal://${host}/api/calendar/${profileId}?token=${token}`;
+  const tz = typeof Intl !== "undefined"
+    ? Intl.DateTimeFormat().resolvedOptions().timeZone
+    : "";
+  const tzParam = tz ? `&tz=${encodeURIComponent(tz)}` : "";
+  return `webcal://${host}/api/calendar/${profileId}?token=${token}${tzParam}`;
 }
 
 export function ProfileCard({
@@ -26,6 +32,7 @@ export function ProfileCard({
   isActive: boolean;
 }) {
   const { setActiveProfileId } = useProfile();
+  const [importOpen, setImportOpen] = useState(false);
   const calUrl = profile.calendarToken
     ? calendarUrl(profile.id, profile.calendarToken)
     : null;
@@ -67,7 +74,7 @@ export function ProfileCard({
         </div>
       )}
 
-      <div className="mt-4 flex items-center gap-2">
+      <div className="mt-4 flex items-center gap-2 flex-wrap">
         <Link
           href={`/profiles/${profile.id}`}
           className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
@@ -83,6 +90,12 @@ export function ProfileCard({
           </Link>
         )}
         <button
+          onClick={() => setImportOpen(true)}
+          className="rounded-lg border border-indigo-200 px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
+        >
+          Import Documents
+        </button>
+        <button
           onClick={() => setActiveProfileId(profile.id)}
           disabled={isActive}
           className="rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-50 disabled:text-gray-400 border-indigo-200 text-indigo-600 hover:bg-indigo-50"
@@ -90,6 +103,12 @@ export function ProfileCard({
           {isActive ? "Active" : "Switch to this"}
         </button>
       </div>
+
+      <DocumentImportModal
+        isOpen={importOpen}
+        onClose={() => setImportOpen(false)}
+        defaultProfileId={profile.id}
+      />
     </div>
   );
 }

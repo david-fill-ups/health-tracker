@@ -141,10 +141,10 @@ export function VisitForm({ profileId, initial, onSuccess, onCancel }: Props) {
       doctorId: form.doctorId || null,
       facilityId: form.facilityId || null,
       locationId: form.locationId || null,
-      reason: form.reason || undefined,
-      specialty: form.specialty || undefined,
-      notes: form.notes || undefined,
-      documentUrl: form.documentUrl || undefined,
+      reason: form.reason || null,
+      specialty: form.specialty || null,
+      notes: form.notes || null,
+      documentUrl: form.documentUrl || null,
     };
 
     if (form.date) {

@@ -183,6 +183,7 @@ model Profile {
   birthDate      DateTime
   sex            Sex
   state          String?
+  heightIn       Int?
   notes          String?
   calendarToken  String   @unique @default(cuid())
   createdAt      DateTime @default(now())

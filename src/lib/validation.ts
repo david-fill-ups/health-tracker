@@ -55,6 +55,7 @@ export const CreateProfileSchema = z.object({
   birthDate: z.coerce.date(),
   sex: SexEnum,
   state: z.string().max(2).optional(),
+  heightIn: z.number().int().min(12).max(108).optional(),
   notes: z.string().max(5000).optional(),
 });
 
@@ -92,6 +93,12 @@ export const UpdateVaccinationSchema = z.object({
   notes: z.string().max(1000).nullable().optional(),
 });
 
+export const RenameVaccinationGroupSchema = z.object({
+  profileId: id,
+  oldName: name255,
+  newName: name255,
+});
+
 // ── Visit ──────────────────────────────────────────────────────────────────────
 
 export const COMMON_VISIT_SPECIALTIES = [
@@ -121,6 +128,10 @@ export const UpdateVisitSchema = CreateVisitSchema.omit({ profileId: true }).par
   doctorId: z.string().min(1).nullish(),
   facilityId: z.string().min(1).nullish(),
   locationId: z.string().min(1).nullish(),
+  reason: z.string().max(500).nullish(),
+  specialty: z.string().max(255).nullish(),
+  notes: z.string().max(5000).nullish(),
+  documentUrl: z.string().url().max(500).nullish(),
 });
 
 // ── Medication ─────────────────────────────────────────────────────────────────

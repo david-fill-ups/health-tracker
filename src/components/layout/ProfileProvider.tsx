@@ -8,20 +8,31 @@ import {
   type ReactNode,
 } from "react";
 
+interface ProfileData {
+  id: string;
+  heightIn: number | null;
+  birthDate: string;
+}
+
 interface ProfileContextValue {
   activeProfileId: string | null;
   setActiveProfileId: (id: string) => void;
+  activeProfile: ProfileData | null;
 }
 
 const ProfileContext = createContext<ProfileContextValue>({
   activeProfileId: null,
   setActiveProfileId: () => {},
+  activeProfile: null,
 });
 
 const STORAGE_KEY = "ht_active_profile";
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const [activeProfileId, setActiveProfileIdState] = useState<string | null>(null);
+  const [profiles, setProfiles] = useState<ProfileData[]>([]);
+
+  const activeProfile = profiles.find((p) => p.id === activeProfileId) ?? null;
 
   // Hydrate from localStorage on mount; fall back to first profile if stored id is gone
   useEffect(() => {
@@ -30,10 +41,13 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       // Fetch profiles to auto-select the first one
       fetch("/api/profiles")
         .then((r) => r.json())
-        .then((profiles: { id: string }[]) => {
-          if (profiles.length > 0) {
-            setActiveProfileIdState(profiles[0].id);
-            localStorage.setItem(STORAGE_KEY, profiles[0].id);
+        .then((fetchedProfiles: { id: string; heightIn?: number | null; birthDate: string }[]) => {
+          setProfiles(
+            fetchedProfiles.map((p) => ({ id: p.id, heightIn: p.heightIn ?? null, birthDate: p.birthDate }))
+          );
+          if (fetchedProfiles.length > 0) {
+            setActiveProfileIdState(fetchedProfiles[0].id);
+            localStorage.setItem(STORAGE_KEY, fetchedProfiles[0].id);
           }
         })
         .catch(() => {});
@@ -42,13 +56,16 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     // Verify the stored id still exists
     fetch("/api/profiles")
       .then((r) => r.json())
-      .then((profiles: { id: string }[]) => {
-        const valid = profiles.some((p) => p.id === stored);
+      .then((fetchedProfiles: { id: string; heightIn?: number | null; birthDate: string }[]) => {
+        setProfiles(
+          fetchedProfiles.map((p) => ({ id: p.id, heightIn: p.heightIn ?? null, birthDate: p.birthDate }))
+        );
+        const valid = fetchedProfiles.some((p) => p.id === stored);
         if (valid) {
           setActiveProfileIdState(stored);
-        } else if (profiles.length > 0) {
-          setActiveProfileIdState(profiles[0].id);
-          localStorage.setItem(STORAGE_KEY, profiles[0].id);
+        } else if (fetchedProfiles.length > 0) {
+          setActiveProfileIdState(fetchedProfiles[0].id);
+          localStorage.setItem(STORAGE_KEY, fetchedProfiles[0].id);
         }
       })
       .catch(() => {
@@ -62,7 +79,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <ProfileContext.Provider value={{ activeProfileId, setActiveProfileId }}>
+    <ProfileContext.Provider value={{ activeProfileId, setActiveProfileId, activeProfile }}>
       {children}
     </ProfileContext.Provider>
   );

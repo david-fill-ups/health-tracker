@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { FacilityCard } from "@/components/healthcare-team/FacilityCard";
 import { DoctorCard } from "@/components/healthcare-team/DoctorCard";
@@ -31,18 +32,56 @@ interface Facility {
   _count?: { visits: number };
   visits?: Array<{ date: string | null }>;
 }
+
 export default function HealthcareTeamPage() {
+  return (
+    <Suspense>
+      <HealthcareTeamContent />
+    </Suspense>
+  );
+}
+
+function HealthcareTeamContent() {
   const { activeProfileId } = useProfile();
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loadingFacilities, setLoadingFacilities] = useState(false);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
-  const [inactiveOpen, setInactiveOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [showFilter, setShowFilter] = useState<"all" | "facilities" | "providers">("all");
+  const [inactiveOpen, setInactiveOpen] = useState(searchParams.get("inactive") === "1");
+  const [search, setSearch] = useState(searchParams.get("q") ?? "");
+  const [showFilter, setShowFilter] = useState<"all" | "facilities" | "providers">(
+    (searchParams.get("filter") as "all" | "facilities" | "providers") ?? "all"
+  );
   const addMenuRef = useRef<HTMLDivElement>(null);
+
+  function syncToUrl(q: string, filter: "all" | "facilities" | "providers", inactive: boolean) {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (filter !== "all") params.set("filter", filter);
+    if (inactive) params.set("inactive", "1");
+    const qs = params.toString();
+    router.replace(qs ? `?${qs}` : "?", { scroll: false });
+  }
+
+  function handleSearchChange(value: string) {
+    setSearch(value);
+    syncToUrl(value, showFilter, inactiveOpen);
+  }
+
+  function handleFilterChange(value: "all" | "facilities" | "providers") {
+    setShowFilter(value);
+    syncToUrl(search, value, inactiveOpen);
+  }
+
+  function handleInactiveToggle() {
+    const next = !inactiveOpen;
+    setInactiveOpen(next);
+    syncToUrl(search, showFilter, next);
+  }
 
   const fetchFacilities = useCallback(async () => {
     if (!activeProfileId) return;
@@ -65,6 +104,7 @@ export default function HealthcareTeamPage() {
       setLoadingDoctors(false);
     }
   }, [activeProfileId]);
+
   useEffect(() => {
     fetchFacilities();
     fetchDoctors();
@@ -167,6 +207,23 @@ export default function HealthcareTeamPage() {
     ? doctors.filter((d) => d.active && doctorMatchesSearch(d))
     : [];
 
+  // Derived: what's visible in the inactive section
+  const visibleInactiveFacilities = showFilter !== "providers"
+    ? inactiveFacilities.filter((f) =>
+        facilityMatchesSearch(f) || (inactiveDoctorsByFacility.get(f.id) ?? []).some(doctorMatchesSearch)
+      )
+    : [];
+
+  const visibleActiveFacilitiesWithInactiveDoctors = showFilter !== "providers"
+    ? activeFacilitiesWithInactiveDoctors.filter((f) =>
+        facilityMatchesSearch(f) || (inactiveDoctorsByFacility.get(f.id) ?? []).some(doctorMatchesSearch)
+      )
+    : [];
+
+  const visibleInactiveIndependentDoctors = showFilter !== "facilities"
+    ? inactiveIndependentDoctors.filter(doctorMatchesSearch)
+    : [];
+
   const loading = loadingFacilities || loadingDoctors;
   return (
     <div className="space-y-6">
@@ -205,7 +262,7 @@ export default function HealthcareTeamPage() {
         <input
           type="search"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => handleSearchChange(e.target.value)}
           placeholder="Search by name, specialty, type…"
           className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
@@ -213,7 +270,7 @@ export default function HealthcareTeamPage() {
           {(["all", "facilities", "providers"] as const).map((opt) => (
             <button
               key={opt}
-              onClick={() => setShowFilter(opt)}
+              onClick={() => handleFilterChange(opt)}
               className={`px-3 py-2 capitalize transition-colors ${
                 showFilter === opt
                   ? "bg-indigo-600 text-white"
@@ -279,7 +336,7 @@ export default function HealthcareTeamPage() {
           {(inactiveFacilities.length > 0 || inactiveDoctors.length > 0) && (
             <div className="border-t border-gray-200 pt-4 mt-2">
               <button
-                onClick={() => setInactiveOpen((v) => !v)}
+                onClick={handleInactiveToggle}
                 className="text-sm text-gray-400 hover:text-gray-600 flex items-center gap-1"
               >
                 <span className="text-xs">{inactiveOpen ? "▾" : "▸"}</span>
@@ -288,8 +345,8 @@ export default function HealthcareTeamPage() {
               </button>
               {inactiveOpen && (
                 <div className="mt-3 space-y-4">
-                  {inactiveFacilities.map((f) => {
-                    const facilityDoctors = inactiveDoctorsByFacility.get(f.id) ?? [];
+                  {visibleInactiveFacilities.map((f) => {
+                    const facilityDoctors = (inactiveDoctorsByFacility.get(f.id) ?? []).filter(doctorMatchesSearch);
                     return (
                       <div key={f.id} className="space-y-1">
                         <FacilityCard facility={toFacilityCardProps(f)} />
@@ -304,8 +361,8 @@ export default function HealthcareTeamPage() {
                     );
                   })}
                   {/* Active facilities with some inactive providers */}
-                  {activeFacilitiesWithInactiveDoctors.map((f) => {
-                    const facilityDoctors = inactiveDoctorsByFacility.get(f.id) ?? [];
+                  {visibleActiveFacilitiesWithInactiveDoctors.map((f) => {
+                    const facilityDoctors = (inactiveDoctorsByFacility.get(f.id) ?? []).filter(doctorMatchesSearch);
                     return (
                       <div key={f.id} className="space-y-1">
                         <FacilityCard facility={toFacilityCardProps(f)} />
@@ -319,12 +376,12 @@ export default function HealthcareTeamPage() {
                       </div>
                     );
                   })}
-                  {inactiveIndependentDoctors.length > 0 && (
+                  {visibleInactiveIndependentDoctors.length > 0 && (
                     <div className="space-y-1">
                       <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">
                         Independent Providers
                       </h2>
-                      {inactiveIndependentDoctors.map((d) => (
+                      {visibleInactiveIndependentDoctors.map((d) => (
                         <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} />
                       ))}
                     </div>

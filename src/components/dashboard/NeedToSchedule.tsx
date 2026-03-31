@@ -70,14 +70,16 @@ export function NeedToSchedule({ activeProfileId }: { activeProfileId: string | 
             const due = v.dueMonth ?? "When available";
             const type = v.type?.replace(/_/g, " ") ?? "";
             return (
-              <li key={v.id} className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-sm font-medium text-gray-800">{label}</p>
-                  {type && <p className="text-xs text-gray-500">{type}</p>}
-                </div>
-                <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-                  {due}
-                </span>
+              <li key={v.id}>
+                <Link href={`/visits/${v.id}`} className="flex items-start justify-between gap-2 hover:bg-gray-50 -mx-2 px-2 py-0.5 rounded-lg transition-colors">
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">{label}</p>
+                    {type && <p className="text-xs text-gray-500">{type}</p>}
+                  </div>
+                  <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                    {due}
+                  </span>
+                </Link>
               </li>
             );
           })}

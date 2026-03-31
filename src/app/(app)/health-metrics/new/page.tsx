@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { Toast } from "@/components/ui/Toast";
 import { COMMON_METRIC_TYPES } from "@/lib/validation";
 
-const COMMON_UNITS = ["kg", "lbs", "mmHg", "mg/dL", "mmol/L", "bpm", "%", "cm", "in"];
+const NEW_OPTION = "__new__";
+
+type MetricInfo = Record<string, { lastUnit: string; units: string[] }>;
 
 function toLocalDatetimeInput(date: Date): string {
   const tzOffset = date.getTimezoneOffset() * 60000;
@@ -26,13 +28,67 @@ export default function NewHealthMetricPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [metricType, setMetricType] = useState("");
+  // Distinct metric info fetched from DB
+  const [metricInfo, setMetricInfo] = useState<MetricInfo>({});
+  const [loadingInfo, setLoadingInfo] = useState(false);
+
+  // Metric type state
+  const [metricTypeSelection, setMetricTypeSelection] = useState(""); // dropdown value
+  const [customMetricType, setCustomMetricType] = useState(""); // only if NEW_OPTION
+
+  // Unit state
+  const [unitSelection, setUnitSelection] = useState(""); // dropdown value
+  const [customUnit, setCustomUnit] = useState(""); // only if NEW_OPTION
+
   const [value, setValue] = useState("");
-  const [unit, setUnit] = useState("");
   const [measuredAt, setMeasuredAt] = useState(nowLocalDatetimeLocal);
   const [notes, setNotes] = useState("");
 
-  async function handleSubmit(e: FormEvent) {
+  // Fetch distinct metric types/units when profile changes
+  useEffect(() => {
+    if (!activeProfileId) return;
+    setLoadingInfo(true);
+    fetch(`/api/health-metrics/distinct?profileId=${activeProfileId}`)
+      .then((r) => r.json())
+      .then((data: MetricInfo) => setMetricInfo(data))
+      .catch(() => setMetricInfo({}))
+      .finally(() => setLoadingInfo(false));
+  }, [activeProfileId]);
+
+  // Existing metric types: DB ones first, then COMMON ones not already in DB
+  const dbMetricTypes = Object.keys(metricInfo).sort();
+  const extraCommon = COMMON_METRIC_TYPES.filter((t) => !metricInfo[t]);
+  const allMetricTypeOptions = [...dbMetricTypes, ...extraCommon];
+
+  // Units available for the selected metric type
+  const selectedMetricType = metricTypeSelection === NEW_OPTION ? customMetricType : metricTypeSelection;
+  const dbUnitsForType = metricInfo[selectedMetricType]?.units ?? [];
+  const allUnitOptions = dbUnitsForType; // only show units previously used for this type
+
+  // When metric type changes, auto-set unit to last used
+  function handleMetricTypeChange(val: string) {
+    setMetricTypeSelection(val);
+    setCustomMetricType("");
+    if (val !== NEW_OPTION && val !== "") {
+      const lastUnit = metricInfo[val]?.lastUnit ?? "";
+      setUnitSelection(lastUnit || (allUnitOptions[0] ?? ""));
+      setCustomUnit("");
+    } else {
+      setUnitSelection("");
+      setCustomUnit("");
+    }
+  }
+
+  // When unit selection changes
+  function handleUnitChange(val: string) {
+    setUnitSelection(val);
+    setCustomUnit("");
+  }
+
+  const finalMetricType = metricTypeSelection === NEW_OPTION ? customMetricType : metricTypeSelection;
+  const finalUnit = unitSelection === NEW_OPTION ? customUnit : unitSelection;
+
+  async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
     if (!activeProfileId) return;
     setSubmitting(true);
@@ -44,9 +100,9 @@ export default function NewHealthMetricPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           profileId: activeProfileId,
-          metricType,
+          metricType: finalMetricType,
           value: parseFloat(value),
-          unit,
+          unit: finalUnit,
           measuredAt: new Date(measuredAt).toISOString(),
           notes: notes || undefined,
         }),
@@ -69,6 +125,8 @@ export default function NewHealthMetricPage() {
     return <p className="text-sm text-gray-500">Select a profile first.</p>;
   }
 
+  const inputCls = "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
@@ -85,28 +143,40 @@ export default function NewHealthMetricPage() {
           </div>
         )}
 
+        {/* Metric Type */}
         <div>
           <label htmlFor="metricType" className="block text-sm font-medium text-gray-700 mb-1">
             Metric type <span className="text-red-500">*</span>
           </label>
-          <input
+          <select
             id="metricType"
-            type="text"
             required
-            list="metric-type-suggestions"
-            value={metricType}
-            onChange={(e) => setMetricType(e.target.value)}
-            placeholder="e.g. Weight, Blood Pressure Systolic"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          />
-          <datalist id="metric-type-suggestions">
-            {COMMON_METRIC_TYPES.map((t) => (
-              <option key={t} value={t} />
+            value={metricTypeSelection}
+            onChange={(e) => handleMetricTypeChange(e.target.value)}
+            disabled={loadingInfo}
+            className={inputCls}
+          >
+            <option value="" disabled>Select a metric type…</option>
+            {allMetricTypeOptions.map((t) => (
+              <option key={t} value={t}>{t}</option>
             ))}
-          </datalist>
+            <option value={NEW_OPTION}>+ Add new metric type</option>
+          </select>
+          {metricTypeSelection === NEW_OPTION && (
+            <input
+              type="text"
+              required
+              autoFocus
+              value={customMetricType}
+              onChange={(e) => setCustomMetricType(e.target.value)}
+              placeholder="Enter new metric type"
+              className={`${inputCls} mt-2`}
+            />
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
+          {/* Value */}
           <div>
             <label htmlFor="value" className="block text-sm font-medium text-gray-700 mb-1">
               Value <span className="text-red-500">*</span>
@@ -118,28 +188,54 @@ export default function NewHealthMetricPage() {
               step="any"
               value={value}
               onChange={(e) => setValue(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className={inputCls}
             />
           </div>
+
+          {/* Unit */}
           <div>
             <label htmlFor="unit" className="block text-sm font-medium text-gray-700 mb-1">
               Unit <span className="text-red-500">*</span>
             </label>
-            <input
-              id="unit"
-              type="text"
-              required
-              list="unit-suggestions"
-              value={unit}
-              onChange={(e) => setUnit(e.target.value)}
-              placeholder="e.g. kg, mmHg, mg/dL"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            />
-            <datalist id="unit-suggestions">
-              {COMMON_UNITS.map((u) => (
-                <option key={u} value={u} />
-              ))}
-            </datalist>
+            {allUnitOptions.length > 0 || (metricTypeSelection !== NEW_OPTION && metricTypeSelection !== "") ? (
+              <>
+                <select
+                  id="unit"
+                  required={unitSelection !== NEW_OPTION}
+                  value={unitSelection}
+                  onChange={(e) => handleUnitChange(e.target.value)}
+                  className={inputCls}
+                >
+                  <option value="" disabled>Select a unit…</option>
+                  {allUnitOptions.map((u) => (
+                    <option key={u} value={u}>{u}</option>
+                  ))}
+                  <option value={NEW_OPTION}>+ Add new unit</option>
+                </select>
+                {unitSelection === NEW_OPTION && (
+                  <input
+                    type="text"
+                    required
+                    autoFocus
+                    value={customUnit}
+                    onChange={(e) => setCustomUnit(e.target.value)}
+                    placeholder="Enter new unit"
+                    className={`${inputCls} mt-2`}
+                  />
+                )}
+              </>
+            ) : (
+              // New metric type selected — free-text unit
+              <input
+                id="unit"
+                type="text"
+                required
+                value={customUnit}
+                onChange={(e) => setCustomUnit(e.target.value)}
+                placeholder="e.g. kg, mmHg, mg/dL"
+                className={inputCls}
+              />
+            )}
           </div>
         </div>
 
@@ -153,7 +249,7 @@ export default function NewHealthMetricPage() {
             required
             value={measuredAt}
             onChange={(e) => setMeasuredAt(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className={inputCls}
           />
         </div>
 
@@ -164,7 +260,7 @@ export default function NewHealthMetricPage() {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className={inputCls}
           />
         </div>
 

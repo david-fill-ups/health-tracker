@@ -12,12 +12,14 @@ type VisitWithRelations = Visit & {
  */
 export function generateCalendarFeed(
   profileName: string,
-  visits: VisitWithRelations[]
+  visits: VisitWithRelations[],
+  timezone?: string
 ): string {
   const cal = ical({
-    name: `${profileName} — Health Tracker`,
+    name: `${profileName} - Health Tracker`,
     method: ICalCalendarMethod.PUBLISH,
     description: `Health appointments for ${profileName}`,
+    ...(timezone ? { timezone } : {}),
   });
 
   for (const visit of visits) {
@@ -34,6 +36,7 @@ export function generateCalendarFeed(
       summary,
       description: visit.notes ?? undefined,
       status: visit.status === "CANCELLED" ? ICalEventStatus.CANCELLED : ICalEventStatus.CONFIRMED,
+      ...(timezone ? { timezone } : {}),
     });
   }
 
