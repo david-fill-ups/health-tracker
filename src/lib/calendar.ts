@@ -40,7 +40,9 @@ export function generateCalendarFeed(
     });
   }
 
-  return cal.toString();
+  // ical-generator omits the Z suffix on DTSTAMP when a timezone is set on events,
+  // but RFC 5545 §3.8.7.2 requires DTSTAMP to always be a UTC value with Z.
+  return cal.toString().replace(/^(DTSTAMP:\d{8}T\d{6})$/gm, "$1Z");
 }
 
 function formatVisitType(type: string): string {

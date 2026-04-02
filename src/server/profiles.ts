@@ -86,7 +86,7 @@ export async function updateProfile(
   profileId: string,
   input: Partial<CreateProfileInput>
 ) {
-  await assertProfileAccess(userId, profileId, "OWNER");
+  await assertProfileAccess(userId, profileId, "WRITE");
   // Explicitly enumerate allowed fields — prevents mass assignment of system
   // fields (userId, calendarToken, etc.) from the raw request body.
   const { name, birthDate, sex, state, heightIn, notes, timezone } = input;

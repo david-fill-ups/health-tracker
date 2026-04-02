@@ -116,6 +116,13 @@ describe("generateCalendarFeed", () => {
     expect(result).not.toContain("DTSTART:20260415T100000Z");
   });
 
+  it("always includes Z on DTSTAMP even when timezone is set", () => {
+    const result = generateCalendarFeed("Jane", [makeVisit()], "America/New_York");
+    const dtstampLines = result.split("\r\n").filter((l) => l.startsWith("DTSTAMP:"));
+    expect(dtstampLines.length).toBeGreaterThan(0);
+    dtstampLines.forEach((line) => expect(line).toMatch(/DTSTAMP:\d{8}T\d{6}Z$/));
+  });
+
   it("uses hyphen (not em dash) in calendar name", () => {
     const result = generateCalendarFeed("Jane", []);
     expect(result).toContain("Jane - Health Tracker");
