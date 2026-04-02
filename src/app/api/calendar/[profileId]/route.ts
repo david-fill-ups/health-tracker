@@ -15,7 +15,6 @@ export async function GET(
   const { profileId } = await params;
   const { searchParams } = new URL(req.url);
   const token = searchParams.get("token");
-  const tz = searchParams.get("tz") ?? undefined;
 
   if (!token) {
     return new NextResponse("Missing token", { status: 401 });
@@ -24,7 +23,7 @@ export async function GET(
   // Validate the calendar token against the profile
   const profile = await prisma.profile.findFirst({
     where: { id: profileId, calendarToken: token },
-    select: { id: true, name: true },
+    select: { id: true, name: true, timezone: true },
   });
 
   if (!profile) {
@@ -41,7 +40,7 @@ export async function GET(
     orderBy: { date: "asc" },
   });
 
-  const icsContent = generateCalendarFeed(profile.name, visits, tz);
+  const icsContent = generateCalendarFeed(profile.name, visits, profile.timezone);
 
   return new NextResponse(icsContent, {
     status: 200,

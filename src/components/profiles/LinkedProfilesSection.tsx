@@ -256,7 +256,13 @@ export function LinkedProfilesSection({
 
   return (
     <div className="border-t border-gray-100 pt-5 space-y-3">
-      <p className="text-sm font-medium text-gray-700">{profileName}&apos;s Family</p>
+      <div>
+        <p className="text-sm font-medium text-gray-700">{profileName}&apos;s Family</p>
+        <p className="mt-0.5 text-xs text-gray-400">
+          Linked family members&apos; names and relationships are visible to everyone with access to this profile,
+          even if those profiles have not been directly shared with them.
+        </p>
+      </div>
 
       {relationships.length === 0 ? (
         <p className="text-sm text-gray-400">No family members linked yet.</p>

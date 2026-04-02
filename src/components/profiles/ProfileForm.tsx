@@ -13,6 +13,7 @@ interface ProfileFormData {
   heightFt: string;
   heightInPart: string;
   notes: string;
+  timezone: string;
 }
 
 interface Profile {
@@ -23,7 +24,29 @@ interface Profile {
   state: string;
   heightIn?: number | null;
   notes: string;
+  timezone?: string;
 }
+
+const TIMEZONES = [
+  { value: "America/New_York", label: "Eastern Time (US & Canada)" },
+  { value: "America/Chicago", label: "Central Time (US & Canada)" },
+  { value: "America/Denver", label: "Mountain Time (US & Canada)" },
+  { value: "America/Phoenix", label: "Mountain Time — Arizona (no DST)" },
+  { value: "America/Los_Angeles", label: "Pacific Time (US & Canada)" },
+  { value: "America/Anchorage", label: "Alaska" },
+  { value: "Pacific/Honolulu", label: "Hawaii" },
+  { value: "UTC", label: "UTC" },
+  { value: "Europe/London", label: "London" },
+  { value: "Europe/Paris", label: "Paris / Berlin / Rome" },
+  { value: "Europe/Helsinki", label: "Helsinki / Athens" },
+  { value: "Asia/Dubai", label: "Dubai / Abu Dhabi" },
+  { value: "Asia/Kolkata", label: "Mumbai / Kolkata" },
+  { value: "Asia/Bangkok", label: "Bangkok / Hanoi" },
+  { value: "Asia/Shanghai", label: "Beijing / Shanghai" },
+  { value: "Asia/Tokyo", label: "Tokyo" },
+  { value: "Australia/Sydney", label: "Sydney / Melbourne" },
+  { value: "Pacific/Auckland", label: "Auckland" },
+];
 
 const SEX_OPTIONS = [
   { value: "MALE", label: "Male" },
@@ -99,6 +122,7 @@ export function ProfileForm({ profile }: { profile?: Profile }) {
     heightFt: profile?.heightIn ? Math.floor(profile.heightIn / 12).toString() : "",
     heightInPart: profile?.heightIn ? (profile.heightIn % 12).toString() : "",
     notes: profile?.notes ?? "",
+    timezone: profile?.timezone ?? "UTC",
   });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -131,6 +155,7 @@ export function ProfileForm({ profile }: { profile?: Profile }) {
       state: form.state || undefined,
       heightIn: totalInches || undefined,
       notes: form.notes || undefined,
+      timezone: form.timezone || undefined,
     };
 
     const res = await fetch(url, {
@@ -386,6 +411,24 @@ export function ProfileForm({ profile }: { profile?: Profile }) {
             {US_STATES.map((s) => (
               <option key={s.value} value={s.value}>
                 {s.label} ({s.value})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700" htmlFor="timezone">
+            Timezone
+          </label>
+          <select
+            id="timezone"
+            value={form.timezone}
+            onChange={(e) => set("timezone", e.target.value)}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          >
+            {TIMEZONES.map((tz) => (
+              <option key={tz.value} value={tz.value}>
+                {tz.label}
               </option>
             ))}
           </select>

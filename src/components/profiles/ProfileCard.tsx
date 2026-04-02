@@ -17,11 +17,7 @@ interface Profile {
 
 function calendarUrl(profileId: string, token: string) {
   const host = typeof window !== "undefined" ? window.location.host : "";
-  const tz = typeof Intl !== "undefined"
-    ? Intl.DateTimeFormat().resolvedOptions().timeZone
-    : "";
-  const tzParam = tz ? `&tz=${encodeURIComponent(tz)}` : "";
-  return `webcal://${host}/api/calendar/${profileId}?token=${token}${tzParam}`;
+  return `webcal://${host}/api/calendar/${profileId}?token=${token}`;
 }
 
 export function ProfileCard({

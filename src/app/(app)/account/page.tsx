@@ -80,6 +80,34 @@ export default async function AccountPage() {
         </Link>
       </div>
 
+      {/* Privacy */}
+      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-gray-500">
+          Privacy
+        </h2>
+        <div className="space-y-3 text-sm text-gray-600">
+          <p>
+            Your health data is stored securely and is never sold or shared with third parties.
+            Each profile is accessible only to you and anyone you explicitly grant access to.
+          </p>
+          <p>
+            When profiles are linked as family members, the names and relationships of those linked
+            profiles become visible to everyone with access to the profile — even if the linked
+            profiles have not been directly shared with them. Be mindful of this when sharing
+            profiles that have family connections.
+          </p>
+          <p>
+            When you use the document import feature, uploaded files are sent to an external
+            AI provider to extract health information. Files are not retained by the AI provider
+            beyond the duration of the analysis.
+          </p>
+          <p>
+            You can permanently delete your account and all associated data using the
+            Danger Zone below.
+          </p>
+        </div>
+      </div>
+
       {/* Danger zone */}
       <div className="rounded-xl border border-red-200 bg-white p-6 shadow-sm">
         <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-red-500">

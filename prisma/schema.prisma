@@ -186,6 +186,7 @@ model Profile {
   heightIn       Int?
   notes          String?
   calendarToken  String   @unique @default(cuid())
+  timezone       String   @default("UTC")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

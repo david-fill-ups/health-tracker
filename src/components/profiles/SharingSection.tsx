@@ -122,7 +122,13 @@ export function SharingSection({ profileId, currentUserId, isOwnerProfile = fals
 
   return (
     <div className="border-t border-gray-100 pt-5 space-y-4">
-      <p className="text-sm font-medium text-gray-700">People with access</p>
+      <div>
+        <p className="text-sm font-medium text-gray-700">People with access</p>
+        <p className="mt-0.5 text-xs text-gray-400">
+          Anyone you share this profile with can also see the names and relationships of any linked
+          family members, even if those profiles have not been shared with them directly.
+        </p>
+      </div>
 
       <ul className="space-y-2">
         {members.map((m) => {

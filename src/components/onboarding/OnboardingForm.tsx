@@ -3,6 +3,27 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+const TIMEZONES = [
+  { value: "America/New_York", label: "Eastern Time (US & Canada)" },
+  { value: "America/Chicago", label: "Central Time (US & Canada)" },
+  { value: "America/Denver", label: "Mountain Time (US & Canada)" },
+  { value: "America/Phoenix", label: "Mountain Time — Arizona (no DST)" },
+  { value: "America/Los_Angeles", label: "Pacific Time (US & Canada)" },
+  { value: "America/Anchorage", label: "Alaska" },
+  { value: "Pacific/Honolulu", label: "Hawaii" },
+  { value: "UTC", label: "UTC" },
+  { value: "Europe/London", label: "London" },
+  { value: "Europe/Paris", label: "Paris / Berlin / Rome" },
+  { value: "Europe/Helsinki", label: "Helsinki / Athens" },
+  { value: "Asia/Dubai", label: "Dubai / Abu Dhabi" },
+  { value: "Asia/Kolkata", label: "Mumbai / Kolkata" },
+  { value: "Asia/Bangkok", label: "Bangkok / Hanoi" },
+  { value: "Asia/Shanghai", label: "Beijing / Shanghai" },
+  { value: "Asia/Tokyo", label: "Tokyo" },
+  { value: "Australia/Sydney", label: "Sydney / Melbourne" },
+  { value: "Pacific/Auckland", label: "Auckland" },
+];
+
 const SEX_OPTIONS = [
   { value: "MALE", label: "Male" },
   { value: "FEMALE", label: "Female" },
@@ -70,6 +91,7 @@ export function OnboardingForm({ defaultName }: { defaultName: string }) {
   const [birthDate, setBirthDate] = useState(`${new Date().getFullYear() - 30}-01-01`);
   const [sex, setSex] = useState("PREFER_NOT_TO_SAY");
   const [state, setState] = useState("");
+  const [timezone, setTimezone] = useState("UTC");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,7 +103,7 @@ export function OnboardingForm({ defaultName }: { defaultName: string }) {
     const res = await fetch("/api/onboarding", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, birthDate, sex, state: state || undefined }),
+      body: JSON.stringify({ name, birthDate, sex, state: state || undefined, timezone: timezone || undefined }),
     });
 
     setSaving(false);
@@ -165,6 +187,24 @@ export function OnboardingForm({ defaultName }: { defaultName: string }) {
           {US_STATES.map((s) => (
             <option key={s.value} value={s.value}>
               {s.label} ({s.value})
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium text-gray-700" htmlFor="timezone">
+          Timezone
+        </label>
+        <select
+          id="timezone"
+          value={timezone}
+          onChange={(e) => setTimezone(e.target.value)}
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+        >
+          {TIMEZONES.map((tz) => (
+            <option key={tz.value} value={tz.value}>
+              {tz.label}
             </option>
           ))}
         </select>

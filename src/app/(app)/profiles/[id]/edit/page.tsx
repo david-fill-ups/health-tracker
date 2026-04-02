@@ -24,6 +24,7 @@ export default async function EditProfilePage({ params }: Props) {
     sex: profile.sex as string,
     state: profile.state ?? "",
     notes: profile.notes ?? "",
+    timezone: profile.timezone,
   };
 
   return (

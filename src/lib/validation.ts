@@ -57,6 +57,7 @@ export const CreateProfileSchema = z.object({
   state: z.string().max(2).optional(),
   heightIn: z.number().int().min(12).max(108).optional(),
   notes: z.string().max(5000).optional(),
+  timezone: z.string().max(50).optional(),
 });
 
 export const UpdateProfileSchema = CreateProfileSchema.partial();
@@ -68,6 +69,7 @@ export const OnboardingSchema = z.object({
   birthDate: z.coerce.date(),
   sex: SexEnum,
   state: z.string().max(2).optional(),
+  timezone: z.string().max(50).optional(),
 });
 
 // ── Vaccination ────────────────────────────────────────────────────────────────

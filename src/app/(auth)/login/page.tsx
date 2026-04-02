@@ -36,9 +36,22 @@ export default async function LoginPage() {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-gray-400">
-          Personal use only. Your data is private and never shared.
-        </p>
+        <div className="mt-6 rounded-lg bg-gray-50 border border-gray-200 p-4 text-xs text-gray-500 space-y-2">
+          <p className="font-medium text-gray-600">Privacy Policy</p>
+          <p>
+            Health Tracker stores your health data securely in a private database accessible only to you.
+            Your data is never sold, shared with third parties, or used for advertising.
+          </p>
+          <p>
+            The document import feature uses an AI service to extract health information from uploaded files.
+            Files you upload are sent to that external AI provider for processing and are not retained
+            beyond the duration of the analysis.
+          </p>
+          <p>
+            This app is for personal use only. You may delete your account and all associated data at any time
+            from Account Settings.
+          </p>
+        </div>
 
         <AboutModal />
       </div>

@@ -209,6 +209,13 @@ export function FileUploadStep({
         </div>
       )}
 
+      {/* AI disclaimer */}
+      <p className="text-xs text-gray-400 rounded-lg bg-gray-50 border border-gray-200 px-3 py-2">
+        <span className="font-medium text-gray-500">Note:</span> Uploaded files are sent to an
+        external AI service for processing. Do not upload documents containing information you
+        are not comfortable sharing outside this app.
+      </p>
+
       {/* Submit */}
       <button
         type="button"
