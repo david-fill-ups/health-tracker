@@ -76,11 +76,11 @@ export type ProposalPrisma = {
       select: { id: true; allergen: true; category: true; notes: true };
     }) => Promise<Array<{ id: string; allergen: string; category: string | null; notes: string | null }>>;
   };
-  vaccination: {
+  dose: {
     findMany: (args: {
       where: { profileId: string };
-      select: { id: true; name: true; date: true; lotNumber: true; notes: true };
-    }) => Promise<Array<{ id: string; name: string; date: Date; lotNumber: string | null; notes: string | null }>>;
+      select: { date: true; vaccination: { select: { name: true } } };
+    }) => Promise<Array<{ date: Date; vaccination: { name: string } }>>;
   };
   healthMetric: {
     findMany: (args: {
@@ -119,7 +119,7 @@ export async function generateImportProposal(
     existingMedications,
     existingConditions,
     existingAllergies,
-    existingVaccinations,
+    existingDoses,
     existingMetrics,
   ] = await Promise.all([
     prisma.facility.findMany({
@@ -146,9 +146,9 @@ export async function generateImportProposal(
       where: { profileId },
       select: { id: true, allergen: true, category: true, notes: true },
     }),
-    prisma.vaccination.findMany({
+    prisma.dose.findMany({
       where: { profileId },
-      select: { id: true, name: true, date: true, lotNumber: true, notes: true },
+      select: { date: true, vaccination: { select: { name: true } } },
     }),
     prisma.healthMetric.findMany({
       where: { profileId },
@@ -460,11 +460,11 @@ export async function generateImportProposal(
   // ── Vaccinations ───────────────────────────────────────────────────────
   for (const v of extracted.vaccinations) {
     const key = `${ci(v.name)}|${isoDatePart(v.date) ?? ""}`;
-    const exactMatch = existingVaccinations.find(
-      (e) => `${ci(e.name)}|${new Date(e.date).toISOString().slice(0, 10)}` === key
+    const isDup = existingDoses.some(
+      (e) => `${ci(e.vaccination.name)}|${new Date(e.date).toISOString().slice(0, 10)}` === key
     );
 
-    if (exactMatch) {
+    if (isDup) {
       skippedCount++;
       continue;
     }

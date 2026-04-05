@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 
 const ACCEPTED_TYPES = ".pdf,image/jpeg,image/png,image/gif,image/webp,.docx";
 const ACCEPT_CAMERA = "image/*";
@@ -34,8 +34,14 @@ export function FileUploadStep({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   // preview URLs per file (lazy-computed)
   const [previews, setPreviews] = useState<Map<string, string>>(new Map());
+
+  useEffect(() => {
+    setIsMobile(/Mobi|Android/i.test(navigator.userAgent));
+  }, []);
 
   function addFiles(incoming: FileList | null) {
     if (!incoming) return;
@@ -74,6 +80,13 @@ export function FileUploadStep({
   }
 
   return (
+    <>
+    {showCamera && (
+      <CameraOverlay
+        onCapture={(file) => { addFiles([file]); setShowCamera(false); }}
+        onClose={() => setShowCamera(false)}
+      />
+    )}
     <div className="space-y-5">
       {/* Profile selector (hidden when opened from a visit) */}
       {!isVisitContext && profiles.length > 0 && (
@@ -126,7 +139,7 @@ export function FileUploadStep({
         </button>
         <button
           type="button"
-          onClick={() => cameraInputRef.current?.click()}
+          onClick={() => isMobile ? cameraInputRef.current?.click() : setShowCamera(true)}
           className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
         >
           📷 Take Photo
@@ -225,6 +238,80 @@ export function FileUploadStep({
       >
         {isLoading ? "Analyzing…" : "Analyze Documents"}
       </button>
+    </div>
+    </>
+  );
+}
+
+// ── Camera overlay (desktop webcam capture) ────────────────────────────────
+
+function CameraOverlay({ onCapture, onClose }: { onCapture: (file: File) => void; onClose: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let stream: MediaStream | null = null;
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: "environment" } })
+      .then((s) => {
+        stream = s;
+        if (videoRef.current) {
+          videoRef.current.srcObject = s;
+          videoRef.current.onloadedmetadata = () => setReady(true);
+        }
+      })
+      .catch((e: Error) => setError(e.message));
+    return () => {
+      stream?.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
+
+  function capture() {
+    const video = videoRef.current;
+    if (!video) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d")?.drawImage(video, 0, 0);
+    canvas.toBlob((blob) => {
+      if (blob) onCapture(new File([blob], `photo-${Date.now()}.jpg`, { type: "image/jpeg" }));
+    }, "image/jpeg", 0.9);
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80">
+      <div className="relative bg-black rounded-xl overflow-hidden w-full max-w-lg mx-4">
+        {error ? (
+          <div className="p-8 text-center">
+            <p className="text-red-400 text-sm mb-4">Could not access camera: {error}</p>
+            <button type="button" onClick={onClose} className="px-4 py-2 bg-white text-black text-sm rounded-lg">
+              Close
+            </button>
+          </div>
+        ) : (
+          <>
+            <video ref={videoRef} autoPlay playsInline muted className="w-full" />
+            <div className="absolute bottom-4 inset-x-0 flex justify-center gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 bg-white/20 text-white text-sm rounded-lg backdrop-blur-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={capture}
+                disabled={!ready}
+                className="px-6 py-2 bg-white text-black text-sm font-semibold rounded-lg disabled:opacity-50"
+              >
+                📷 Capture
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

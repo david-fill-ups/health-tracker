@@ -319,10 +319,16 @@ async function applyOtherItem(
           ? facilityIdByName.get(ci(d.facilityName as string))
           : undefined;
 
-        await tx.vaccination.create({
+        const vax = await tx.vaccination.upsert({
+          where: { profileId_name: { profileId, name: d.name as string } },
+          create: { profileId, name: d.name as string, aliases: [] },
+          update: {},
+        });
+
+        await tx.dose.create({
           data: {
+            vaccinationId: vax.id,
             profileId,
-            name: d.name as string,
             date: new Date(d.date as string),
             source: "ADMINISTERED",
             facilityId: facilityId ?? undefined,
