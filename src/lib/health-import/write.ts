@@ -1,5 +1,6 @@
 import { EMPTY_COUNTS } from "./types";
 import type { ExtractedEntities, ImportCounts } from "./types";
+import { resolveCanonicalVaccineName } from "@/lib/cdc";
 
 function ci(s: string | null | undefined): string {
   return (s ?? "").toLowerCase().trim();
@@ -41,6 +42,13 @@ export type WritePrisma = {
     create: (args: { data: Record<string, unknown> }) => Promise<{ id: string }>;
   };
   vaccination: {
+    upsert: (args: {
+      where: { profileId_name: { profileId: string; name: string } };
+      create: Record<string, unknown>;
+      update: Record<string, unknown>;
+    }) => Promise<{ id: string }>;
+  };
+  dose: {
     create: (args: { data: Record<string, unknown> }) => Promise<{ id: string }>;
   };
   healthMetric: {
@@ -188,10 +196,19 @@ export async function writeNewEntities(
       ? facilityIdByName.get(ci(v.facilityName))
       : undefined;
 
-    await prisma.vaccination.create({
+    const { canonical, isAlias } = resolveCanonicalVaccineName(v.name);
+    const aliasesToAdd = isAlias ? [v.name] : [];
+
+    const vaccination = await prisma.vaccination.upsert({
+      where: { profileId_name: { profileId, name: canonical } },
+      create: { profileId, name: canonical, aliases: aliasesToAdd },
+      update: aliasesToAdd.length ? { aliases: { push: aliasesToAdd[0] } } : {},
+    });
+
+    await prisma.dose.create({
       data: {
+        vaccinationId: vaccination.id,
         profileId,
-        name: v.name,
         date: new Date(v.date),
         source: "ADMINISTERED",
         facilityId: facilityId ?? undefined,

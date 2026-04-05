@@ -35,7 +35,7 @@ const COMMON_VACCINES = [
   "Polio",
 ];
 
-export default function NewVaccinationPage() {
+export default function NewDosePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { activeProfileId } = useProfile();
@@ -45,7 +45,8 @@ export default function NewVaccinationPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [source, setSource] = useState<VaccinationSource>("ADMINISTERED");
-  const [name, setName] = useState(searchParams.get("name") ?? "");
+  const [vaccineName, setVaccineName] = useState(searchParams.get("name") ?? "");
+  const [doseName, setDoseName] = useState("");
   const [date, setDate] = useState("");
   const [facilityId, setFacilityId] = useState("");
   const [lotNumber, setLotNumber] = useState("");
@@ -82,7 +83,8 @@ export default function NewVaccinationPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           profileId: activeProfileId,
-          name,
+          vaccineName,
+          name: doseName || undefined,
           date: date || undefined,
           source,
           facilityId: facilityId || undefined,
@@ -110,7 +112,7 @@ export default function NewVaccinationPage() {
         <a href="/vaccinations" className="text-sm text-indigo-600 hover:underline">
           ← Back to Vaccinations
         </a>
-        <h1 className="mt-2 text-2xl font-bold text-gray-900">Record Vaccination</h1>
+        <h1 className="mt-2 text-2xl font-bold text-gray-900">Record Dose</h1>
       </div>
 
       {!activeProfileId ? (
@@ -145,17 +147,17 @@ export default function NewVaccinationPage() {
           </div>
 
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="vaccineName" className="block text-sm font-medium text-gray-700 mb-1">
               {isNatural ? "Disease / condition" : "Vaccine name"}{" "}
               <span className="text-red-500">*</span>
             </label>
             <input
-              id="name"
+              id="vaccineName"
               type="text"
               list="vaccine-list"
               required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={vaccineName}
+              onChange={(e) => setVaccineName(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               placeholder={isNatural ? "e.g. Varicella (Chickenpox)" : "e.g. Influenza"}
             />
@@ -165,6 +167,22 @@ export default function NewVaccinationPage() {
               ))}
             </datalist>
           </div>
+
+          {isAdministered && (
+            <div>
+              <label htmlFor="doseName" className="block text-sm font-medium text-gray-700 mb-1">
+                Dose label <span className="text-gray-400 text-xs ml-1">(optional)</span>
+              </label>
+              <input
+                id="doseName"
+                type="text"
+                value={doseName}
+                onChange={(e) => setDoseName(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                placeholder="e.g. Moderna #1, Booster"
+              />
+            </div>
+          )}
 
           <div>
             <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">

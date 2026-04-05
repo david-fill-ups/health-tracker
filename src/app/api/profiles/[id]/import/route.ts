@@ -381,41 +381,53 @@ export async function POST(req: Request, { params }: Params) {
 
       // ── Vaccinations ──
       for (const v of (data.vaccinations ?? [])) {
-        if (mode === "skip_duplicates") {
-          const datePart = isoDatePart(v.date);
-          const existing = await tx.vaccination.findFirst({
-            where: {
-              profileId,
-              name: { equals: v.name, mode: "insensitive" },
-              ...(datePart
-                ? {
-                    date: {
-                      gte: new Date(`${datePart}T00:00:00.000Z`),
-                      lt: new Date(`${datePart}T23:59:59.999Z`),
-                    },
-                  }
-                : {}),
-            },
-            select: { id: true },
-          });
-          if (existing) {
-            skipped.vaccinations++;
-            continue;
-          }
-        }
+        // Support both new format (with doses[]) and old flat format (with date at top level)
+        const doses: Array<{ name?: string | null; date: string; source?: string | null; facilityId?: string | null; lotNumber?: string | null; notes?: string | null }> =
+          Array.isArray(v.doses) ? v.doses : [{ date: v.date, source: v.source, facilityId: v.facilityId, lotNumber: v.lotNumber, notes: v.notes }];
 
-        await tx.vaccination.create({
-          data: {
-            profileId,
-            name: v.name,
-            date: new Date(v.date),
-            source: v.source ?? undefined,
-            facilityId: v.facilityId ? (idMap.get(v.facilityId) ?? undefined) : undefined,
-            lotNumber: v.lotNumber ?? undefined,
-            notes: v.notes ?? undefined,
-          },
+        const vaccination = await tx.vaccination.upsert({
+          where: { profileId_name: { profileId, name: v.name } },
+          create: { profileId, name: v.name, aliases: v.aliases ?? [], notes: v.notes ?? undefined },
+          update: {},
         });
-        imported.vaccinations++;
+
+        for (const d of doses) {
+          if (mode === "skip_duplicates") {
+            const datePart = isoDatePart(d.date);
+            const existing = await tx.dose.findFirst({
+              where: {
+                vaccinationId: vaccination.id,
+                ...(datePart
+                  ? {
+                      date: {
+                        gte: new Date(`${datePart}T00:00:00.000Z`),
+                        lt: new Date(`${datePart}T23:59:59.999Z`),
+                      },
+                    }
+                  : {}),
+              },
+              select: { id: true },
+            });
+            if (existing) {
+              skipped.vaccinations++;
+              continue;
+            }
+          }
+
+          await tx.dose.create({
+            data: {
+              vaccinationId: vaccination.id,
+              profileId,
+              name: d.name ?? undefined,
+              date: new Date(d.date),
+              source: (d.source as "ADMINISTERED" | "NATURAL" | "DECLINED") ?? undefined,
+              facilityId: d.facilityId ? (idMap.get(d.facilityId) ?? undefined) : undefined,
+              lotNumber: d.lotNumber ?? undefined,
+              notes: d.notes ?? undefined,
+            },
+          });
+          imported.vaccinations++;
+        }
       }
 
       // ── Allergies ──

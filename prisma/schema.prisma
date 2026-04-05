@@ -196,6 +196,7 @@ model Profile {
   visits        Visit[]
   conditions    Condition[]
   vaccinations  Vaccination[]
+  doses         Dose[]
   medications   Medication[]
   facilities    Facility[]
   doctors       Doctor[]
@@ -253,12 +254,12 @@ model Facility {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  profile      Profile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  locations    Location[]
-  doctors      Doctor[]
-  visits       Visit[]
-  vaccinations Vaccination[]
-  portals      Portal[]
+  profile   Profile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  locations Location[]
+  doctors   Doctor[]
+  visits    Visit[]
+  doses     Dose[]
+  portals   Portal[]
 
   @@index([profileId])
 }
@@ -442,20 +443,39 @@ enum VaccinationSource {
 }
 
 model Vaccination {
-  id         String            @id @default(cuid())
-  profileId  String
-  name       String
-  date       DateTime
-  source     VaccinationSource @default(ADMINISTERED)
-  facilityId String?
-  lotNumber  String?
-  notes      String?
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
+  id        String   @id @default(cuid())
+  profileId String
+  name      String   // canonical CDC-mapped name
+  aliases   String[] // also known as; for AI import + display
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  profile  Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  facility Facility? @relation(fields: [facilityId], references: [id])
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  doses   Dose[]
 
+  @@unique([profileId, name])
+  @@index([profileId])
+}
+
+model Dose {
+  id            String            @id @default(cuid())
+  vaccinationId String
+  profileId     String
+  name          String?           // optional display name e.g. "Moderna #1"
+  date          DateTime
+  source        VaccinationSource @default(ADMINISTERED)
+  facilityId    String?
+  lotNumber     String?
+  notes         String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  vaccination Vaccination @relation(fields: [vaccinationId], references: [id], onDelete: Cascade)
+  profile     Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  facility    Facility?   @relation(fields: [facilityId], references: [id])
+
+  @@index([vaccinationId])
   @@index([profileId])
   @@index([facilityId])
 }

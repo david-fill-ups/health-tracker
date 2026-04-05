@@ -3,10 +3,13 @@ import { auth } from "@/auth";
 import { PermissionError } from "@/lib/permissions";
 import {
   getVaccinationsForProfile,
-  createVaccination,
-  renameVaccinationGroup,
+  createDose,
+  updateVaccinationRecord,
 } from "@/server/vaccinations";
-import { parseBody, CreateVaccinationSchema, RenameVaccinationGroupSchema } from "@/lib/validation";
+import { parseBody, CreateDoseSchema, UpdateVaccinationSchema } from "@/lib/validation";
+import { z } from "zod";
+
+const PatchBodySchema = UpdateVaccinationSchema.extend({ id: z.string().min(1) });
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -31,29 +34,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function PATCH(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  try {
-    const body = await req.json();
-    const parsed = parseBody(RenameVaccinationGroupSchema, body);
-    if (!parsed.ok) return parsed.response;
-    const { profileId, oldName, newName } = parsed.data;
-
-    const result = await renameVaccinationGroup(session.user.id, profileId, oldName, newName);
-    return NextResponse.json(result);
-  } catch (err) {
-    if (err instanceof PermissionError) {
-      return NextResponse.json({ error: err.message }, { status: err.statusCode });
-    }
-    console.error("PATCH /api/vaccinations error:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
-}
-
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -62,17 +42,43 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const parsed = parseBody(CreateVaccinationSchema, body);
+    const parsed = parseBody(CreateDoseSchema, body);
     if (!parsed.ok) return parsed.response;
     const { profileId, ...input } = parsed.data;
 
-    const vaccination = await createVaccination(session.user.id, profileId, input);
-    return NextResponse.json(vaccination, { status: 201 });
+    const dose = await createDose(session.user.id, profileId, input);
+    return NextResponse.json(dose, { status: 201 });
   } catch (err) {
     if (err instanceof PermissionError) {
       return NextResponse.json({ error: err.message }, { status: err.statusCode });
     }
     console.error("POST /api/vaccinations error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const body = await req.json();
+    const parsed = parseBody(PatchBodySchema, body);
+    if (!parsed.ok) return parsed.response;
+    const { id, ...input } = parsed.data;
+
+    const result = await updateVaccinationRecord(session.user.id, id, input);
+    return NextResponse.json(result);
+  } catch (err) {
+    if (err instanceof PermissionError) {
+      return NextResponse.json({ error: err.message }, { status: err.statusCode });
+    }
+    if (err instanceof Error && err.message === "Vaccination not found") {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    console.error("PATCH /api/vaccinations error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

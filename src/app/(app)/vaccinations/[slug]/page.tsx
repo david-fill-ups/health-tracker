@@ -14,13 +14,21 @@ const SOURCE_LABEL: Partial<Record<VaccinationSource, string>> = {
   DECLINED: "Declined",
 };
 
-interface VaccinationRecord {
+interface Dose {
   id: string;
-  name: string;
+  name: string | null;
   date: string;
   source?: VaccinationSource | null;
   lotNumber: string | null;
   facility?: { name: string } | null;
+}
+
+interface VaccinationRecord {
+  id: string;
+  name: string;
+  aliases: string[];
+  notes: string | null;
+  doses: Dose[];
 }
 
 const FREQUENCY_LABEL: Record<string, string> = {
@@ -34,7 +42,7 @@ export default function VaccineInfoPage() {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
   const { activeProfileId } = useProfile();
-  const [records, setRecords] = useState<VaccinationRecord[]>([]);
+  const [vaccination, setVaccination] = useState<VaccinationRecord | null>(null);
   const [recommendation, setRecommendation] = useState<VaccinationRecommendation | null>(null);
   const [loading, setLoading] = useState(false);
   const [renamingActive, setRenamingActive] = useState(false);
@@ -55,9 +63,11 @@ export default function VaccineInfoPage() {
         if (Array.isArray(vaxData)) {
           if (vaccineInfo) {
             const allNames = [vaccineInfo.vaccine, ...vaccineInfo.aliases].map((n) => n.toLowerCase());
-            setRecords(vaxData.filter((v: VaccinationRecord) => allNames.includes(v.name.toLowerCase())));
+            const match = vaxData.find((v: VaccinationRecord) => allNames.includes(v.name.toLowerCase()));
+            setVaccination(match ?? null);
           } else {
-            setRecords(vaxData.filter((v: VaccinationRecord) => vaccineToSlug(v.name) === slug));
+            const match = vaxData.find((v: VaccinationRecord) => vaccineToSlug(v.name) === slug);
+            setVaccination(match ?? null);
           }
         }
         if (Array.isArray(recData?.recommendations)) {
@@ -74,9 +84,7 @@ export default function VaccineInfoPage() {
       .finally(() => setLoading(false));
   }, [activeProfileId, slug, vaccineInfo]);
 
-  const displayName = vaccineInfo?.vaccine ?? records[0]?.name ?? decodeURIComponent(slug).replace(/-/g, " ");
-  // Only allow renaming custom-named vaccines (no CDC entry) that have records
-  const canRename = !vaccineInfo && records.length > 0;
+  const displayName = vaccineInfo?.vaccine ?? vaccination?.name ?? decodeURIComponent(slug).replace(/-/g, " ");
 
   const STATUS_BADGE: Record<string, { label: string; classes: string }> = {
     up_to_date: { label: "Up to date", classes: "bg-green-100 text-green-700" },
@@ -85,10 +93,12 @@ export default function VaccineInfoPage() {
     completed:  { label: "Completed",   classes: "bg-blue-100 text-blue-700" },
     exempt:     { label: "Declined",    classes: "bg-gray-100 text-gray-500" },
   };
+
   function fmtMonth(d: Date | string | null): string | null {
     if (!d) return null;
     return new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "short" });
   }
+
   const statusBadge = (() => {
     if (!recommendation || recommendation.status === "not_applicable" || recommendation.status === "not_scheduled") return null;
     const base = STATUS_BADGE[recommendation.status];
@@ -108,16 +118,16 @@ export default function VaccineInfoPage() {
   async function handleRename(e: { preventDefault(): void }) {
     e.preventDefault();
     const newName = renameValue.trim();
-    if (!newName || newName === displayName || !activeProfileId) {
+    if (!newName || newName === displayName || !vaccination) {
       setRenamingActive(false);
       return;
     }
     setRenaming(true);
     try {
-      const res = await fetch("/api/vaccinations", {
-        method: "PATCH",
+      const res = await fetch(`/api/vaccinations/${vaccination.id}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profileId: activeProfileId, oldName: displayName, newName }),
+        body: JSON.stringify({ name: newName }),
       });
       if (res.ok) {
         router.replace(`/vaccinations/${vaccineToSlug(newName)}`);
@@ -126,6 +136,11 @@ export default function VaccineInfoPage() {
       setRenaming(false);
     }
   }
+
+  // Display aliases: from the Vaccination record (user-defined) OR from CDC schedule
+  const displayAliases = vaccination?.aliases?.length
+    ? vaccination.aliases
+    : vaccineInfo?.aliases ?? [];
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -160,9 +175,9 @@ export default function VaccineInfoPage() {
         ) : (
           <div className="mt-2 flex items-center gap-3">
             <h1 className="text-2xl font-bold text-gray-900">{displayName}</h1>
-            {canRename && (
+            {vaccination && (
               <button
-                onClick={() => { setRenameValue(displayName); setRenamingActive(true); }}
+                onClick={() => { setRenameValue(vaccination.name); setRenamingActive(true); }}
                 className="text-sm text-gray-400 hover:text-gray-600"
               >
                 Rename
@@ -170,8 +185,8 @@ export default function VaccineInfoPage() {
             )}
           </div>
         )}
-        {vaccineInfo?.aliases && vaccineInfo.aliases.length > 0 && (
-          <p className="mt-1 text-sm text-gray-400">Also known as: {vaccineInfo.aliases.join(", ")}</p>
+        {displayAliases.length > 0 && (
+          <p className="mt-1 text-sm text-gray-400">Also known as: {displayAliases.join(", ")}</p>
         )}
         {statusBadge && (
           <div className="mt-2 flex items-center gap-2">
@@ -219,9 +234,9 @@ export default function VaccineInfoPage() {
 
       <div className="rounded-xl border border-gray-200 bg-white p-5">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Your Records</h2>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Your Doses</h2>
           <Link
-            href={`/vaccinations/new?name=${encodeURIComponent(vaccineInfo?.vaccine ?? displayName)}`}
+            href={`/vaccinations/new?name=${encodeURIComponent(vaccination?.name ?? vaccineInfo?.vaccine ?? displayName)}`}
             className="text-xs text-indigo-600 hover:underline"
           >
             + Record dose
@@ -240,34 +255,37 @@ export default function VaccineInfoPage() {
           </div>
         )}
 
-        {activeProfileId && !loading && records.length === 0 && (
+        {activeProfileId && !loading && (!vaccination || vaccination.doses.length === 0) && (
           <p className="text-sm text-gray-400">No doses recorded yet.</p>
         )}
 
-        {activeProfileId && !loading && records.length > 0 && (
+        {activeProfileId && !loading && vaccination && vaccination.doses.length > 0 && (
           <ul className="divide-y divide-gray-100">
-            {records
+            {vaccination.doses
               .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-              .map((v) => (
-                <li key={v.id} className="py-2.5 flex items-center justify-between gap-4">
+              .map((dose) => (
+                <li key={dose.id} className="py-2.5 flex items-center justify-between gap-4">
                   <div>
+                    {dose.name && (
+                      <p className="text-sm font-medium text-gray-900">{dose.name}</p>
+                    )}
                     <p className="text-sm text-gray-800">
-                      {new Date(v.date).toLocaleDateString(undefined, {
+                      {new Date(dose.date).toLocaleDateString(undefined, {
                         year: "numeric",
                         month: "long",
                         day: "numeric",
                       })}
-                      {v.facility ? ` · ${v.facility.name}` : ""}
+                      {dose.facility ? ` · ${dose.facility.name}` : ""}
                     </p>
-                    {v.lotNumber && (
-                      <p className="text-xs text-gray-400">Lot: {v.lotNumber}</p>
+                    {dose.lotNumber && (
+                      <p className="text-xs text-gray-400">Lot: {dose.lotNumber}</p>
                     )}
-                    {v.source && SOURCE_LABEL[v.source] && (
-                      <p className="text-xs italic text-gray-400">{SOURCE_LABEL[v.source]}</p>
+                    {dose.source && SOURCE_LABEL[dose.source] && (
+                      <p className="text-xs italic text-gray-400">{SOURCE_LABEL[dose.source]}</p>
                     )}
                   </div>
                   <Link
-                    href={`/vaccinations/${vaccineToSlug(v.name)}/edit/${v.id}`}
+                    href={`/vaccinations/${vaccineToSlug(vaccination.name)}/doses/${dose.id}/edit`}
                     className="text-xs text-gray-400 hover:text-indigo-600 shrink-0"
                   >
                     Edit

@@ -18,7 +18,7 @@ const SOURCE_OPTIONS: { value: VaccinationSource; label: string; description: st
   { value: "DECLINED", label: "Declined", description: "I chose not to vaccinate" },
 ];
 
-export default function EditVaccinationPage({
+export default function EditDosePage({
   params,
 }: {
   params: Promise<{ slug: string; id: string }>;
@@ -33,6 +33,7 @@ export default function EditVaccinationPage({
   const [error, setError] = useState<string | null>(null);
   const [facilities, setFacilities] = useState<Facility[]>([]);
 
+  const [doseName, setDoseName] = useState("");
   const [date, setDate] = useState("");
   const [source, setSource] = useState<VaccinationSource>("ADMINISTERED");
   const [facilityId, setFacilityId] = useState("");
@@ -44,18 +45,19 @@ export default function EditVaccinationPage({
   useEffect(() => {
     if (!activeProfileId) return;
     Promise.all([
-      fetch(`/api/vaccinations/${id}`).then((r) => r.json()),
+      fetch(`/api/vaccinations/doses/${id}`).then((r) => r.json()),
       fetch(`/api/facilities?profileId=${activeProfileId}`).then((r) => r.json()),
     ])
-      .then(([vax, facs]) => {
-        setDate(vax.date ? vax.date.slice(0, 10) : "");
-        setSource(vax.source ?? "ADMINISTERED");
-        setFacilityId(vax.facilityId ?? "");
-        setLotNumber(vax.lotNumber ?? "");
-        setNotes(vax.notes ?? "");
+      .then(([dose, facs]) => {
+        setDoseName(dose.name ?? "");
+        setDate(dose.date ? dose.date.slice(0, 10) : "");
+        setSource(dose.source ?? "ADMINISTERED");
+        setFacilityId(dose.facilityId ?? "");
+        setLotNumber(dose.lotNumber ?? "");
+        setNotes(dose.notes ?? "");
         setFacilities(Array.isArray(facs) ? facs : []);
       })
-      .catch(() => setError("Failed to load vaccination record"))
+      .catch(() => setError("Failed to load dose record"))
       .finally(() => setLoading(false));
   }, [id, activeProfileId]);
 
@@ -65,10 +67,11 @@ export default function EditVaccinationPage({
     setError(null);
 
     try {
-      const res = await fetch(`/api/vaccinations/${id}`, {
+      const res = await fetch(`/api/vaccinations/doses/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          name: doseName || null,
           date: date || undefined,
           source,
           facilityId: isAdministered && facilityId ? facilityId : null,
@@ -91,14 +94,14 @@ export default function EditVaccinationPage({
   }
 
   async function handleDelete() {
-    if (!confirm("Delete this vaccination record?")) return;
+    if (!confirm("Delete this dose record?")) return;
     setDeleting(true);
-    const res = await fetch(`/api/vaccinations/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/vaccinations/doses/${id}`, { method: "DELETE" });
     if (res.ok) {
       router.push(`/vaccinations/${slug}`);
       router.refresh();
     } else {
-      setError("Failed to delete vaccination");
+      setError("Failed to delete dose");
       setDeleting(false);
     }
   }
@@ -115,7 +118,7 @@ export default function EditVaccinationPage({
         <a href={`/vaccinations/${slug}`} className="text-sm text-indigo-600 hover:underline">
           ← Back
         </a>
-        <h1 className="mt-2 text-2xl font-bold text-gray-900">Edit Vaccination</h1>
+        <h1 className="mt-2 text-2xl font-bold text-gray-900">Edit Dose</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -145,6 +148,22 @@ export default function EditVaccinationPage({
             ))}
           </div>
         </div>
+
+        {isAdministered && (
+          <div>
+            <label htmlFor="doseName" className="block text-sm font-medium text-gray-700 mb-1">
+              Dose label <span className="text-gray-400 text-xs ml-1">(optional)</span>
+            </label>
+            <input
+              id="doseName"
+              type="text"
+              value={doseName}
+              onChange={(e) => setDoseName(e.target.value)}
+              placeholder="e.g. Moderna #1, Booster"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+          </div>
+        )}
 
         <div>
           <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">

@@ -145,7 +145,7 @@
     },
     {
       "vaccine": "Hepatitis B",
-      "aliases": ["Hep B", "HBV"],
+      "aliases": ["Hep B", "HBV", "DTaP-Hib-IPV-HepB"],
       "description": "Protects against hepatitis B, a serious infection of the liver caused by the hepatitis B virus (HBV). Transmitted through blood, sexual contact, or from mother to child at birth. Chronic infection can lead to liver cirrhosis, liver failure, and liver cancer. About 2 billion people worldwide have been infected.",
       "ageGroups": [
         {
@@ -195,7 +195,7 @@
     },
     {
       "vaccine": "Pneumococcal (PCV15/PCV20)",
-      "aliases": ["Pneumonia", "Prevnar", "PCV", "PPSV23", "Pneumococcal"],
+      "aliases": ["Pneumonia", "Prevnar", "PCV", "PCV13", "Prevnar 13", "PPSV23", "Pneumococcal"],
       "description": "Protects against pneumococcal disease caused by Streptococcus pneumoniae bacteria, which can lead to pneumonia, bacterial meningitis, and bloodstream infections (bacteremia). Older adults and immunocompromised individuals are at highest risk for severe disease.",
       "ageGroups": [
         {
@@ -268,7 +268,7 @@
     },
     {
       "vaccine": "DTaP",
-      "aliases": ["Diphtheria", "Pertussis", "Whooping Cough"],
+      "aliases": ["Diphtheria", "Pertussis", "Whooping Cough", "DTaP-Hib-IPV-HepB", "DTaP-Hib-IPV"],
       "description": "Protects children against diphtheria, tetanus, and pertussis (whooping cough). DTaP is the pediatric formulation given in a 5-dose series. Pertussis can be especially dangerous for infants before the vaccine series is complete. The adult equivalent is Tdap, which maintains protection.",
       "ageGroups": [
         {
@@ -284,7 +284,7 @@
     },
     {
       "vaccine": "Hib",
-      "aliases": ["Haemophilus influenzae type b"],
+      "aliases": ["Haemophilus influenzae type b", "DTaP-Hib-IPV-HepB", "DTaP-Hib-IPV"],
       "description": "Protects against Haemophilus influenzae type b (Hib), a bacteria that was once the leading cause of bacterial meningitis in children under 5. Before the vaccine, Hib disease caused thousands of deaths and permanent disabilities each year. Vaccination has reduced Hib disease by more than 99% in the US.",
       "ageGroups": [
         {
@@ -307,7 +307,7 @@
     },
     {
       "vaccine": "Polio (IPV)",
-      "aliases": ["Inactivated Poliovirus", "Polio"],
+      "aliases": ["Inactivated Poliovirus", "Polio", "DTaP-Hib-IPV-HepB", "DTaP-Hib-IPV"],
       "description": "Protects against poliomyelitis, a crippling and potentially fatal infectious disease caused by poliovirus. Polio can cause irreversible paralysis, usually in the legs. While wild poliovirus has been eradicated from most of the world, vaccination remains important to prevent reintroduction. The inactivated poliovirus vaccine (IPV) is used in the United States.",
       "ageGroups": [
         {

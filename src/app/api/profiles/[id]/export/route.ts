@@ -135,11 +135,16 @@ export async function GET(_req: Request, { params }: Params) {
       })),
       vaccinations: vaccinations.map((v) => ({
         name: v.name,
-        date: v.date.toISOString(),
-        source: v.source,
-        facilityId: v.facilityId ?? null,
-        lotNumber: v.lotNumber ?? null,
+        aliases: v.aliases,
         notes: v.notes ?? null,
+        doses: v.doses.map((d) => ({
+          name: d.name ?? null,
+          date: d.date.toISOString(),
+          source: d.source,
+          facilityId: d.facilityId ?? null,
+          lotNumber: d.lotNumber ?? null,
+          notes: d.notes ?? null,
+        })),
       })),
       allergies: allergies.map((a) => ({
         allergen: a.allergen,

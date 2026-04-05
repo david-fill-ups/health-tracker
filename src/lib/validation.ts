@@ -76,9 +76,25 @@ export const OnboardingSchema = z.object({
 
 export const VaccinationSourceEnum = z.enum(["ADMINISTERED", "NATURAL", "DECLINED"]);
 
+// Vaccination parent record (canonical name per profile)
 export const CreateVaccinationSchema = z.object({
   profileId: id,
   name: name255,
+  aliases: z.array(z.string().max(255)).optional(),
+  notes: z.string().max(1000).optional(),
+});
+
+export const UpdateVaccinationSchema = z.object({
+  name: name255.optional(),
+  aliases: z.array(z.string().max(255)).optional(),
+  notes: z.string().max(1000).nullable().optional(),
+});
+
+// Dose record (individual administration tied to a Vaccination)
+export const CreateDoseSchema = z.object({
+  profileId: id,
+  vaccineName: name255,           // used to find or create the Vaccination parent
+  name: name255.optional(),       // optional display label e.g. "Moderna #1"
   date: z.coerce.date(),
   source: VaccinationSourceEnum.optional(),
   facilityId: z.string().min(1).optional(),
@@ -86,19 +102,13 @@ export const CreateVaccinationSchema = z.object({
   notes: z.string().max(1000).optional(),
 });
 
-export const UpdateVaccinationSchema = z.object({
-  name: name255.optional(),
+export const UpdateDoseSchema = z.object({
+  name: name255.nullable().optional(),
   date: z.coerce.date().optional(),
   source: VaccinationSourceEnum.optional(),
   facilityId: z.string().min(1).nullable().optional(),
   lotNumber: z.string().max(255).nullable().optional(),
   notes: z.string().max(1000).nullable().optional(),
-});
-
-export const RenameVaccinationGroupSchema = z.object({
-  profileId: id,
-  oldName: name255,
-  newName: name255,
 });
 
 // ── Visit ──────────────────────────────────────────────────────────────────────

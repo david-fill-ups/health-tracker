@@ -43,7 +43,7 @@ function ConditionCard({ condition }: { condition: Condition }) {
         </p>
       )}
       {condition.notes && (
-        <p className="mt-1 text-sm text-gray-500">{condition.notes}</p>
+        <p className="mt-1 text-sm text-gray-500 truncate">{condition.notes}</p>
       )}
     </div>
   );

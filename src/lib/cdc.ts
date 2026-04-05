@@ -54,6 +54,21 @@ export function getVaccineBySlug(slug: string): CdcVaccineSchedule | null {
 }
 
 /**
+ * Resolves a raw vaccine name (e.g. from AI import) to the canonical CDC name.
+ * Returns the canonical name and whether the raw name was an alias.
+ */
+export function resolveCanonicalVaccineName(rawName: string): { canonical: string; isAlias: boolean } {
+  const lower = rawName.toLowerCase();
+  for (const entry of schedule.schedules) {
+    const all = [entry.vaccine, ...entry.aliases].map((n) => n.toLowerCase());
+    if (all.includes(lower)) {
+      return { canonical: entry.vaccine, isAlias: entry.vaccine.toLowerCase() !== lower };
+    }
+  }
+  return { canonical: rawName, isAlias: false };
+}
+
+/**
  * Determines vaccination status for a single vaccine entry
  * given the profile's age in months and their recorded vaccinations.
  */

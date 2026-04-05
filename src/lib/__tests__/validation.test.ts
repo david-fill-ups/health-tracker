@@ -2,11 +2,13 @@ import { describe, it, expect } from "vitest";
 import {
   CreateProfileSchema,
   CreateVaccinationSchema,
+  UpdateVaccinationSchema,
+  CreateDoseSchema,
+  UpdateDoseSchema,
   CreateVisitSchema,
   ProfileAccessSchema,
   UpdateProfileAccessSchema,
   UpdateProfileSchema,
-  UpdateVaccinationSchema,
   UpdateVisitSchema,
   UpdateMedicationSchema,
   UpdateConditionSchema,
@@ -86,17 +88,15 @@ describe("CreateVaccinationSchema", () => {
   const valid = {
     profileId: "profile-123",
     name: "Flu",
-    date: "2025-10-01",
   };
 
   it("accepts valid input", () => {
     const result = CreateVaccinationSchema.safeParse(valid);
     expect(result.success).toBe(true);
-    if (result.success) expect(result.data.date).toBeInstanceOf(Date);
   });
 
   it("rejects missing profileId", () => {
-    const result = CreateVaccinationSchema.safeParse({ name: "Flu", date: "2025-10-01" });
+    const result = CreateVaccinationSchema.safeParse({ name: "Flu" });
     expect(result.success).toBe(false);
   });
 
@@ -106,26 +106,53 @@ describe("CreateVaccinationSchema", () => {
   });
 
   it("rejects missing name", () => {
-    const result = CreateVaccinationSchema.safeParse({ profileId: "p1", date: "2025-10-01" });
+    const result = CreateVaccinationSchema.safeParse({ profileId: "p1" });
     expect(result.success).toBe(false);
+  });
+
+  it("accepts optional aliases and notes", () => {
+    const result = CreateVaccinationSchema.safeParse({
+      ...valid,
+      aliases: ["Influenza"],
+      notes: "Annual",
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
+// ── CreateDoseSchema ──────────────────────────────────────────────────────────
+
+describe("CreateDoseSchema", () => {
+  const valid = {
+    profileId: "profile-123",
+    vaccineName: "Flu",
+    date: "2025-10-01",
+  };
+
+  it("accepts valid input", () => {
+    const result = CreateDoseSchema.safeParse(valid);
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.date).toBeInstanceOf(Date);
+  });
+
+  it("rejects missing profileId", () => {
+    expect(CreateDoseSchema.safeParse({ vaccineName: "Flu", date: "2025-10-01" }).success).toBe(false);
+  });
+
+  it("rejects missing vaccineName", () => {
+    expect(CreateDoseSchema.safeParse({ profileId: "p1", date: "2025-10-01" }).success).toBe(false);
   });
 
   it("rejects missing date", () => {
-    const result = CreateVaccinationSchema.safeParse({ profileId: "p1", name: "Flu" });
-    expect(result.success).toBe(false);
+    expect(CreateDoseSchema.safeParse({ profileId: "p1", vaccineName: "Flu" }).success).toBe(false);
   });
 
   it("rejects invalid date string", () => {
-    const result = CreateVaccinationSchema.safeParse({ ...valid, date: "not-a-date" });
-    expect(result.success).toBe(false);
+    expect(CreateDoseSchema.safeParse({ ...valid, date: "not-a-date" }).success).toBe(false);
   });
 
   it("accepts optional lotNumber and notes", () => {
-    const result = CreateVaccinationSchema.safeParse({
-      ...valid,
-      lotNumber: "LOT123",
-      notes: "Left arm",
-    });
+    const result = CreateDoseSchema.safeParse({ ...valid, lotNumber: "LOT123", notes: "Left arm" });
     expect(result.success).toBe(true);
   });
 });
@@ -281,18 +308,32 @@ describe("UpdateVaccinationSchema", () => {
     expect(UpdateVaccinationSchema.safeParse({ name: "MMR" }).success).toBe(true);
   });
 
+  it("accepts aliases array", () => {
+    expect(UpdateVaccinationSchema.safeParse({ aliases: ["MMR-II"] }).success).toBe(true);
+  });
+
+  it("accepts null notes (clearing a field)", () => {
+    expect(UpdateVaccinationSchema.safeParse({ notes: null }).success).toBe(true);
+  });
+});
+
+describe("UpdateDoseSchema", () => {
+  it("accepts empty object", () => {
+    expect(UpdateDoseSchema.safeParse({}).success).toBe(true);
+  });
+
   it("coerces date in partial update", () => {
-    const r = UpdateVaccinationSchema.safeParse({ date: "2024-09-01" });
+    const r = UpdateDoseSchema.safeParse({ date: "2024-09-01" });
     expect(r.success).toBe(true);
     if (r.success) expect(r.data.date).toBeInstanceOf(Date);
   });
 
   it("rejects invalid date string", () => {
-    expect(UpdateVaccinationSchema.safeParse({ date: "not-a-date" }).success).toBe(false);
+    expect(UpdateDoseSchema.safeParse({ date: "not-a-date" }).success).toBe(false);
   });
 
   it("accepts null lotNumber (clearing a field)", () => {
-    expect(UpdateVaccinationSchema.safeParse({ lotNumber: null }).success).toBe(true);
+    expect(UpdateDoseSchema.safeParse({ lotNumber: null }).success).toBe(true);
   });
 });
 
@@ -661,14 +702,14 @@ describe("z.coerce.date() behaviour", () => {
     if (r.success) expect(r.data.birthDate).toBeInstanceOf(Date);
   });
 
-  it("CreateVaccinationSchema date accepts ISO string", () => {
-    const r = CreateVaccinationSchema.safeParse({ profileId: "p1", name: "Flu", date: "2025-10-01T00:00:00.000Z" });
+  it("CreateDoseSchema date accepts ISO string", () => {
+    const r = CreateDoseSchema.safeParse({ profileId: "p1", vaccineName: "Flu", date: "2025-10-01T00:00:00.000Z" });
     expect(r.success).toBe(true);
     if (r.success) expect(r.data.date).toBeInstanceOf(Date);
   });
 
   it("rejects non-date strings", () => {
-    const r = CreateVaccinationSchema.safeParse({ profileId: "p1", name: "Flu", date: "yesterday" });
+    const r = CreateDoseSchema.safeParse({ profileId: "p1", vaccineName: "Flu", date: "yesterday" });
     expect(r.success).toBe(false);
   });
 });
