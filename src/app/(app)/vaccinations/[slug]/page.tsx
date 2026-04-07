@@ -176,12 +176,20 @@ export default function VaccineInfoPage() {
           <div className="mt-2 flex items-center gap-3">
             <h1 className="text-2xl font-bold text-gray-900">{displayName}</h1>
             {vaccination && (
-              <button
-                onClick={() => { setRenameValue(vaccination.name); setRenamingActive(true); }}
-                className="text-sm text-gray-400 hover:text-gray-600"
-              >
-                Rename
-              </button>
+              <>
+                <button
+                  onClick={() => { setRenameValue(vaccination.name); setRenamingActive(true); }}
+                  className="text-sm text-gray-400 hover:text-gray-600"
+                >
+                  Rename
+                </button>
+                <Link
+                  href={`/vaccinations/${slug}/edit`}
+                  className="text-sm text-gray-400 hover:text-gray-600"
+                >
+                  Edit
+                </Link>
+              </>
             )}
           </div>
         )}

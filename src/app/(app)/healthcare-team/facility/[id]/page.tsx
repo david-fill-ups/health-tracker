@@ -36,6 +36,7 @@ interface Doctor {
   name: string;
   specialty: string | null;
   active: boolean;
+  photo: string | null;
 }
 
 interface FacilityDetail {
@@ -362,13 +363,22 @@ export default function FacilityDetailPage({ params }: { params: Promise<{ id: s
           <div className="space-y-2">
             {facility.doctors.map((doc) => (
               <div key={doc.id} className={`rounded-xl border border-gray-200 bg-white p-3 flex items-center justify-between ${doc.active ? "" : "opacity-50"}`}>
-                <div>
-                  <Link href={`/healthcare-team/provider/${doc.id}`} className="font-medium text-gray-900 hover:text-indigo-600 hover:underline text-sm">
-                    {doc.name}
-                  </Link>
-                  {doc.specialty && (
-                    <span className="ml-2 text-xs text-gray-500">{doc.specialty}</span>
+                <div className="flex items-center gap-3">
+                  {doc.photo && (
+                    <img
+                      src={doc.photo}
+                      alt={doc.name}
+                      className="w-8 h-8 rounded-full object-cover shrink-0"
+                    />
                   )}
+                  <div>
+                    <Link href={`/healthcare-team/provider/${doc.id}`} className="font-medium text-gray-900 hover:text-indigo-600 hover:underline text-sm">
+                      {doc.name}
+                    </Link>
+                    {doc.specialty && (
+                      <span className="ml-2 text-xs text-gray-500">{doc.specialty}</span>
+                    )}
+                  </div>
                 </div>
                 {!doc.active && (
                   <span className="text-xs text-gray-400">Inactive</span>

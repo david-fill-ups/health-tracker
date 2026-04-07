@@ -396,7 +396,7 @@ export async function POST(req: Request, { params }: Params) {
             const datePart = isoDatePart(d.date);
             const existing = await tx.dose.findFirst({
               where: {
-                vaccinationId: vaccination.id,
+                vaccinations: { some: { vaccinationId: vaccination.id } },
                 ...(datePart
                   ? {
                       date: {
@@ -416,7 +416,6 @@ export async function POST(req: Request, { params }: Params) {
 
           await tx.dose.create({
             data: {
-              vaccinationId: vaccination.id,
               profileId,
               name: d.name ?? undefined,
               date: new Date(d.date),
@@ -424,6 +423,7 @@ export async function POST(req: Request, { params }: Params) {
               facilityId: d.facilityId ? (idMap.get(d.facilityId) ?? undefined) : undefined,
               lotNumber: d.lotNumber ?? undefined,
               notes: d.notes ?? undefined,
+              vaccinations: { create: [{ vaccinationId: vaccination.id }] },
             },
           });
           imported.vaccinations++;

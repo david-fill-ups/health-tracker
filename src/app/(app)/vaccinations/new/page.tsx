@@ -187,13 +187,12 @@ export default function NewDosePage() {
           <div>
             <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
               {isNatural ? "Approx. date of illness" : isDeclined ? "Date declined" : "Date"}
-              {!isNatural && <span className="text-red-500"> *</span>}
-              {isNatural && <span className="text-gray-400 text-xs ml-1">(optional)</span>}
+              <span className="text-red-500"> *</span>
             </label>
             <input
               id="date"
               type="date"
-              required={!isNatural}
+              required
               value={date}
               onChange={(e) => setDate(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"

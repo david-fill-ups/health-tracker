@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { assertProfileAccess, PermissionError } from "@/lib/permissions";
+import { getAllCanonicals } from "@/lib/cdc";
 import type { ProposalItem, ApplyResult, EntityType } from "@/lib/ai-import/types";
+import type { Prisma } from "@/generated/prisma/client";
+import { VisitType, MedicationType, ConditionStatus } from "@/generated/prisma/client";
 
 function ci(s: string | null | undefined): string {
   return (s ?? "").toLowerCase().trim();
@@ -104,8 +107,7 @@ export async function POST(req: Request) {
 
 // ── Item handlers ──────────────────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Tx = any;
+type Tx = Prisma.TransactionClient;
 
 async function applyFacilityItem(
   item: ProposalItem,
@@ -226,7 +228,7 @@ async function applyOtherItem(
           data: {
             profileId,
             date: d.date ? new Date(d.date as string) : undefined,
-            type: (d.type as string) ?? "ROUTINE",
+            type: ((d.type as string) ?? "ROUTINE") as VisitType,
             status: "COMPLETED",
             reason: (d.reason as string) ?? undefined,
             specialty: (d.specialty as string) ?? undefined,
@@ -253,7 +255,7 @@ async function applyOtherItem(
           data: {
             profileId,
             name: d.name as string,
-            medicationType: (d.type as string) ?? "ORAL",
+            medicationType: ((d.type as string) ?? "ORAL") as MedicationType,
             dosage: (d.dosage as string) ?? undefined,
             frequency: (d.frequency as string) ?? undefined,
             prescribingDoctorId: prescribingDoctorId ?? undefined,
@@ -280,7 +282,7 @@ async function applyOtherItem(
             profileId,
             name: d.name as string,
             diagnosisDate: d.diagnosisDate ? new Date(d.diagnosisDate as string) : undefined,
-            status: (d.status as string) ?? "ACTIVE",
+            status: ((d.status as string) ?? "ACTIVE") as ConditionStatus,
             notes: (d.notes as string) ?? undefined,
           },
         });
@@ -319,21 +321,36 @@ async function applyOtherItem(
           ? facilityIdByName.get(ci(d.facilityName as string))
           : undefined;
 
-        const vax = await tx.vaccination.upsert({
-          where: { profileId_name: { profileId, name: d.name as string } },
-          create: { profileId, name: d.name as string, aliases: [] },
-          update: {},
-        });
+        const rawName = d.name as string;
+        const canonicals = getAllCanonicals(rawName);
+        const vaccinationNames = canonicals.size > 0 ? Array.from(canonicals) : [rawName];
+        const isCombo = vaccinationNames.length > 1;
+
+        const vaccinationIds = await Promise.all(
+          vaccinationNames.map((vaxName) =>
+            tx.vaccination
+              .upsert({
+                where: { profileId_name: { profileId, name: vaxName } },
+                create: { profileId, name: vaxName, aliases: [] },
+                update: {},
+                select: { id: true },
+              })
+              .then((v: { id: string }) => v.id)
+          )
+        );
 
         await tx.dose.create({
           data: {
-            vaccinationId: vax.id,
             profileId,
+            name: isCombo ? rawName : undefined,
             date: new Date(d.date as string),
             source: "ADMINISTERED",
             facilityId: facilityId ?? undefined,
             lotNumber: (d.lotNumber as string) ?? undefined,
             notes: (d.notes as string) ?? undefined,
+            vaccinations: {
+              create: vaccinationIds.map((vaccinationId: string) => ({ vaccinationId })),
+            },
           },
         });
         result.created.vaccination++;

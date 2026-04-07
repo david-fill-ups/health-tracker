@@ -9,6 +9,8 @@ import { DoctorForm } from "@/components/healthcare-team/DoctorForm";
 interface Facility {
   id: string;
   name: string;
+  websiteUrl?: string | null;
+  portalUrl?: string | null;
 }
 
 export default function NewProviderPage() {

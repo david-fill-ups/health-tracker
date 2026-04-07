@@ -13,6 +13,7 @@ interface Doctor {
   active: boolean;
   visitCount?: number;
   lastVisit?: string | null;
+  photo?: string | null;
 }
 
 interface Props {
@@ -27,6 +28,13 @@ export function DoctorCard({ doctor }: Props) {
       }`}
     >
       <div className="flex items-start gap-3 flex-wrap">
+        {doctor.photo && (
+          <img
+            src={doctor.photo}
+            alt={doctor.name}
+            className="w-10 h-10 rounded-full object-cover shrink-0"
+          />
+        )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <Link

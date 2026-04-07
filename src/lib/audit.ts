@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import type { Prisma } from "@/generated/prisma/client";
 
 export type AuditAction =
   | "DELETE_ACCOUNT"
@@ -35,7 +36,7 @@ export async function logAudit(
 ): Promise<void> {
   try {
     await prisma.auditLog.create({
-      data: { userId, profileId, action, entityType, entityId, metadata: metadata as any }, // eslint-disable-line @typescript-eslint/no-explicit-any
+      data: { userId, profileId, action, entityType, entityId, metadata: metadata as Prisma.InputJsonValue },
     });
   } catch (err) {
     console.error("[audit] Failed to write audit log:", { action, userId, profileId, entityId, err });

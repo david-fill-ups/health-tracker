@@ -16,6 +16,7 @@ interface Doctor {
   phone?: string | null;
   active: boolean;
   rating?: number | null;
+  photo?: string | null;
   _count?: { visits: number };
   visits?: Array<{ date: string | null }>;
 }
@@ -207,6 +208,11 @@ function HealthcareTeamContent() {
     ? doctors.filter((d) => d.active && doctorMatchesSearch(d))
     : [];
 
+  // In "providers" mode: flat list of all inactive matching doctors
+  const flatInactiveProviders = showFilter === "providers"
+    ? inactiveDoctors.filter(doctorMatchesSearch)
+    : [];
+
   // Derived: what's visible in the inactive section
   const visibleInactiveFacilities = showFilter !== "providers"
     ? inactiveFacilities.filter((f) =>
@@ -223,6 +229,10 @@ function HealthcareTeamContent() {
   const visibleInactiveIndependentDoctors = showFilter !== "facilities"
     ? inactiveIndependentDoctors.filter(doctorMatchesSearch)
     : [];
+
+  const filteredInactiveCount =
+    (showFilter !== "providers" ? visibleInactiveFacilities.length : 0) +
+    (showFilter !== "facilities" ? inactiveDoctors.filter(doctorMatchesSearch).length : 0);
 
   const loading = loadingFacilities || loadingDoctors;
   return (
@@ -318,8 +328,8 @@ function HealthcareTeamContent() {
               </div>
             );
           })}
-          {/* Independent providers */}
-          {visibleIndependentDoctors.length > 0 && (
+          {/* Independent providers — not shown in providers mode since flatProviders already covers them */}
+          {showFilter !== "providers" && visibleIndependentDoctors.length > 0 && (
             <div className="space-y-1">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">
                 Independent Providers
@@ -333,7 +343,7 @@ function HealthcareTeamContent() {
           )}
 
           {/* Inactive section */}
-          {(inactiveFacilities.length > 0 || inactiveDoctors.length > 0) && (
+          {filteredInactiveCount > 0 && (
             <div className="border-t border-gray-200 pt-4 mt-2">
               <button
                 onClick={handleInactiveToggle}
@@ -341,11 +351,29 @@ function HealthcareTeamContent() {
               >
                 <span className="text-xs">{inactiveOpen ? "▾" : "▸"}</span>
                 {inactiveOpen ? "Hide" : "Show"} inactive (
-                {inactiveFacilities.length + inactiveDoctors.length})
+                {filteredInactiveCount})
               </button>
               {inactiveOpen && (
                 <div className="mt-3 space-y-4">
                   {visibleInactiveFacilities.map((f) => {
+                    const facilityDoctors = showFilter === "facilities"
+                      ? []
+                      : (inactiveDoctorsByFacility.get(f.id) ?? []).filter(doctorMatchesSearch);
+                    return (
+                      <div key={f.id} className="space-y-1">
+                        <FacilityCard facility={toFacilityCardProps(f)} />
+                        {facilityDoctors.length > 0 && (
+                          <div className="ml-6 space-y-1 border-l-2 border-gray-100 pl-4">
+                            {facilityDoctors.map((d) => (
+                              <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {/* Active facilities with some inactive providers — skip when filter=facilities since doctors are hidden anyway */}
+                  {showFilter !== "facilities" && visibleActiveFacilitiesWithInactiveDoctors.map((f) => {
                     const facilityDoctors = (inactiveDoctorsByFacility.get(f.id) ?? []).filter(doctorMatchesSearch);
                     return (
                       <div key={f.id} className="space-y-1">
@@ -360,23 +388,11 @@ function HealthcareTeamContent() {
                       </div>
                     );
                   })}
-                  {/* Active facilities with some inactive providers */}
-                  {visibleActiveFacilitiesWithInactiveDoctors.map((f) => {
-                    const facilityDoctors = (inactiveDoctorsByFacility.get(f.id) ?? []).filter(doctorMatchesSearch);
-                    return (
-                      <div key={f.id} className="space-y-1">
-                        <FacilityCard facility={toFacilityCardProps(f)} />
-                        {facilityDoctors.length > 0 && (
-                          <div className="ml-6 space-y-1 border-l-2 border-gray-100 pl-4">
-                            {facilityDoctors.map((d) => (
-                              <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                  {visibleInactiveIndependentDoctors.length > 0 && (
+                  {/* Providers mode: flat list of all inactive doctors */}
+                  {showFilter === "providers" && flatInactiveProviders.map((d) => (
+                    <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} />
+                  ))}
+                  {showFilter !== "providers" && visibleInactiveIndependentDoctors.length > 0 && (
                     <div className="space-y-1">
                       <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">
                         Independent Providers

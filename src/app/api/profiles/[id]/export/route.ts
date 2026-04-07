@@ -55,6 +55,8 @@ export async function GET(_req: Request, { params }: Params) {
         birthDate: profile.birthDate.toISOString().slice(0, 10),
         sex: profile.sex,
         state: profile.state ?? null,
+        heightIn: profile.heightIn ?? null,
+        timezone: profile.timezone ?? null,
         notes: profile.notes ?? null,
       },
       facilities: facilities.map((f) => ({
@@ -186,7 +188,7 @@ export async function GET(_req: Request, { params }: Params) {
       status: 200,
       headers: {
         "Content-Type": "application/json",
-        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
       },
     });
   } catch (e) {

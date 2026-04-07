@@ -4,6 +4,7 @@ import { useState, useEffect, use, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { Toast } from "@/components/ui/Toast";
+import { useBeforeUnload } from "@/hooks/useBeforeUnload";
 
 interface Facility {
   id: string;
@@ -30,6 +31,7 @@ export default function EditDosePage({
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [facilities, setFacilities] = useState<Facility[]>([]);
 
@@ -40,7 +42,10 @@ export default function EditDosePage({
   const [lotNumber, setLotNumber] = useState("");
   const [notes, setNotes] = useState("");
 
+  const [isDirty, setIsDirty] = useState(false);
   const isAdministered = source === "ADMINISTERED";
+
+  useBeforeUnload(isDirty && !saved);
 
   useEffect(() => {
     if (!activeProfileId) return;
@@ -56,6 +61,7 @@ export default function EditDosePage({
         setLotNumber(dose.lotNumber ?? "");
         setNotes(dose.notes ?? "");
         setFacilities(Array.isArray(facs) ? facs : []);
+        setIsDirty(false);
       })
       .catch(() => setError("Failed to load dose record"))
       .finally(() => setLoading(false));
@@ -94,7 +100,6 @@ export default function EditDosePage({
   }
 
   async function handleDelete() {
-    if (!confirm("Delete this dose record?")) return;
     setDeleting(true);
     const res = await fetch(`/api/vaccinations/doses/${id}`, { method: "DELETE" });
     if (res.ok) {
@@ -103,6 +108,7 @@ export default function EditDosePage({
     } else {
       setError("Failed to delete dose");
       setDeleting(false);
+      setConfirmDelete(false);
     }
   }
 
@@ -135,7 +141,7 @@ export default function EditDosePage({
               <button
                 key={opt.value}
                 type="button"
-                onClick={() => setSource(opt.value)}
+                onClick={() => { setSource(opt.value); setIsDirty(true); }}
                 className={`rounded-lg border px-3 py-2.5 text-left text-sm transition-colors ${
                   source === opt.value
                     ? "border-indigo-500 bg-indigo-50 text-indigo-700"
@@ -158,7 +164,7 @@ export default function EditDosePage({
               id="doseName"
               type="text"
               value={doseName}
-              onChange={(e) => setDoseName(e.target.value)}
+              onChange={(e) => { setDoseName(e.target.value); setIsDirty(true); }}
               placeholder="e.g. Moderna #1, Booster"
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
@@ -174,7 +180,7 @@ export default function EditDosePage({
             type="date"
             required
             value={date}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={(e) => { setDate(e.target.value); setIsDirty(true); }}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
         </div>
@@ -185,7 +191,7 @@ export default function EditDosePage({
             <select
               id="facility"
               value={facilityId}
-              onChange={(e) => setFacilityId(e.target.value)}
+              onChange={(e) => { setFacilityId(e.target.value); setIsDirty(true); }}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             >
               <option value="">— None —</option>
@@ -207,7 +213,7 @@ export default function EditDosePage({
               id="lotNumber"
               type="text"
               value={lotNumber}
-              onChange={(e) => setLotNumber(e.target.value)}
+              onChange={(e) => { setLotNumber(e.target.value); setIsDirty(true); }}
               placeholder="Optional"
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
@@ -219,7 +225,7 @@ export default function EditDosePage({
           <textarea
             id="notes"
             value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+            onChange={(e) => { setNotes(e.target.value); setIsDirty(true); }}
             rows={3}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
@@ -239,14 +245,34 @@ export default function EditDosePage({
           >
             Cancel
           </a>
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={deleting}
-            className="ml-auto rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
-          >
-            {deleting ? "Deleting…" : "Delete"}
-          </button>
+          {!confirmDelete ? (
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="ml-auto rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+            >
+              Delete
+            </button>
+          ) : (
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-sm text-gray-600">Delete this dose?</span>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleting ? "Deleting…" : "Confirm"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
         </div>
       </form>
       <Toast message={saved ? "Saved successfully" : null} onDismiss={() => setSaved(false)} />

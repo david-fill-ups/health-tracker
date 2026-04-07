@@ -69,6 +69,21 @@ export function resolveCanonicalVaccineName(rawName: string): { canonical: strin
 }
 
 /**
+ * Returns ALL canonical CDC vaccine names that match rawName (by name or alias).
+ * Combination vaccines like "DTaP-Hib-IPV-HepB" map to multiple canonicals
+ * (DTaP, Hib, Hepatitis B, Polio). Non-combo vaccines return a single-entry set.
+ */
+export function getAllCanonicals(rawName: string): Set<string> {
+  const lower = rawName.toLowerCase();
+  const result = new Set<string>();
+  for (const entry of schedule.schedules) {
+    const all = [entry.vaccine, ...entry.aliases].map((n) => n.toLowerCase());
+    if (all.includes(lower)) result.add(entry.vaccine);
+  }
+  return result;
+}
+
+/**
  * Determines vaccination status for a single vaccine entry
  * given the profile's age in months and their recorded vaccinations.
  */

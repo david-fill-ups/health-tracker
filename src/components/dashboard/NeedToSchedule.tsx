@@ -33,9 +33,23 @@ export function NeedToSchedule({ activeProfileId }: { activeProfileId: string | 
     fetch(`/api/visits?profileId=${activeProfileId}`)
       .then((r) => r.json())
       .then((data: Visit[]) => {
-        const needScheduling = data.filter(
-          (v) => !v.date && (v.status === "PENDING" || v.status === "SCHEDULED")
-        );
+        const oneYearFromNow = new Date();
+        oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+        const cutoff = `${oneYearFromNow.getFullYear()}-${String(oneYearFromNow.getMonth() + 1).padStart(2, "0")}`;
+
+        const needScheduling = data
+          .filter(
+            (v) =>
+              !v.date &&
+              (v.status === "PENDING" || v.status === "SCHEDULED") &&
+              (!v.dueMonth || v.dueMonth <= cutoff)
+          )
+          .sort((a, b) => {
+            if (!a.dueMonth && !b.dueMonth) return 0;
+            if (!a.dueMonth) return 1;
+            if (!b.dueMonth) return -1;
+            return a.dueMonth.localeCompare(b.dueMonth);
+          });
         setItems(needScheduling);
       })
       .catch(() => setItems([]))

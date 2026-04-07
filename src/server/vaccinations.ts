@@ -1,24 +1,36 @@
 import { prisma } from "@/lib/prisma";
 import { assertProfileAccess } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
-import { generateRecommendations, getCdcLastUpdated } from "@/lib/cdc";
+import { generateRecommendations, getCdcLastUpdated, getAllCanonicals } from "@/lib/cdc";
 import { findDestination, getTravelVaccineStatus } from "@/lib/travel";
 import type { VaccinationSource } from "@/generated/prisma/client";
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+/** Flattens the M2M join shape into a plain Dose array for API consumers. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function flattenDoses(doseVaccinations: any[]) {
+  return doseVaccinations.map((dv) => dv.dose);
+}
 
 // ── Vaccination (parent) ───────────────────────────────────────────────────────
 
 export async function getVaccinationsForProfile(userId: string, profileId: string) {
   await assertProfileAccess(userId, profileId);
-  return prisma.vaccination.findMany({
+  const vaccinations = await prisma.vaccination.findMany({
     where: { profileId },
     include: {
       doses: {
-        include: { facility: true },
-        orderBy: { date: "desc" },
+        include: {
+          dose: { include: { facility: true } },
+        },
+        orderBy: { dose: { date: "desc" } },
       },
     },
     orderBy: { name: "asc" },
   });
+  // Flatten: vaccination.doses[].dose → vaccination.doses[]
+  return vaccinations.map((v) => ({ ...v, doses: flattenDoses(v.doses) }));
 }
 
 export async function getVaccinationById(userId: string, vaccinationId: string) {
@@ -26,14 +38,16 @@ export async function getVaccinationById(userId: string, vaccinationId: string) 
     where: { id: vaccinationId },
     include: {
       doses: {
-        include: { facility: true },
-        orderBy: { date: "desc" },
+        include: {
+          dose: { include: { facility: true } },
+        },
+        orderBy: { dose: { date: "desc" } },
       },
     },
   });
   if (!vaccination) throw new Error("Vaccination not found");
   await assertProfileAccess(userId, vaccination.profileId);
-  return vaccination;
+  return { ...vaccination, doses: flattenDoses(vaccination.doses) };
 }
 
 export interface CreateVaccinationInput {
@@ -112,23 +126,40 @@ export async function createDose(userId: string, profileId: string, input: Creat
   await assertProfileAccess(userId, profileId, "WRITE");
   const { vaccineName, name, date, source, facilityId, lotNumber, notes } = input;
 
-  // Find or create the Vaccination parent
-  const vaccination = await prisma.vaccination.upsert({
-    where: { profileId_name: { profileId, name: vaccineName } },
-    create: { profileId, name: vaccineName, aliases: [] },
-    update: {},
-  });
+  // Resolve combo vaccine names to all canonical CDC components.
+  // "DTaP-Hib-IPV-HepB" → ["DTaP", "Hib", "Hepatitis B", "Polio (IPV)"]
+  // "Vaxelis" → same; "Influenza" → ["Influenza"]; unknown → [vaccineName]
+  const canonicals = getAllCanonicals(vaccineName);
+  const vaccinationNames = canonicals.size > 0 ? Array.from(canonicals) : [vaccineName];
+  const isCombo = vaccinationNames.length > 1;
+
+  // Upsert all target Vaccination records
+  const vaccinationIds = await Promise.all(
+    vaccinationNames.map((vaxName) =>
+      prisma.vaccination
+        .upsert({
+          where: { profileId_name: { profileId, name: vaxName } },
+          create: { profileId, name: vaxName, aliases: [] },
+          update: {},
+          select: { id: true },
+        })
+        .then((v) => v.id)
+    )
+  );
 
   const dose = await prisma.dose.create({
     data: {
-      vaccinationId: vaccination.id,
       profileId,
-      name: name ?? null,
+      // Store the original combo/brand name for display when it differs from the canonical
+      name: name ?? (isCombo ? vaccineName : null),
       date: date ?? new Date(),
       source: source ?? "ADMINISTERED",
       facilityId,
       lotNumber,
       notes,
+      vaccinations: {
+        create: vaccinationIds.map((vaccinationId) => ({ vaccinationId })),
+      },
     },
   });
   await logAudit(userId, profileId, "CREATE_DOSE", "Dose", dose.id, { vaccineName });
@@ -138,11 +169,17 @@ export async function createDose(userId: string, profileId: string, input: Creat
 export async function getDoseById(userId: string, doseId: string) {
   const dose = await prisma.dose.findUnique({
     where: { id: doseId },
-    include: { facility: true, vaccination: true },
+    include: {
+      facility: true,
+      vaccinations: { include: { vaccination: true } },
+    },
   });
   if (!dose) throw new Error("Dose not found");
   await assertProfileAccess(userId, dose.profileId);
-  return dose;
+  // Expose first vaccination as `vaccination` for backward compat; also expose full array
+  const vaccination = dose.vaccinations[0]?.vaccination ?? null;
+  const allVaccinations = dose.vaccinations.map((dv) => dv.vaccination);
+  return { ...dose, vaccination, allVaccinations };
 }
 
 export interface UpdateDoseInput {
@@ -196,7 +233,11 @@ export async function getVaccinationRecommendations(userId: string, profileId: s
     where: { profileId },
     select: {
       name: true,
-      doses: { select: { date: true, source: true } },
+      doses: {
+        select: {
+          dose: { select: { date: true, source: true } },
+        },
+      },
     },
   });
 
@@ -206,7 +247,8 @@ export async function getVaccinationRecommendations(userId: string, profileId: s
 
   for (const v of vaccinations) {
     const key = v.name.toLowerCase();
-    for (const dose of v.doses) {
+    for (const dv of v.doses) {
+      const dose = dv.dose;
       if (dose.source === "DECLINED") {
         declinedNames.add(key);
         continue;
@@ -241,11 +283,11 @@ export async function getTravelCheck(userId: string, profileId: string, destinat
   const destinationKey = findDestination(destination);
   if (!destinationKey) return null;
 
-  const doses = await prisma.dose.findMany({
-    where: { profileId, source: { not: "DECLINED" } },
-    select: { vaccination: { select: { name: true } } },
+  // Query canonical Vaccination records directly — simpler and correct with M2M
+  const vaccinations = await prisma.vaccination.findMany({
+    where: { profileId },
+    select: { name: true },
   });
 
-  const vaccinationNames = doses.map((d) => ({ name: d.vaccination.name }));
-  return getTravelVaccineStatus(destinationKey, vaccinationNames);
+  return getTravelVaccineStatus(destinationKey, vaccinations);
 }

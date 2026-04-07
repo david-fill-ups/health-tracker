@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { normalizePersonName } from "@/lib/health-import/deduplicate";
+import { getAllCanonicals } from "@/lib/cdc";
 import type {
   WebExtractedEntities,
   ProposalItem,
@@ -79,8 +80,8 @@ export type ProposalPrisma = {
   dose: {
     findMany: (args: {
       where: { profileId: string };
-      select: { date: true; vaccination: { select: { name: true } } };
-    }) => Promise<Array<{ date: Date; vaccination: { name: string } }>>;
+      select: { date: true; vaccinations: { select: { vaccination: { select: { name: true } } } } };
+    }) => Promise<Array<{ date: Date; vaccinations: Array<{ vaccination: { name: string } }> }>>;
   };
   healthMetric: {
     findMany: (args: {
@@ -148,7 +149,7 @@ export async function generateImportProposal(
     }),
     prisma.dose.findMany({
       where: { profileId },
-      select: { date: true, vaccination: { select: { name: true } } },
+      select: { date: true, vaccinations: { select: { vaccination: { select: { name: true } } } } },
     }),
     prisma.healthMetric.findMany({
       where: { profileId },
@@ -459,10 +460,23 @@ export async function generateImportProposal(
 
   // ── Vaccinations ───────────────────────────────────────────────────────
   for (const v of extracted.vaccinations) {
-    const key = `${ci(v.name)}|${isoDatePart(v.date) ?? ""}`;
-    const isDup = existingDoses.some(
-      (e) => `${ci(e.vaccination.name)}|${new Date(e.date).toISOString().slice(0, 10)}` === key
-    );
+    const extractedDate = isoDatePart(v.date) ?? "";
+    const extractedCanonicals = getAllCanonicals(v.name);
+    const isDup = existingDoses.some((e) => {
+      const existingDate = new Date(e.date).toISOString().slice(0, 10);
+      if (existingDate !== extractedDate) return false;
+      // Check all vaccination names linked to this existing dose
+      for (const dv of e.vaccinations) {
+        const existingName = dv.vaccination.name;
+        if (ci(existingName) === ci(v.name)) return true;
+        // Alias-aware: if both names cover the same CDC vaccine, treat as duplicate
+        const existingCanonicals = getAllCanonicals(existingName);
+        for (const c of extractedCanonicals) {
+          if (existingCanonicals.has(c)) return true;
+        }
+      }
+      return false;
+    });
 
     if (isDup) {
       skippedCount++;

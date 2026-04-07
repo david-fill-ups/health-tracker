@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useProfile } from "./ProfileProvider";
 
 interface Profile {
@@ -14,6 +15,8 @@ export function ProfileSwitcher() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     fetch("/api/profiles")
@@ -62,6 +65,10 @@ export function ProfileSwitcher() {
               onClick={() => {
                 setActiveProfileId(p.id);
                 setOpen(false);
+                // Navigate to the section root when switching profiles
+                const section = pathname.split("/").filter(Boolean)[0];
+                const sectionRoot = section ? `/${section}` : "/dashboard";
+                if (pathname !== sectionRoot) router.push(sectionRoot);
               }}
               className={`flex w-full items-center gap-2 px-4 py-2 text-sm transition-colors hover:bg-gray-50 ${
                 p.id === activeProfileId

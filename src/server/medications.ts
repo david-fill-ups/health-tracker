@@ -27,11 +27,11 @@ export interface CreateMedicationInput {
   name: string;
   medicationType?: string;
   dosage?: string | null;
-  frequency?: string;
+  frequency?: string | null;
   prescribingDoctorId?: string | null;
   startDate?: Date;
   endDate?: Date;
-  instructions?: string;
+  instructions?: string | null;
   active?: boolean;
 }
 

@@ -9,6 +9,8 @@ import type { NpiResult } from "@/lib/npi";
 interface Facility {
   id: string;
   name: string;
+  websiteUrl?: string | null;
+  portalUrl?: string | null;
 }
 
 interface DoctorFormData {
@@ -78,6 +80,16 @@ export function DoctorForm({ profileId, facilities, existingSpecialties = [], in
 
   function set<K extends keyof DoctorFormData>(key: K, value: DoctorFormData[K]) {
     setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  function handleFacilityChange(facilityId: string) {
+    const facility = facilities.find((f) => f.id === facilityId);
+    setForm((f) => ({
+      ...f,
+      facilityId,
+      websiteUrl: f.websiteUrl || facility?.websiteUrl || "",
+      portalUrl: f.portalUrl || facility?.portalUrl || "",
+    }));
   }
 
   function handleNpiSelect(result: NpiResult) {
@@ -226,7 +238,7 @@ export function DoctorForm({ profileId, facilities, existingSpecialties = [], in
             <label className="block text-sm font-medium text-gray-700 mb-1">Facility</label>
             <select
               value={form.facilityId}
-              onChange={(e) => set("facilityId", e.target.value)}
+              onChange={(e) => handleFacilityChange(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="">— None —</option>
@@ -270,38 +282,68 @@ export function DoctorForm({ profileId, facilities, existingSpecialties = [], in
             />
           </div>
 
-          {/* Photo URL with avatar preview */}
+          {/* Photo upload */}
           <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Photo URL</label>
-            <div className="flex gap-3 items-start">
-              <div className="shrink-0">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Photo</label>
+            <div className="flex gap-4 items-center">
+              <button
+                type="button"
+                onClick={() => document.getElementById("photo-upload")?.click()}
+                className="relative shrink-0 h-16 w-16 rounded-full overflow-hidden border-2 border-dashed border-gray-300 hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 group"
+              >
                 {form.photo ? (
                   <img
                     src={form.photo}
                     alt={form.name}
-                    className="h-12 w-12 rounded-full object-cover border border-gray-200"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                      (e.target as HTMLImageElement).nextElementSibling?.removeAttribute("hidden");
-                    }}
+                    className="h-full w-full object-cover"
                   />
-                ) : null}
-                <div
-                  hidden={!!form.photo}
-                  className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center
-                             text-indigo-700 font-semibold text-sm select-none"
-                >
-                  {form.name
-                    ? form.name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
-                    : "?"}
+                ) : (
+                  <div className="h-full w-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold text-sm select-none">
+                    {form.name
+                      ? form.name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
+                      : "?"}
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-white text-xs font-medium">Change</span>
                 </div>
+              </button>
+              <div className="flex flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={() => document.getElementById("photo-upload")?.click()}
+                  className="text-sm text-indigo-600 hover:underline text-left"
+                >
+                  {form.photo ? "Change photo" : "Upload photo"}
+                </button>
+                {form.photo && (
+                  <button
+                    type="button"
+                    onClick={() => set("photo", "")}
+                    className="text-sm text-gray-400 hover:text-red-500 text-left"
+                  >
+                    Remove
+                  </button>
+                )}
+                <span className="text-xs text-gray-400">JPG, PNG, GIF up to 2 MB</span>
               </div>
               <input
-                type="url"
-                value={form.photo}
-                onChange={(e) => set("photo", e.target.value)}
-                placeholder="https://…"
-                className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                id="photo-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  if (file.size > 2 * 1024 * 1024) {
+                    setError("Photo must be under 2 MB");
+                    return;
+                  }
+                  const reader = new FileReader();
+                  reader.onload = (ev) => set("photo", ev.target?.result as string);
+                  reader.readAsDataURL(file);
+                  e.target.value = "";
+                }}
               />
             </div>
           </div>

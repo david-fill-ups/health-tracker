@@ -21,7 +21,8 @@ interface VisitSummary {
 interface Facility {
   id: string;
   name: string;
-  portalUrl: string | null;
+  websiteUrl?: string | null;
+  portalUrl?: string | null;
 }
 
 interface DoctorDetail {
@@ -36,6 +37,10 @@ interface DoctorDetail {
   portalUrl: string | null;
   notes: string | null;
   active: boolean;
+  photo: string | null;
+  npiNumber: string | null;
+  credential: string | null;
+  npiLastSynced: string | null;
   _count: { visits: number };
   visits: VisitSummary[];
 }
@@ -170,6 +175,13 @@ export default function ProviderDetailPage({ params }: { params: Promise<{ id: s
         <Link href="/healthcare-team" className="text-sm text-gray-500 hover:text-gray-700">
           ← Healthcare Team
         </Link>
+        {doctor.photo && (
+          <img
+            src={doctor.photo}
+            alt={doctor.name}
+            className="w-12 h-12 rounded-full object-cover shrink-0"
+          />
+        )}
         <h1 className="text-2xl font-bold text-gray-900">{doctor.name}</h1>
         {doctor.specialty && (
           <span className="rounded-full bg-purple-100 text-purple-700 px-2 py-0.5 text-xs font-medium">{doctor.specialty}</span>
@@ -270,6 +282,10 @@ export default function ProviderDetailPage({ params }: { params: Promise<{ id: s
                 name: doctor.name,
                 specialty: doctor.specialty ?? "",
                 facilityId: doctor.facilityId ?? "",
+                npiNumber: doctor.npiNumber ?? "",
+                credential: doctor.credential ?? "",
+                npiLastSynced: doctor.npiLastSynced ?? null,
+                photo: doctor.photo ?? "",
                 rating: doctor.rating,
                 websiteUrl: doctor.websiteUrl ?? "",
                 portalUrl: doctor.portalUrl ?? "",

@@ -43,7 +43,7 @@ export function FileUploadStep({
     setIsMobile(/Mobi|Android/i.test(navigator.userAgent));
   }, []);
 
-  function addFiles(incoming: FileList | null) {
+  function addFiles(incoming: FileList | File[] | null) {
     if (!incoming) return;
     const newFiles = Array.from(incoming);
     const combined = [...files, ...newFiles];

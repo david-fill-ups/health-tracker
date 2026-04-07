@@ -15,8 +15,10 @@ import {
   CreateMedicationSchema,
   UpdateMedicationSchema,
   CreateMedicationLogSchema,
+  CreateDoseSchema,
   CreateVaccinationSchema,
   UpdateVaccinationSchema,
+  UpdateDoseSchema,
   CreateConditionSchema,
   UpdateConditionSchema,
   CreateFacilitySchema,
@@ -432,13 +434,13 @@ export function buildOpenApiSpec(): AnyObj {
           },
         },
         post: {
-          operationId: "createVaccination",
-          summary: "Record vaccination",
-          description: "Adds a vaccination record to a profile. Requires WRITE access.",
+          operationId: "createDose",
+          summary: "Record a dose",
+          description: "Records a vaccination dose for a profile. Creates the parent Vaccination record if it does not exist. Requires WRITE access.",
           tags: ["Vaccinations"],
-          requestBody: jsonBody(CreateVaccinationSchema),
+          requestBody: jsonBody(CreateDoseSchema),
           responses: {
-            "201": resp("Created vaccination record"),
+            "201": resp("Created dose record"),
             "400": resp("Validation error"),
             "401": resp("Unauthorized"),
             "403": resp("Forbidden"),
@@ -451,10 +453,10 @@ export function buildOpenApiSpec(): AnyObj {
         get: {
           operationId: "getVaccination",
           summary: "Get vaccination",
-          description: "Returns a single vaccination record.",
+          description: "Returns a single vaccination (parent) record with all doses.",
           tags: ["Vaccinations"],
           responses: {
-            "200": resp("Vaccination record"),
+            "200": resp("Vaccination record with doses"),
             "401": resp("Unauthorized"),
             "403": resp("Forbidden"),
             "404": resp("Not found"),
@@ -463,7 +465,7 @@ export function buildOpenApiSpec(): AnyObj {
         put: {
           operationId: "updateVaccination",
           summary: "Update vaccination",
-          description: "Updates a vaccination record. Requires WRITE access.",
+          description: "Updates a vaccination parent record (name, aliases, notes). Requires WRITE access.",
           tags: ["Vaccinations"],
           requestBody: jsonBody(UpdateVaccinationSchema),
           responses: {
@@ -477,6 +479,46 @@ export function buildOpenApiSpec(): AnyObj {
           operationId: "deleteVaccination",
           summary: "Delete vaccination",
           description: "Permanently deletes a vaccination record. Requires WRITE access.",
+          tags: ["Vaccinations"],
+          responses: {
+            "200": resp("{ ok: true }"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+      },
+
+      "/api/vaccinations/doses/{id}": {
+        parameters: [strPathParam("id", "Dose ID")],
+        get: {
+          operationId: "getDose",
+          summary: "Get dose",
+          description: "Returns a single dose record.",
+          tags: ["Vaccinations"],
+          responses: {
+            "200": resp("Dose record"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+            "404": resp("Not found"),
+          },
+        },
+        put: {
+          operationId: "updateDose",
+          summary: "Update dose",
+          description: "Updates a dose record. Requires WRITE access.",
+          tags: ["Vaccinations"],
+          requestBody: jsonBody(UpdateDoseSchema),
+          responses: {
+            "200": resp("Updated dose record"),
+            "400": resp("Validation error"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden"),
+          },
+        },
+        delete: {
+          operationId: "deleteDose",
+          summary: "Delete dose",
+          description: "Permanently deletes a dose record. Requires WRITE access.",
           tags: ["Vaccinations"],
           responses: {
             "200": resp("{ ok: true }"),

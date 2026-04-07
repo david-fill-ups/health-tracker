@@ -37,6 +37,10 @@ export function normalizeZip(raw: string): string {
   return raw.replace(/\D/g, "").slice(0, 5);
 }
 
+function toTitleCase(s: string): string {
+  return s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export function parseNameQuery(q: string): [string, string] {
   const trimmed = q.trim();
   if (trimmed.includes(",")) {
@@ -78,7 +82,7 @@ export function shapeResult(r: any): NpiResult {
     return {
       npiNumber: r.number,
       type: "individual",
-      name: nameParts.join(" "),
+      name: nameParts.map(toTitleCase).join(" "),
       firstName: b.first_name ?? "",
       lastName: b.last_name ?? "",
       credential: b.credential ?? "",
@@ -91,7 +95,7 @@ export function shapeResult(r: any): NpiResult {
   return {
     npiNumber: r.number,
     type: "organization",
-    name: r.basic?.organization_name ?? "",
+    name: toTitleCase(r.basic?.organization_name ?? ""),
     specialty,
     phone,
     address,

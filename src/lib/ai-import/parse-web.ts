@@ -74,11 +74,11 @@ const SCHEMA_DESCRIPTION = `{
   ],
   "vaccinations": [
     {
-      "name": "string (required) — vaccine name",
-      "date": "string (required) YYYY-MM-DD — date administered",
-      "facilityName": "optional — where it was given",
+      "name": "string (required) — vaccine name (e.g. 'Influenza', 'DTaP', 'Hepatitis B', 'MMR')",
+      "date": "string (required) YYYY-MM-DD — exact date THIS specific dose was administered; if only year is known use YYYY-01-01",
+      "facilityName": "optional — where this dose was given",
       "lotNumber": "optional string",
-      "notes": "optional string"
+      "notes": "optional string — include any dose number (e.g. 'Dose 2 of 3') if shown"
     }
   ],
   "healthMetrics": [
@@ -184,6 +184,7 @@ Rules:
 - Ignore billing/financial information, insurance details, and appointment scheduling forms.
 - For visits: extract visit-level information (date, provider, facility, reason, summary notes).
 - For doctors: omit honorifics and credentials from the name field — put credentials in the credential field.
+- For vaccinations: each entry represents ONE dose on ONE date. If a vaccine appears multiple times with different dates (e.g. Hepatitis B dose 1, dose 2, dose 3), produce a separate entry for each date. Never group multiple doses into one entry.
 
 ${warnings.length > 0 ? `Note: ${warnings.join("; ")}` : ""}
 

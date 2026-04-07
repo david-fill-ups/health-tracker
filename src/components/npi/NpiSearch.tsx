@@ -11,7 +11,7 @@ interface Props {
 
 export function NpiSearch({ type, onSelect, onDismiss }: Props) {
   const [query, setQuery] = useState("");
-  const [stateFilter, setStateFilter] = useState("");
+  const [cityFilter, setCityFilter] = useState("");
   const [results, setResults] = useState<NpiResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +25,7 @@ export function NpiSearch({ type, onSelect, onDismiss }: Props) {
     setError(null);
     try {
       const params = new URLSearchParams({ q: query.trim(), type });
-      if (stateFilter) params.set("state", stateFilter);
+      if (cityFilter) params.set("city", cityFilter.trim());
       const res = await fetch(`/api/npi?${params.toString()}`);
       if (!res.ok) {
         const data = await res.json();
@@ -44,7 +44,7 @@ export function NpiSearch({ type, onSelect, onDismiss }: Props) {
   const placeholder =
     type === "individual"
       ? 'Last name, or "Last, First"'
-      : "Organization name";
+      : "Organization or facility name";
 
   return (
     <div className="rounded-xl border border-slate-700 bg-slate-800 p-4 space-y-3">
@@ -61,37 +61,43 @@ export function NpiSearch({ type, onSelect, onDismiss }: Props) {
         </button>
       </div>
 
-      <form onSubmit={handleSearch} className="flex gap-2">
-        <input
-          ref={inputRef}
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={placeholder}
-          autoFocus
-          className="flex-1 rounded-lg border border-slate-600 bg-slate-900 px-3 py-1.5 text-sm
-                     text-slate-100 placeholder-slate-500
-                     focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        />
-        <input
-          type="text"
-          value={stateFilter}
-          onChange={(e) => setStateFilter(e.target.value.toUpperCase().slice(0, 2))}
-          placeholder="ST"
-          maxLength={2}
-          title="Optional state filter (e.g. MA, CA)"
-          className="w-14 rounded-lg border border-slate-600 bg-slate-900 px-2 py-1.5 text-sm
-                     text-center text-slate-100 placeholder-slate-500
-                     focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        />
-        <button
-          type="submit"
-          disabled={loading || query.trim().length < 2}
-          className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white
-                     hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-        >
-          {loading ? "…" : "Search"}
-        </button>
+      <form onSubmit={handleSearch} className="space-y-2">
+        <div className="flex gap-2">
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={placeholder}
+            autoFocus
+            className="flex-1 rounded-lg border border-slate-600 bg-slate-900 px-3 py-1.5 text-sm
+                       text-slate-100 placeholder-slate-500
+                       focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+          <input
+            type="text"
+            value={cityFilter}
+            onChange={(e) => setCityFilter(e.target.value)}
+            placeholder="City"
+            title={type === "individual" ? "City is required for provider searches" : "Optional city filter"}
+            className="w-28 rounded-lg border border-slate-600 bg-slate-900 px-2 py-1.5 text-sm
+                       text-slate-100 placeholder-slate-500
+                       focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+          <button
+            type="submit"
+            disabled={loading || query.trim().length < 2 || (type === "individual" && cityFilter.trim().length < 2)}
+            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white
+                       hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+          >
+            {loading ? "…" : "Search"}
+          </button>
+        </div>
+        {type === "individual" && (
+          <p className="text-xs text-slate-400">
+            City is required to search providers (NPI registry requirement).
+          </p>
+        )}
       </form>
 
       {error && (

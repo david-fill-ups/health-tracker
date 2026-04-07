@@ -29,9 +29,9 @@ export interface CreateLocationInput {
   name: string;
   address1?: string | null;
   address2?: string | null;
-  city?: string;
-  state?: string;
-  zip?: string;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
   phone?: string | null;
   active?: boolean;
 }

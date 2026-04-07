@@ -93,7 +93,7 @@ export function MedicationForm({ profileId, initialValues, medicationId }: Medic
         return;
       }
 
-      router.push("/medications");
+      router.push(medicationId ? `/medications/${medicationId}` : "/medications");
       router.refresh();
     } finally {
       setSubmitting(false);
@@ -231,7 +231,7 @@ export function MedicationForm({ profileId, initialValues, medicationId }: Medic
           {submitting ? "Saving…" : medicationId ? "Save changes" : "Add medication"}
         </button>
         <a
-          href="/medications"
+          href={medicationId ? `/medications/${medicationId}` : "/medications"}
           className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
         >
           Cancel

@@ -451,33 +451,42 @@ model Vaccination {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  doses   Dose[]
+  profile Profile           @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  doses   DoseVaccination[]
 
   @@unique([profileId, name])
   @@index([profileId])
 }
 
 model Dose {
-  id            String            @id @default(cuid())
-  vaccinationId String
-  profileId     String
-  name          String?           // optional display name e.g. "Moderna #1"
-  date          DateTime
-  source        VaccinationSource @default(ADMINISTERED)
-  facilityId    String?
-  lotNumber     String?
-  notes         String?
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  id         String            @id @default(cuid())
+  profileId  String
+  name       String?           // brand/combo name e.g. "Vaxelis", "DTaP-Hib-IPV-HepB"
+  date       DateTime
+  source     VaccinationSource @default(ADMINISTERED)
+  facilityId String?
+  lotNumber  String?
+  notes      String?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
 
-  vaccination Vaccination @relation(fields: [vaccinationId], references: [id], onDelete: Cascade)
-  profile     Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  facility    Facility?   @relation(fields: [facilityId], references: [id])
+  vaccinations DoseVaccination[]
+  profile      Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  facility     Facility?   @relation(fields: [facilityId], references: [id])
 
-  @@index([vaccinationId])
   @@index([profileId])
   @@index([facilityId])
+}
+
+model DoseVaccination {
+  doseId        String
+  vaccinationId String
+
+  dose        Dose        @relation(fields: [doseId],        references: [id], onDelete: Cascade)
+  vaccination Vaccination @relation(fields: [vaccinationId], references: [id], onDelete: Cascade)
+
+  @@id([doseId, vaccinationId])
+  @@index([vaccinationId])
 }
 
 // ─── CDC Schedule ─────────────────────────────────────────────────────────────

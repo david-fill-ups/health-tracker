@@ -29,7 +29,10 @@ const name255 = z.string().min(1, "Required").max(255);
 const optStr255 = z.string().max(255).nullish();
 const optStr500 = z.string().max(500).nullish();
 const optPhone = z.string().max(30).nullish();
-const optDate = z.coerce.date().optional();
+const optDate = z.preprocess(
+  (v) => (v == null || v === "" ? undefined : v),
+  z.coerce.date().optional()
+);
 const id = z.string().min(1);
 const optNpi = z.string().regex(/^\d{10}$/, "NPI must be 10 digits").nullish();
 const optCredential = z.string().max(50).nullish();
@@ -123,16 +126,16 @@ export const COMMON_VISIT_SPECIALTIES = [
 
 export const CreateVisitSchema = z.object({
   profileId: id,
-  doctorId: z.string().min(1).optional(),
-  facilityId: z.string().min(1).optional(),
-  locationId: z.string().min(1).optional(),
+  doctorId: z.string().min(1).nullish(),
+  facilityId: z.string().min(1).nullish(),
+  locationId: z.string().min(1).nullish(),
   date: optDate,
   dueMonth: z.string().regex(/^\d{4}-\d{2}$/).optional(),
   type: VisitTypeEnum.optional(),
-  reason: z.string().max(500).optional(),
-  specialty: z.string().max(255).optional(),
-  notes: z.string().max(5000).optional(),
-  documentUrl: z.string().url().max(500).optional(),
+  reason: z.string().max(500).nullish(),
+  specialty: z.string().max(255).nullish(),
+  notes: z.string().max(5000).nullish(),
+  documentUrl: z.string().url().max(500).nullish(),
   status: VisitStatusEnum.optional(),
 });
 
@@ -173,11 +176,11 @@ export const CreateMedicationSchema = z.object({
   name: name255,
   medicationType: MedicationTypeEnum.optional(),
   dosage: optStr255,
-  frequency: z.string().max(255).optional(),
+  frequency: z.string().max(255).nullish(),
   prescribingDoctorId: z.string().min(1).nullish(),
   startDate: optDate,
   endDate: optDate,
-  instructions: z.string().max(2000).optional(),
+  instructions: z.string().max(2000).nullish(),
   active: z.boolean().optional(),
 });
 
@@ -234,7 +237,7 @@ export const CreateDoctorSchema = z.object({
   facilityId: z.string().min(1).optional(),
   npiNumber: optNpi,
   credential: optCredential,
-  photo: optStr500,
+  photo: z.string().nullish(),
   npiLastSynced: z.coerce.date().nullish(),
   rating: z.number().min(0).max(5).optional(),
   websiteUrl: optStr500,
@@ -251,7 +254,7 @@ export const UpdateDoctorSchema = CreateDoctorSchema.partial();
 export const NpiSearchSchema = z.object({
   q: z.string().min(2).max(100),
   type: z.enum(["individual", "organization"]).optional(),
-  state: z.string().max(2).optional(),
+  city: z.string().max(100).optional(),
   limit: z.coerce.number().int().min(1).max(20).optional().default(10),
 });
 
@@ -261,9 +264,9 @@ export const CreateLocationSchema = z.object({
   name: name255,
   address1: optStr255,
   address2: optStr255,
-  city: z.string().max(100).optional(),
-  state: z.string().max(2).optional(),
-  zip: z.string().max(10).optional(),
+  city: z.string().max(100).nullish(),
+  state: z.string().max(2).nullish(),
+  zip: z.string().max(10).nullish(),
   phone: optPhone,
   active: z.boolean().optional(),
 });
