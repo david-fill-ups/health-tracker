@@ -10,16 +10,21 @@ import { parseBody, UpdateVaccinationSchema } from "@/lib/validation";
 
 type Params = { params: Promise<{ id: string }> };
 
-export async function GET(_req: NextRequest, { params }: Params) {
+export async function GET(req: NextRequest, { params }: Params) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
+  const profileId = req.nextUrl.searchParams.get("profileId");
+  if (!profileId) return NextResponse.json({ error: "profileId query param required" }, { status: 400 });
 
   try {
     const vaccination = await getVaccinationById(session.user.id, id);
+    if (vaccination.profileId !== profileId) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
     return NextResponse.json(vaccination);
   } catch (err) {
     if (err instanceof PermissionError) {

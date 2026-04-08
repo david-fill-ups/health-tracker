@@ -34,6 +34,49 @@ interface Facility {
   visits?: Array<{ date: string | null }>;
 }
 
+type SortBy = "name" | "rating" | "visits" | "lastVisit";
+type SortDir = "asc" | "desc";
+
+// Default direction when first selecting a sort option
+const defaultSortDir: Record<SortBy, SortDir> = {
+  name: "asc",
+  rating: "desc",
+  visits: "desc",
+  lastVisit: "desc",
+};
+
+function sortDoctors(arr: Doctor[], sortBy: SortBy, dir: SortDir): Doctor[] {
+  const sign = dir === "asc" ? 1 : -1;
+  return [...arr].sort((a, b) => {
+    switch (sortBy) {
+      case "name": return sign * a.name.localeCompare(b.name);
+      case "rating": return sign * ((a.rating ?? -1) - (b.rating ?? -1));
+      case "visits": return sign * ((a._count?.visits ?? 0) - (b._count?.visits ?? 0));
+      case "lastVisit": {
+        const da = a.visits?.[0]?.date ? new Date(a.visits[0].date).getTime() : 0;
+        const db = b.visits?.[0]?.date ? new Date(b.visits[0].date).getTime() : 0;
+        return sign * (da - db);
+      }
+    }
+  });
+}
+
+function sortFacilities(arr: Facility[], sortBy: SortBy, dir: SortDir): Facility[] {
+  const sign = dir === "asc" ? 1 : -1;
+  return [...arr].sort((a, b) => {
+    switch (sortBy) {
+      case "name": return sign * a.name.localeCompare(b.name);
+      case "rating": return sign * ((a.rating ?? -1) - (b.rating ?? -1));
+      case "visits": return sign * ((a._count?.visits ?? 0) - (b._count?.visits ?? 0));
+      case "lastVisit": {
+        const da = a.visits?.[0]?.date ? new Date(a.visits[0].date).getTime() : 0;
+        const db = b.visits?.[0]?.date ? new Date(b.visits[0].date).getTime() : 0;
+        return sign * (da - db);
+      }
+    }
+  });
+}
+
 export default function HealthcareTeamPage() {
   return (
     <Suspense>
@@ -57,31 +100,66 @@ function HealthcareTeamContent() {
   const [showFilter, setShowFilter] = useState<"all" | "facilities" | "providers">(
     (searchParams.get("filter") as "all" | "facilities" | "providers") ?? "all"
   );
+  const [sortBy, setSortBy] = useState<SortBy>(
+    (searchParams.get("sort") as SortBy) ?? "name"
+  );
+  const [sortDir, setSortDir] = useState<SortDir>(
+    (searchParams.get("dir") as SortDir) ?? "asc"
+  );
+  const [specialty, setSpecialty] = useState(searchParams.get("specialty") ?? "");
   const addMenuRef = useRef<HTMLDivElement>(null);
 
-  function syncToUrl(q: string, filter: "all" | "facilities" | "providers", inactive: boolean) {
+  function syncToUrl(
+    q: string,
+    filter: "all" | "facilities" | "providers",
+    inactive: boolean,
+    sort: SortBy,
+    dir: SortDir,
+    spec: string,
+  ) {
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     if (filter !== "all") params.set("filter", filter);
     if (inactive) params.set("inactive", "1");
+    if (sort !== "name") params.set("sort", sort);
+    if (dir !== defaultSortDir[sort]) params.set("dir", dir);
+    if (spec) params.set("specialty", spec);
     const qs = params.toString();
     router.replace(qs ? `?${qs}` : "?", { scroll: false });
   }
 
   function handleSearchChange(value: string) {
     setSearch(value);
-    syncToUrl(value, showFilter, inactiveOpen);
+    syncToUrl(value, showFilter, inactiveOpen, sortBy, sortDir, specialty);
   }
 
   function handleFilterChange(value: "all" | "facilities" | "providers") {
     setShowFilter(value);
-    syncToUrl(search, value, inactiveOpen);
+    syncToUrl(search, value, inactiveOpen, sortBy, sortDir, specialty);
   }
 
   function handleInactiveToggle() {
     const next = !inactiveOpen;
     setInactiveOpen(next);
-    syncToUrl(search, showFilter, next);
+    syncToUrl(search, showFilter, next, sortBy, sortDir, specialty);
+  }
+
+  function handleSortChange(value: SortBy) {
+    if (value === sortBy) {
+      const newDir: SortDir = sortDir === "asc" ? "desc" : "asc";
+      setSortDir(newDir);
+      syncToUrl(search, showFilter, inactiveOpen, value, newDir, specialty);
+    } else {
+      const newDir = defaultSortDir[value];
+      setSortBy(value);
+      setSortDir(newDir);
+      syncToUrl(search, showFilter, inactiveOpen, value, newDir, specialty);
+    }
+  }
+
+  function handleSpecialtyChange(value: string) {
+    setSpecialty(value);
+    syncToUrl(search, showFilter, inactiveOpen, sortBy, sortDir, value);
   }
 
   const fetchFacilities = useCallback(async () => {
@@ -129,6 +207,11 @@ function HealthcareTeamContent() {
       </div>
     );
   }
+
+  // Unique specialties for filter dropdown
+  const specialties = [
+    ...new Set(doctors.map((d) => d.specialty).filter(Boolean) as string[]),
+  ].sort();
 
   const activeFacilities = facilities.filter((f) => f.active);
   const inactiveFacilities = facilities.filter((f) => !f.active);
@@ -192,49 +275,78 @@ function HealthcareTeamContent() {
     );
   }
 
+  function doctorMatchesSpecialty(d: Doctor): boolean {
+    if (!specialty) return true;
+    return d.specialty === specialty;
+  }
+
+  function doctorMatches(d: Doctor): boolean {
+    return doctorMatchesSearch(d) && doctorMatchesSpecialty(d);
+  }
+
   // Derived: what's visible in the active section
   const visibleActiveFacilities = showFilter !== "providers"
-    ? activeFacilities.filter((f) =>
-        facilityMatchesSearch(f) || (activeDoctorsByFacility.get(f.id) ?? []).some(doctorMatchesSearch)
+    ? sortFacilities(
+        activeFacilities.filter((f) =>
+          facilityMatchesSearch(f) || (activeDoctorsByFacility.get(f.id) ?? []).some(doctorMatches)
+        ),
+        sortBy,
+        sortDir,
       )
     : [];
 
   const visibleIndependentDoctors = showFilter !== "facilities"
-    ? independentDoctors.filter(doctorMatchesSearch)
+    ? sortDoctors(independentDoctors.filter(doctorMatches), sortBy, sortDir)
     : [];
 
   // In "providers" mode: flat list of all active matching doctors
   const flatProviders = showFilter === "providers"
-    ? doctors.filter((d) => d.active && doctorMatchesSearch(d))
+    ? sortDoctors(doctors.filter((d) => d.active && doctorMatches(d)), sortBy, sortDir)
     : [];
 
   // In "providers" mode: flat list of all inactive matching doctors
   const flatInactiveProviders = showFilter === "providers"
-    ? inactiveDoctors.filter(doctorMatchesSearch)
+    ? sortDoctors(inactiveDoctors.filter(doctorMatches), sortBy, sortDir)
     : [];
 
   // Derived: what's visible in the inactive section
   const visibleInactiveFacilities = showFilter !== "providers"
-    ? inactiveFacilities.filter((f) =>
-        facilityMatchesSearch(f) || (inactiveDoctorsByFacility.get(f.id) ?? []).some(doctorMatchesSearch)
+    ? sortFacilities(
+        inactiveFacilities.filter((f) =>
+          facilityMatchesSearch(f) || (inactiveDoctorsByFacility.get(f.id) ?? []).some(doctorMatches)
+        ),
+        sortBy,
+        sortDir,
       )
     : [];
 
   const visibleActiveFacilitiesWithInactiveDoctors = showFilter !== "providers"
-    ? activeFacilitiesWithInactiveDoctors.filter((f) =>
-        facilityMatchesSearch(f) || (inactiveDoctorsByFacility.get(f.id) ?? []).some(doctorMatchesSearch)
+    ? sortFacilities(
+        activeFacilitiesWithInactiveDoctors.filter((f) =>
+          facilityMatchesSearch(f) || (inactiveDoctorsByFacility.get(f.id) ?? []).some(doctorMatches)
+        ),
+        sortBy,
+        sortDir,
       )
     : [];
 
   const visibleInactiveIndependentDoctors = showFilter !== "facilities"
-    ? inactiveIndependentDoctors.filter(doctorMatchesSearch)
+    ? sortDoctors(inactiveIndependentDoctors.filter(doctorMatches), sortBy, sortDir)
     : [];
 
   const filteredInactiveCount =
     (showFilter !== "providers" ? visibleInactiveFacilities.length : 0) +
-    (showFilter !== "facilities" ? inactiveDoctors.filter(doctorMatchesSearch).length : 0);
+    (showFilter !== "facilities" ? inactiveDoctors.filter(doctorMatches).length : 0);
 
   const loading = loadingFacilities || loadingDoctors;
+
+  const sortLabels: Record<SortBy, string> = {
+    name: "Name",
+    rating: "Rating",
+    visits: "Most visited",
+    lastVisit: "Last visit",
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -267,29 +379,70 @@ function HealthcareTeamContent() {
         </div>
       </div>
 
-      {/* Search + filter */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => handleSearchChange(e.target.value)}
-          placeholder="Search by name, specialty, type…"
-          className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
-        />
-        <div className="flex rounded-lg border border-gray-300 overflow-hidden text-sm shrink-0">
-          {(["all", "facilities", "providers"] as const).map((opt) => (
-            <button
-              key={opt}
-              onClick={() => handleFilterChange(opt)}
-              className={`px-3 py-2 capitalize transition-colors ${
-                showFilter === opt
-                  ? "bg-indigo-600 text-white"
-                  : "bg-white text-gray-600 hover:bg-gray-50"
-              }`}
+      {/* Search + filters */}
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            placeholder="Search by name, specialty, type…"
+            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          />
+          <div className="flex rounded-lg border border-gray-300 overflow-hidden text-sm shrink-0">
+            {(["all", "facilities", "providers"] as const).map((opt) => (
+              <button
+                key={opt}
+                onClick={() => handleFilterChange(opt)}
+                className={`px-3 py-2 capitalize transition-colors ${
+                  showFilter === opt
+                    ? "bg-indigo-600 text-white"
+                    : "bg-white text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                {opt === "all" ? "All" : opt === "facilities" ? "Facilities" : "Providers"}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2 items-center">
+          {/* Specialty filter — only when providers are visible */}
+          {showFilter !== "facilities" && specialties.length > 0 && (
+            <select
+              value={specialty}
+              onChange={(e) => handleSpecialtyChange(e.target.value)}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
             >
-              {opt === "all" ? "All" : opt === "facilities" ? "Facilities" : "Providers"}
-            </button>
-          ))}
+              <option value="">All specialties</option>
+              {specialties.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          )}
+          {/* Sort */}
+          <div className="flex items-center gap-1.5 ml-auto">
+            <span className="text-xs text-gray-500">Sort:</span>
+            <div className="flex rounded-lg border border-gray-300 overflow-hidden text-sm">
+              {(["name", "rating", "visits", "lastVisit"] as SortBy[]).map((opt) => (
+                <button
+                  key={opt}
+                  onClick={() => handleSortChange(opt)}
+                  className={`px-3 py-1.5 transition-colors flex items-center gap-1 ${
+                    sortBy === opt
+                      ? "bg-indigo-600 text-white"
+                      : "bg-white text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  {sortLabels[opt]}
+                  {sortBy === opt && (
+                    <span className="text-xs leading-none">
+                      {sortDir === "asc" ? "↑" : "↓"}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -299,7 +452,7 @@ function HealthcareTeamContent() {
         <div className="space-y-4">
           {visibleActiveFacilities.length === 0 && visibleIndependentDoctors.length === 0 && flatProviders.length === 0 && (
             <p className="text-sm text-gray-400">
-              {search || showFilter !== "all"
+              {search || showFilter !== "all" || specialty
                 ? "No results found."
                 : "No facilities or providers added yet."}
             </p>
@@ -314,7 +467,7 @@ function HealthcareTeamContent() {
           {showFilter !== "providers" && visibleActiveFacilities.map((f) => {
             const facilityDoctors = showFilter === "facilities"
               ? []
-              : (activeDoctorsByFacility.get(f.id) ?? []).filter(doctorMatchesSearch);
+              : sortDoctors((activeDoctorsByFacility.get(f.id) ?? []).filter(doctorMatches), sortBy, sortDir);
             return (
               <div key={f.id} className="space-y-1">
                 <FacilityCard facility={toFacilityCardProps(f)} />
@@ -358,7 +511,7 @@ function HealthcareTeamContent() {
                   {visibleInactiveFacilities.map((f) => {
                     const facilityDoctors = showFilter === "facilities"
                       ? []
-                      : (inactiveDoctorsByFacility.get(f.id) ?? []).filter(doctorMatchesSearch);
+                      : sortDoctors((inactiveDoctorsByFacility.get(f.id) ?? []).filter(doctorMatches), sortBy, sortDir);
                     return (
                       <div key={f.id} className="space-y-1">
                         <FacilityCard facility={toFacilityCardProps(f)} />
@@ -374,7 +527,11 @@ function HealthcareTeamContent() {
                   })}
                   {/* Active facilities with some inactive providers — skip when filter=facilities since doctors are hidden anyway */}
                   {showFilter !== "facilities" && visibleActiveFacilitiesWithInactiveDoctors.map((f) => {
-                    const facilityDoctors = (inactiveDoctorsByFacility.get(f.id) ?? []).filter(doctorMatchesSearch);
+                    const facilityDoctors = sortDoctors(
+                      (inactiveDoctorsByFacility.get(f.id) ?? []).filter(doctorMatches),
+                      sortBy,
+                      sortDir,
+                    );
                     return (
                       <div key={f.id} className="space-y-1">
                         <FacilityCard facility={toFacilityCardProps(f)} />

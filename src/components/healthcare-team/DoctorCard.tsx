@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { PhotoLightbox } from "@/components/ui/PhotoLightbox";
 
 interface Doctor {
   id: string;
@@ -21,19 +23,27 @@ interface Props {
 }
 
 export function DoctorCard({ doctor }: Props) {
+  const [lightbox, setLightbox] = useState(false);
+
   return (
-    <div
-      className={`rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-opacity ${
-        doctor.active ? "" : "opacity-50"
-      }`}
-    >
+    <>
+      {lightbox && doctor.photo && (
+        <PhotoLightbox src={doctor.photo} alt={doctor.name} onClose={() => setLightbox(false)} />
+      )}
+      <div
+        className={`rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-opacity ${
+          doctor.active ? "" : "opacity-50"
+        }`}
+      >
       <div className="flex items-start gap-3 flex-wrap">
         {doctor.photo && (
-          <img
-            src={doctor.photo}
-            alt={doctor.name}
-            className="w-10 h-10 rounded-full object-cover shrink-0"
-          />
+          <button onClick={() => setLightbox(true)} className="shrink-0 cursor-zoom-in">
+            <img
+              src={doctor.photo}
+              alt={doctor.name}
+              className="w-10 h-10 rounded-full object-cover"
+            />
+          </button>
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -71,5 +81,6 @@ export function DoctorCard({ doctor }: Props) {
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { DoctorForm } from "@/components/healthcare-team/DoctorForm";
 import { StarRating } from "@/components/ui/StarRating";
+import { PhotoLightbox } from "@/components/ui/PhotoLightbox";
 import type { VisitStatus, VisitType } from "@/generated/prisma/enums";
 
 interface VisitSummary {
@@ -68,6 +69,7 @@ export default function ProviderDetailPage({ params }: { params: Promise<{ id: s
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const [lightbox, setLightbox] = useState(false);
 
   useEffect(() => {
     if (!activeProfileId || !id) return;
@@ -171,16 +173,21 @@ export default function ProviderDetailPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="max-w-3xl space-y-6">
+      {lightbox && doctor.photo && (
+        <PhotoLightbox src={doctor.photo} alt={doctor.name} onClose={() => setLightbox(false)} />
+      )}
       <div className="flex items-center gap-4">
         <Link href="/healthcare-team" className="text-sm text-gray-500 hover:text-gray-700">
           ← Healthcare Team
         </Link>
         {doctor.photo && (
-          <img
-            src={doctor.photo}
-            alt={doctor.name}
-            className="w-12 h-12 rounded-full object-cover shrink-0"
-          />
+          <button onClick={() => setLightbox(true)} className="shrink-0 cursor-zoom-in">
+            <img
+              src={doctor.photo}
+              alt={doctor.name}
+              className="w-12 h-12 rounded-full object-cover"
+            />
+          </button>
         )}
         <h1 className="text-2xl font-bold text-gray-900">{doctor.name}</h1>
         {doctor.specialty && (

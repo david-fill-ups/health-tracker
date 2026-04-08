@@ -50,7 +50,7 @@ export default function EditDosePage({
   useEffect(() => {
     if (!activeProfileId) return;
     Promise.all([
-      fetch(`/api/vaccinations/doses/${id}`).then((r) => r.json()),
+      fetch(`/api/vaccinations/doses/${id}?profileId=${activeProfileId}`).then((r) => r.json()),
       fetch(`/api/facilities?profileId=${activeProfileId}`).then((r) => r.json()),
     ])
       .then(([dose, facs]) => {

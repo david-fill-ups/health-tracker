@@ -7,16 +7,20 @@ import { prisma } from "@/lib/prisma";
 
 type Params = { params: Promise<{ id: string }> };
 
-export async function GET(_req: Request, { params }: Params) {
+export async function GET(req: Request, { params }: Params) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const { id } = await params;
-    // Single query: only returns the facility if the user has access to its profile.
-    // This avoids leaking whether a resource exists to unauthorized users (404 vs 401 timing).
+    const { searchParams } = new URL(req.url);
+    const profileId = searchParams.get("profileId");
+    if (!profileId) return NextResponse.json({ error: "profileId query param required" }, { status: 400 });
+    // Single query: only returns the facility if it belongs to the requested profile
+    // and the user has access to that profile.
     const facility = await prisma.facility.findFirst({
       where: {
         id,
+        profileId,
         profile: { access: { some: { userId: session.user.id } } },
       },
       include: {
