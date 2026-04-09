@@ -21,7 +21,7 @@ export async function getLocationsForFacility(userId: string, facilityId: string
   await assertProfileAccess(userId, profileId);
   return prisma.location.findMany({
     where: { facilityId },
-    orderBy: [{ active: "desc" }, { name: "asc" }],
+    orderBy: { name: "asc" },
   });
 }
 
@@ -33,7 +33,6 @@ export interface CreateLocationInput {
   state?: string | null;
   zip?: string | null;
   phone?: string | null;
-  active?: boolean;
 }
 
 export async function createLocation(
@@ -43,8 +42,8 @@ export async function createLocation(
 ) {
   const profileId = await getProfileIdForFacility(facilityId);
   await assertProfileAccess(userId, profileId, "WRITE");
-  const { name, address1, address2, city, state, zip, phone, active } = input;
-  const location = await prisma.location.create({ data: { name, address1, address2, city, state, zip, phone, active, facilityId } });
+  const { name, address1, address2, city, state, zip, phone } = input;
+  const location = await prisma.location.create({ data: { name, address1, address2, city, state, zip, phone, facilityId } });
   await logAudit(userId, profileId, "CREATE_LOCATION", "Location", location.id, { name: location.name, facilityId });
   return location;
 }
@@ -57,8 +56,8 @@ export async function updateLocation(
 ) {
   const profileId = await getProfileIdForFacility(facilityId);
   await assertProfileAccess(userId, profileId, "WRITE");
-  const { name, address1, address2, city, state, zip, phone, active } = input;
-  const location = await prisma.location.update({ where: { id: locationId, facilityId }, data: { name, address1, address2, city, state, zip, phone, active } });
+  const { name, address1, address2, city, state, zip, phone } = input;
+  const location = await prisma.location.update({ where: { id: locationId, facilityId }, data: { name, address1, address2, city, state, zip, phone } });
   await logAudit(userId, profileId, "UPDATE_LOCATION", "Location", locationId);
   return location;
 }

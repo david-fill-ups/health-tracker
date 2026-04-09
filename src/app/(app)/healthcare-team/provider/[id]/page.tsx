@@ -24,6 +24,7 @@ interface Facility {
   name: string;
   websiteUrl?: string | null;
   portalUrl?: string | null;
+  locations?: { id: string; name: string; facilityId: string }[];
 }
 
 interface DoctorDetail {
@@ -32,6 +33,8 @@ interface DoctorDetail {
   specialty: string | null;
   facilityId: string | null;
   facility: Facility | null;
+  primaryLocationId: string | null;
+  primaryLocation: { id: string; name: string } | null;
   rating: number | null;
   phone: string | null;
   websiteUrl: string | null;
@@ -62,6 +65,7 @@ export default function ProviderDetailPage({ params }: { params: Promise<{ id: s
 
   const [doctor, setDoctor] = useState<DoctorDetail | null>(null);
   const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [allLocations, setAllLocations] = useState<{ id: string; name: string; facilityId: string }[]>([]);
   const [allSpecialties, setAllSpecialties] = useState<string[]>([]);
   const [allDoctors, setAllDoctors] = useState<{ id: string; facilityId: string | null; active: boolean }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,7 +86,13 @@ export default function ProviderDetailPage({ params }: { params: Promise<{ id: s
       .then(async ([docRes, facRes, allDocRes]) => {
         if (docRes.status === 404) { setNotFound(true); return; }
         if (docRes.ok) setDoctor(await docRes.json());
-        if (facRes.ok) setFacilities(await facRes.json());
+        if (facRes.ok) {
+          const facs: Facility[] = await facRes.json();
+          setFacilities(facs);
+          setAllLocations(
+            facs.flatMap((f) => (f.locations ?? []).map((l) => ({ ...l, facilityId: f.id })))
+          );
+        }
         if (allDocRes.ok) {
           const allDocs = await allDocRes.json();
           const specs = [...new Set(
@@ -226,6 +236,12 @@ export default function ProviderDetailPage({ params }: { params: Promise<{ id: s
                 </Link>
               </p>
             )}
+            {doctor.primaryLocation && (
+              <p>
+                <span className="font-medium text-gray-500">Primary Location:</span>{" "}
+                {doctor.primaryLocation.name}
+              </p>
+            )}
             <div className="flex items-center gap-2">
               <span className="font-medium text-gray-500">Rating:</span>
               <StarRating value={doctor.rating} onChange={handleRatingChange} />
@@ -283,12 +299,14 @@ export default function ProviderDetailPage({ params }: { params: Promise<{ id: s
             <DoctorForm
               profileId={activeProfileId}
               facilities={facilities}
+              locations={allLocations}
               existingSpecialties={allSpecialties}
               initial={{
                 id: doctor.id,
                 name: doctor.name,
                 specialty: doctor.specialty ?? "",
                 facilityId: doctor.facilityId ?? "",
+                primaryLocationId: doctor.primaryLocationId ?? "",
                 npiNumber: doctor.npiNumber ?? "",
                 credential: doctor.credential ?? "",
                 npiLastSynced: doctor.npiLastSynced ?? null,

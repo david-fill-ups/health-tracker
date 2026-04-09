@@ -28,7 +28,6 @@ interface Location {
   state: string | null;
   zip: string | null;
   phone: string | null;
-  active: boolean;
 }
 
 interface Doctor {
@@ -309,7 +308,6 @@ export default function FacilityDetailPage({ params }: { params: Promise<{ id: s
                     state: loc.state ?? "",
                     zip: loc.zip ?? "",
                     phone: loc.phone ?? "",
-                    active: loc.active,
                   }}
                   onSuccess={(saved) => {
                     setLocations((prev) => prev.map((l) => l.id === saved.id ? saved : l));
@@ -320,7 +318,7 @@ export default function FacilityDetailPage({ params }: { params: Promise<{ id: s
               ) : (
                 <div
                   key={loc.id}
-                  className={`rounded-xl border border-gray-200 bg-white p-3 flex items-start justify-between gap-4 ${loc.active ? "" : "opacity-50"}`}
+                  className="rounded-xl border border-gray-200 bg-white p-3 flex items-start justify-between gap-4"
                 >
                   <div className="text-sm">
                     <p className="font-medium text-gray-900">{loc.name}</p>
@@ -333,7 +331,6 @@ export default function FacilityDetailPage({ params }: { params: Promise<{ id: s
                       </p>
                     )}
                     {loc.phone && <p className="text-gray-500">{loc.phone}</p>}
-                    {!loc.active && <span className="text-xs text-gray-400">Inactive</span>}
                   </div>
                   <div className="flex gap-2 shrink-0">
                     <button

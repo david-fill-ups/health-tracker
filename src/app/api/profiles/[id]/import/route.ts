@@ -130,7 +130,6 @@ export async function POST(req: Request, { params }: Params) {
                     state: l.state ?? undefined,
                     zip: l.zip ?? undefined,
                     phone: l.phone ?? undefined,
-                    active: l.active ?? true,
                   },
                 });
                 idMap.set(l.id, newLoc.id);
@@ -170,7 +169,6 @@ export async function POST(req: Request, { params }: Params) {
               state: l.state ?? undefined,
               zip: l.zip ?? undefined,
               phone: l.phone ?? undefined,
-              active: l.active ?? true,
             },
           });
           if (l.id) idMap.set(l.id, newLoc.id);

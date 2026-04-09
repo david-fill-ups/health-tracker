@@ -235,6 +235,7 @@ export const CreateDoctorSchema = z.object({
   name: name255,
   specialty: optStr255,
   facilityId: z.string().min(1).optional(),
+  primaryLocationId: z.string().min(1).optional(),
   npiNumber: optNpi,
   credential: optCredential,
   photo: z.string().nullish(),
@@ -268,7 +269,6 @@ export const CreateLocationSchema = z.object({
   state: z.string().max(2).nullish(),
   zip: z.string().max(10).nullish(),
   phone: optPhone,
-  active: z.boolean().optional(),
 });
 
 export const UpdateLocationSchema = CreateLocationSchema.partial();
@@ -351,6 +351,9 @@ export const CreateFamilyMemberSchema = z.object({
   name: name255,
   relationship: FamilyRelationshipEnum,
   side: FamilySideEnum.optional(),
+  dateOfBirth: optDate,
+  dateOfDeath: optDate,
+  causeOfDeath: z.string().max(500).nullish(),
   notes: z.string().max(5000).optional(),
 });
 
@@ -398,6 +401,59 @@ export const UpdateProfileRelationshipSchema = z.object({
   relationship: ProfileRelationshipTypeEnum.optional(),
   biological: z.boolean().optional(),
 });
+
+// ── Insurance Card ─────────────────────────────────────────────────────────────
+
+export const InsuranceCardTypeEnum = z.enum([
+  "HEALTH", "DENTAL", "VISION", "PRESCRIPTION", "HSA", "FSA", "HRA", "OTHER",
+]);
+
+export const InsuranceCardStatusEnum = z.enum(["ACTIVE", "INACTIVE", "EXPIRED"]);
+
+export const INSURANCE_CARD_TYPE_LABELS: Record<z.infer<typeof InsuranceCardTypeEnum>, string> = {
+  HEALTH: "Health",
+  DENTAL: "Dental",
+  VISION: "Vision",
+  PRESCRIPTION: "Prescription / RX",
+  HSA: "HSA",
+  FSA: "FSA",
+  HRA: "HRA",
+  OTHER: "Other",
+};
+
+export const INSURANCE_CARD_STATUS_LABELS: Record<z.infer<typeof InsuranceCardStatusEnum>, string> = {
+  ACTIVE: "Active",
+  INACTIVE: "Inactive",
+  EXPIRED: "Expired",
+};
+
+// base64 data URL — cap ~1 MB encoded
+const optBase64Image = z.string().max(1_400_000, "Image too large (max ~1 MB)").nullish();
+
+export const CreateInsuranceCardSchema = z.object({
+  profileId: id,
+  type: InsuranceCardTypeEnum.optional(),
+  status: InsuranceCardStatusEnum.optional(),
+  insurerName: optStr255,
+  planName: optStr255,
+  policyHolder: optStr255,
+  memberId: z.string().max(100).nullish(),
+  groupNumber: z.string().max(100).nullish(),
+  rxBIN: z.string().max(20).nullish(),
+  rxPCN: z.string().max(20).nullish(),
+  rxGroup: z.string().max(50).nullish(),
+  phone: optPhone,
+  website: optStr255,
+  cardLastFour: z.string().max(20).nullish(),
+  cardNetwork: z.string().max(20).nullish(),
+  effectiveDate: optDate,
+  expirationDate: optDate,
+  frontImageData: optBase64Image,
+  backImageData: optBase64Image,
+  notes: z.string().max(5000).nullish(),
+});
+
+export const UpdateInsuranceCardSchema = CreateInsuranceCardSchema.omit({ profileId: true }).partial();
 
 // ── Travel ──────────────────────────────────────────────────────────────────────
 

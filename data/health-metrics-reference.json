@@ -1,0 +1,164 @@
+{
+  "metrics": [
+    {
+      "metricType": "Weight",
+      "aliases": ["body weight", "body wt"],
+      "description": "Tracks total body mass over time. Regular weight monitoring can help identify trends related to diet, exercise, and overall health. Significant unexplained changes may warrant medical attention."
+    },
+    {
+      "metricType": "Blood Pressure Systolic",
+      "aliases": ["systolic", "systolic bp", "sys bp"],
+      "description": "The top number in a blood pressure reading, measuring the pressure in your arteries when your heart beats. Normal systolic pressure is below 120 mmHg. Consistently elevated readings (≥130) indicate hypertension, increasing the risk of heart disease and stroke."
+    },
+    {
+      "metricType": "Blood Pressure Diastolic",
+      "aliases": ["diastolic", "diastolic bp", "dia bp"],
+      "description": "The bottom number in a blood pressure reading, measuring the pressure in your arteries between heartbeats. Normal diastolic pressure is below 80 mmHg. Elevated diastolic pressure (≥80) is a component of hypertension diagnosis."
+    },
+    {
+      "metricType": "Blood Sugar (Fasting)",
+      "aliases": ["fasting glucose", "fasting blood sugar", "fasting blood glucose", "blood sugar fasting", "FBS"],
+      "description": "Glucose level measured after at least 8 hours without eating. Normal range is 70–99 mg/dL. Levels of 100–125 mg/dL indicate prediabetes, and 126 mg/dL or higher on two separate tests indicates diabetes. Used to screen for and monitor diabetes."
+    },
+    {
+      "metricType": "Blood Sugar (Post-meal)",
+      "aliases": ["postprandial glucose", "post-meal glucose", "blood sugar post meal", "blood sugar (post meal)", "2hr glucose"],
+      "description": "Glucose level measured approximately 2 hours after eating. A reading below 140 mg/dL is normal. Values of 140–199 mg/dL may indicate prediabetes, and 200 mg/dL or higher may indicate diabetes. Helps assess how well your body processes carbohydrates."
+    },
+    {
+      "metricType": "Heart Rate",
+      "aliases": ["pulse", "resting heart rate", "HR", "pulse rate"],
+      "description": "The number of times your heart beats per minute. A normal resting heart rate for adults is 60–100 bpm, though well-trained athletes may have resting rates below 60. Consistently elevated resting rates may indicate cardiovascular stress, while very low rates can sometimes signal heart rhythm issues."
+    },
+    {
+      "metricType": "Blood Oxygen (SpO2)",
+      "aliases": ["oxygen saturation", "SpO2", "spo2", "pulse ox", "o2 saturation"],
+      "description": "Measures the percentage of hemoglobin in your blood that is carrying oxygen. A normal reading is 95–100%. Readings below 95% may indicate respiratory or circulatory issues, and below 90% is considered a medical emergency requiring immediate attention."
+    },
+    {
+      "metricType": "BMI",
+      "aliases": ["body mass index"],
+      "description": "Body Mass Index is calculated from height and weight (kg/m²) and used as a general indicator of body fat. Standard ranges: underweight (<18.5), normal (18.5–24.9), overweight (25–29.9), obese (≥30). BMI does not distinguish between muscle and fat mass, so it has limitations for athletes and older adults."
+    },
+    {
+      "metricType": "Total Cholesterol",
+      "aliases": ["cholesterol", "total chol", "chol"],
+      "description": "The total amount of cholesterol in your blood, including LDL, HDL, and other lipoproteins. Desirable levels are below 200 mg/dL. Cholesterol is essential for cell function but elevated levels increase the risk of atherosclerosis, heart attack, and stroke."
+    },
+    {
+      "metricType": "LDL",
+      "aliases": ["LDL cholesterol", "ldl chol", "low-density lipoprotein", "bad cholesterol"],
+      "description": "Low-density lipoprotein (LDL) carries cholesterol to your arteries and can contribute to plaque buildup. Often called 'bad cholesterol.' Optimal levels are below 100 mg/dL. High LDL significantly increases the risk of cardiovascular disease."
+    },
+    {
+      "metricType": "HDL",
+      "aliases": ["HDL cholesterol", "hdl chol", "high-density lipoprotein", "good cholesterol"],
+      "description": "High-density lipoprotein (HDL) helps remove cholesterol from the arteries and transports it to the liver for elimination. Often called 'good cholesterol.' Levels of 60 mg/dL or higher are protective; below 40 mg/dL (men) or 50 mg/dL (women) increases cardiovascular risk."
+    },
+    {
+      "metricType": "Triglycerides",
+      "aliases": ["trigs", "TG", "trig"],
+      "description": "A type of fat found in your blood, stored from excess calories. Normal levels are below 150 mg/dL. Elevated triglycerides (≥200 mg/dL) can contribute to atherosclerosis and are associated with metabolic syndrome, diabetes, and cardiovascular disease. Diet and alcohol intake significantly affect levels."
+    },
+    {
+      "metricType": "Hemoglobin A1C",
+      "aliases": ["A1C", "HbA1c", "glycated hemoglobin", "glycohemoglobin", "hemoglobin a1c", "a1c"],
+      "description": "Reflects average blood sugar levels over the past 2–3 months by measuring the percentage of hemoglobin coated with sugar. A normal A1C is below 5.7%. Values of 5.7–6.4% indicate prediabetes, and 6.5% or higher indicates diabetes. Used to diagnose and monitor long-term diabetes management."
+    },
+    {
+      "metricType": "TSH",
+      "aliases": ["thyroid stimulating hormone", "thyrotropin"],
+      "description": "Thyroid-stimulating hormone is produced by the pituitary gland and regulates thyroid function. Normal range is approximately 0.4–4.0 mIU/L. High TSH suggests an underactive thyroid (hypothyroidism); low TSH may indicate an overactive thyroid (hyperthyroidism). TSH is the primary screening test for thyroid disease."
+    },
+    {
+      "metricType": "Free T4",
+      "aliases": ["free thyroxine", "FT4", "T4", "free t4"],
+      "description": "Free thyroxine (T4) is the active form of thyroid hormone circulating in the blood. It regulates metabolism, energy, and organ function. Measured alongside TSH to evaluate thyroid health. Low Free T4 with high TSH confirms hypothyroidism; high Free T4 with low TSH suggests hyperthyroidism."
+    },
+    {
+      "metricType": "Free T3",
+      "aliases": ["free triiodothyronine", "FT3", "T3", "free t3"],
+      "description": "Free triiodothyronine (T3) is the more potent active thyroid hormone, largely converted from T4 in peripheral tissues. Measured when thyroid symptoms persist despite normal TSH and T4 levels. Low Free T3 may explain fatigue and other hypothyroid symptoms even when other thyroid markers appear normal."
+    },
+    {
+      "metricType": "Vitamin D",
+      "aliases": ["vitamin D 25-OH", "25-hydroxyvitamin D", "25(OH)D", "vitamin d 25 oh", "vitamin d (25-oh)"],
+      "description": "Measures 25-hydroxyvitamin D, the main storage form of vitamin D in the blood. Vitamin D is essential for bone health, immune function, and muscle performance. Sufficient levels are 30–100 ng/mL. Deficiency (<20 ng/mL) is common and linked to bone loss, immune dysfunction, and increased disease risk."
+    },
+    {
+      "metricType": "Vitamin B12",
+      "aliases": ["B12", "cobalamin", "cyanocobalamin", "b12"],
+      "description": "Vitamin B12 is essential for red blood cell production, nerve function, and DNA synthesis. Normal range is approximately 200–900 pg/mL. Deficiency causes anemia, fatigue, and neurological symptoms, and can cause irreversible nerve damage if untreated. Common in vegans, older adults, and those with absorption issues."
+    },
+    {
+      "metricType": "Ferritin",
+      "aliases": ["serum ferritin"],
+      "description": "Ferritin is a blood protein that stores iron, and its level reflects total iron stores in the body. Normal range is approximately 12–300 ng/mL (varies by sex and lab). Low ferritin indicates iron deficiency, often before anemia develops. High ferritin may signal inflammation, liver disease, or hemochromatosis."
+    },
+    {
+      "metricType": "WBC",
+      "aliases": ["white blood cell count", "leukocyte count", "white cells", "white blood cells"],
+      "description": "The white blood cell count measures the number of immune cells in your blood, expressed as thousands per microliter (K/µL). Normal range is 4.5–11.0 K/µL. Elevated WBC can indicate infection, inflammation, or certain blood disorders. Low WBC may suggest bone marrow problems or immune suppression."
+    },
+    {
+      "metricType": "Hemoglobin",
+      "aliases": ["HGB", "Hgb", "hemoglobin level"],
+      "description": "Hemoglobin is the protein in red blood cells that carries oxygen throughout the body. Normal levels are approximately 13.5–17.5 g/dL for men and 12.0–15.5 g/dL for women. Low hemoglobin (anemia) causes fatigue and shortness of breathlessness. High hemoglobin may indicate dehydration or polycythemia."
+    },
+    {
+      "metricType": "Platelets",
+      "aliases": ["platelet count", "PLT", "thrombocytes"],
+      "description": "Platelets are cell fragments that help blood clot after injury. Normal range is 150–400 K/µL. Low platelet count (thrombocytopenia) increases bleeding risk, while high counts (thrombocytosis) can increase clotting risk. Abnormal levels may be caused by medications, infections, or bone marrow conditions."
+    },
+    {
+      "metricType": "ALT",
+      "aliases": ["alanine aminotransferase", "SGPT", "alanine transaminase"],
+      "description": "ALT is an enzyme primarily found in the liver. Elevated levels indicate liver cell damage or inflammation, making it a key marker for detecting liver disease. Causes of elevated ALT include fatty liver, hepatitis, alcohol use, and certain medications. Normal range is approximately 7–40 IU/L."
+    },
+    {
+      "metricType": "AST",
+      "aliases": ["aspartate aminotransferase", "SGOT"],
+      "description": "AST is an enzyme found in the liver, heart, and muscles. Like ALT, elevated AST suggests liver injury or disease, but because it is less liver-specific it is usually interpreted alongside ALT. High AST with high ALT typically points to liver disease; high AST alone may indicate muscle damage or heart issues."
+    },
+    {
+      "metricType": "Creatinine",
+      "aliases": ["serum creatinine", "creat"],
+      "description": "Creatinine is a waste product from muscle metabolism that is filtered out by the kidneys. Normal levels are approximately 0.7–1.3 mg/dL. Elevated creatinine suggests reduced kidney function. It is routinely measured alongside eGFR to assess kidney health and monitor chronic kidney disease."
+    },
+    {
+      "metricType": "eGFR",
+      "aliases": ["estimated glomerular filtration rate", "GFR", "egfr"],
+      "description": "Estimated glomerular filtration rate (eGFR) measures how well the kidneys filter waste from the blood each minute. A value above 60 mL/min/1.73m² is generally considered normal. Lower values indicate chronic kidney disease (CKD), with stages defined by progressively decreasing eGFR. Calculated from creatinine, age, and sex."
+    },
+    {
+      "metricType": "Glucose",
+      "aliases": ["blood glucose", "plasma glucose", "serum glucose", "random glucose"],
+      "description": "Blood glucose is the concentration of sugar in the blood, measured in mg/dL. Fasting normal range is 70–99 mg/dL. Glucose is the primary energy source for the body and is regulated by insulin. Regular monitoring is important for people with diabetes or prediabetes to manage blood sugar control."
+    },
+    {
+      "metricType": "PSA",
+      "aliases": ["prostate-specific antigen", "total PSA"],
+      "description": "Prostate-specific antigen (PSA) is a protein produced by prostate cells. Levels below 4.0 ng/mL are generally considered normal, though age-specific ranges apply. Elevated PSA may indicate prostate cancer, benign prostate enlargement (BPH), or prostatitis. PSA is used for prostate cancer screening and monitoring treatment response."
+    },
+    {
+      "metricType": "Testosterone",
+      "aliases": ["total testosterone", "serum testosterone"],
+      "description": "Testosterone is the primary male sex hormone, also present in smaller amounts in women. Normal range for adult men is approximately 300–1,000 ng/dL. Low testosterone (hypogonadism) can cause fatigue, low libido, reduced muscle mass, and mood changes. Levels are affected by age, time of day, and health conditions."
+    },
+    {
+      "metricType": "Cortisol",
+      "aliases": ["serum cortisol", "AM cortisol", "morning cortisol"],
+      "description": "Cortisol is the body's primary stress hormone, produced by the adrenal glands. Normal morning (AM) levels are approximately 6–23 µg/dL. Chronically elevated cortisol is associated with Cushing's syndrome, while low cortisol may indicate adrenal insufficiency. Levels fluctuate throughout the day, peaking in the morning."
+    },
+    {
+      "metricType": "CRP",
+      "aliases": ["C-reactive protein", "hs-CRP", "high-sensitivity CRP", "hs crp", "crp"],
+      "description": "C-reactive protein (CRP) is produced by the liver in response to inflammation. Standard CRP above 1.0 mg/L, or high-sensitivity CRP (hs-CRP) above 3.0 mg/L, indicates elevated inflammation. CRP is used to assess infection severity, monitor inflammatory conditions like arthritis, and evaluate cardiovascular disease risk."
+    },
+    {
+      "metricType": "Vitamin D (25-OH)",
+      "aliases": [],
+      "description": "Measures 25-hydroxyvitamin D, the main storage form of vitamin D in the blood. Vitamin D is essential for bone health, immune function, and muscle performance. Sufficient levels are 30–100 ng/mL. Deficiency (<20 ng/mL) is common and linked to bone loss, immune dysfunction, and increased disease risk."
+    }
+  ]
+}

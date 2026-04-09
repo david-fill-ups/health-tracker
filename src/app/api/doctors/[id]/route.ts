@@ -25,6 +25,7 @@ export async function GET(req: Request, { params }: Params) {
       },
       include: {
         facility: true,
+        primaryLocation: { select: { id: true, name: true } },
         _count: { select: { visits: true } },
         visits: {
           orderBy: { date: "desc" },

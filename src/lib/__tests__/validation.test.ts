@@ -485,6 +485,30 @@ describe("UpdateDoctorSchema", () => {
   });
 });
 
+// ── CreateDoctorSchema — primaryLocationId ────────────────────────────────────
+
+describe("CreateDoctorSchema primaryLocationId", () => {
+  const base = { name: "Dr. Smith" };
+
+  it("accepts primaryLocationId as optional string", () => {
+    expect(CreateDoctorSchema.safeParse({ ...base, primaryLocationId: "loc-1" }).success).toBe(true);
+  });
+
+  it("omitting primaryLocationId is valid", () => {
+    expect(CreateDoctorSchema.safeParse(base).success).toBe(true);
+  });
+
+  it("rejects empty string primaryLocationId", () => {
+    expect(CreateDoctorSchema.safeParse({ ...base, primaryLocationId: "" }).success).toBe(false);
+  });
+});
+
+describe("UpdateDoctorSchema primaryLocationId", () => {
+  it("accepts partial update with only primaryLocationId", () => {
+    expect(UpdateDoctorSchema.safeParse({ primaryLocationId: "loc-2" }).success).toBe(true);
+  });
+});
+
 // ── CreateDoctorSchema / UpdateDoctorSchema — notes field ────────────────────
 
 describe("CreateDoctorSchema notes", () => {

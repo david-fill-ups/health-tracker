@@ -41,6 +41,8 @@ import {
   UpdateFamilyConditionSchema,
   CreateProfileRelationshipSchema,
   UpdateProfileRelationshipSchema,
+  CreateInsuranceCardSchema,
+  UpdateInsuranceCardSchema,
 } from "./validation";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -110,6 +112,7 @@ export function buildOpenApiSpec(): AnyObj {
       { name: "Portals", description: "Patient and resupply portal catalog" },
       { name: "Health Metrics", description: "Standalone health measurements (weight, blood sugar, etc.)" },
       { name: "Family History", description: "Family member medical history (manual entries and profile links)" },
+      { name: "Insurance", description: "Insurance cards, discount cards (GoodRx), and health payment accounts (HSA/FSA/HRA)" },
       { name: "Import / Export", description: "JSON data portability for health profiles" },
       { name: "Calendar", description: "iCal feed for upcoming visits" },
       { name: "Account", description: "Account management" },
@@ -1396,6 +1399,82 @@ export function buildOpenApiSpec(): AnyObj {
             "400": resp("Invalid query parameters"),
             "401": resp("Unauthorized"),
             "502": resp("NPI registry unavailable or unreachable"),
+          },
+        },
+      },
+
+      // ─── Insurance ────────────────────────────────────────────────────────────
+
+      "/api/insurance": {
+        get: {
+          operationId: "listInsuranceCards",
+          summary: "List insurance cards",
+          description:
+            "Returns all insurance/payment cards for a profile. Image data is excluded from the list — use GET /api/insurance/{id} to retrieve images. Sensitive fields (memberId, groupNumber, rxBIN, etc.) are included in plaintext; masking is a client-side concern.",
+          tags: ["Insurance"],
+          parameters: [queryParam("profileId", "Profile ID", true)],
+          responses: {
+            "200": resp("Array of insurance card records (without image blobs)"),
+            "400": resp("profileId required"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden — insufficient access"),
+          },
+        },
+        post: {
+          operationId: "createInsuranceCard",
+          summary: "Create insurance card",
+          description:
+            "Creates a new insurance or payment card. Images (frontImageData, backImageData) are base64-encoded data URLs and are optional.",
+          tags: ["Insurance"],
+          requestBody: jsonBody(CreateInsuranceCardSchema),
+          responses: {
+            "201": resp("Created insurance card"),
+            "400": resp("Validation error"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden — insufficient access"),
+          },
+        },
+      },
+
+      "/api/insurance/{id}": {
+        parameters: [strPathParam("id", "Insurance card ID")],
+        get: {
+          operationId: "getInsuranceCard",
+          summary: "Get insurance card",
+          description: "Returns the full insurance card record including frontImageData and backImageData base64 strings.",
+          tags: ["Insurance"],
+          parameters: [queryParam("profileId", "Profile ID", true)],
+          responses: {
+            "200": resp("Full insurance card with image data"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden — insufficient access"),
+            "404": resp("Not found"),
+          },
+        },
+        put: {
+          operationId: "updateInsuranceCard",
+          summary: "Update insurance card",
+          description: "Updates an insurance card. Send only the fields to change. Pass null for frontImageData or backImageData to remove an image.",
+          tags: ["Insurance"],
+          parameters: [queryParam("profileId", "Profile ID", true)],
+          requestBody: jsonBody(UpdateInsuranceCardSchema),
+          responses: {
+            "200": resp("Updated insurance card"),
+            "400": resp("Validation error"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden — insufficient access"),
+          },
+        },
+        delete: {
+          operationId: "deleteInsuranceCard",
+          summary: "Delete insurance card",
+          description: "Permanently deletes an insurance card and its stored images.",
+          tags: ["Insurance"],
+          parameters: [queryParam("profileId", "Profile ID", true)],
+          responses: {
+            "204": resp("Deleted — no content"),
+            "401": resp("Unauthorized"),
+            "403": resp("Forbidden — insufficient access"),
           },
         },
       },

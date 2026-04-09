@@ -21,6 +21,9 @@ interface FamilyMember {
   name: string;
   relationship: FamilyRelationship;
   side: FamilySide | null;
+  dateOfBirth: string | null;
+  dateOfDeath: string | null;
+  causeOfDeath: string | null;
   notes: string | null;
   conditions: FamilyCondition[];
 }
@@ -37,6 +40,9 @@ export default function EditFamilyMemberPage({ params }: { params: Promise<{ id:
   const [name, setName] = useState("");
   const [relationship, setRelationship] = useState<FamilyRelationship>("PARENT");
   const [side, setSide] = useState<FamilySide | "">("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [dateOfDeath, setDateOfDeath] = useState("");
+  const [causeOfDeath, setCauseOfDeath] = useState("");
   const [notes, setNotes] = useState("");
 
   const showSide = SIDE_APPLICABLE.includes(relationship);
@@ -66,6 +72,9 @@ export default function EditFamilyMemberPage({ params }: { params: Promise<{ id:
         setName(data.name);
         setRelationship(data.relationship);
         setSide(data.side ?? "");
+        setDateOfBirth(data.dateOfBirth ? data.dateOfBirth.slice(0, 10) : "");
+        setDateOfDeath(data.dateOfDeath ? data.dateOfDeath.slice(0, 10) : "");
+        setCauseOfDeath(data.causeOfDeath ?? "");
         setNotes(data.notes ?? "");
         setConditions(data.conditions);
       })
@@ -80,7 +89,15 @@ export default function EditFamilyMemberPage({ params }: { params: Promise<{ id:
       const res = await fetch(`/api/family-members/${id}?profileId=${activeProfileId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, relationship, side: side || undefined, notes: notes || undefined }),
+        body: JSON.stringify({
+          name,
+          relationship,
+          side: side || undefined,
+          dateOfBirth: dateOfBirth || undefined,
+          dateOfDeath: dateOfDeath || undefined,
+          causeOfDeath: causeOfDeath || undefined,
+          notes: notes || undefined,
+        }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -279,6 +296,49 @@ export default function EditFamilyMemberPage({ params }: { params: Promise<{ id:
               <option value="MATERNAL">Maternal</option>
               <option value="PATERNAL">Paternal</option>
             </select>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 mb-1">
+              Date of Birth <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <input
+              id="dateOfBirth"
+              type="date"
+              value={dateOfBirth}
+              onChange={(e) => setDateOfBirth(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label htmlFor="dateOfDeath" className="block text-sm font-medium text-gray-700 mb-1">
+              Date of Death <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <input
+              id="dateOfDeath"
+              type="date"
+              value={dateOfDeath}
+              onChange={(e) => setDateOfDeath(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+          </div>
+        </div>
+
+        {dateOfDeath && (
+          <div>
+            <label htmlFor="causeOfDeath" className="block text-sm font-medium text-gray-700 mb-1">
+              Cause of Death <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <input
+              id="causeOfDeath"
+              type="text"
+              value={causeOfDeath}
+              onChange={(e) => setCauseOfDeath(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              placeholder="e.g. Heart disease"
+            />
           </div>
         )}
 

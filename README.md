@@ -11,6 +11,7 @@ A personal health management app for tracking medical visits, medications, vacci
 - **Allergies** — record allergen reactions with category, wheal size, and diagnosis date
 - **Health Metrics** — log standalone measurements (weight, blood sugar, blood pressure, etc.) with trend charts
 - **Vaccinations** — record vaccinations and compare against CDC recommended schedule
+- **Insurance** — store insurance cards (health, dental, vision, Rx/GoodRx), HSA/FSA/HRA payment cards; upload front/back photos; sensitive fields masked by default
 - **Healthcare Team** — manage doctors and facilities; link locations to facilities
 - **Calendar feed** — subscribe to upcoming appointments via webcal/iCal in any calendar app
 - **Import / Export** — full profile data export to JSON; re-import with append, skip-duplicates, or replace modes
@@ -131,6 +132,8 @@ All endpoints require authentication. Profile-scoped endpoints require a `profil
 | GET/PUT/DELETE | `/api/health-metrics/[id]` | Get / update / delete health metric |
 | GET/POST | `/api/vaccinations` | List / create vaccinations |
 | GET | `/api/vaccinations/recommendations` | CDC compliance recommendations for a profile |
+| GET/POST | `/api/insurance` | List (no images) / create insurance cards |
+| GET/PUT/DELETE | `/api/insurance/[id]` | Get (with images) / update / delete insurance card |
 | GET/POST | `/api/doctors` | List / create doctors |
 | GET/PUT/DELETE | `/api/doctors/[id]` | Get / update / delete doctor |
 | GET/POST | `/api/facilities` | List / create facilities |

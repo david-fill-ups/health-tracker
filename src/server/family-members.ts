@@ -8,6 +8,9 @@ export interface CreateFamilyMemberInput {
   name: string;
   relationship: FamilyRelationship;
   side?: FamilySide;
+  dateOfBirth?: Date | null;
+  dateOfDeath?: Date | null;
+  causeOfDeath?: string | null;
   notes?: string;
 }
 

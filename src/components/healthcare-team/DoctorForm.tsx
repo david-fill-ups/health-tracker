@@ -13,10 +13,17 @@ interface Facility {
   portalUrl?: string | null;
 }
 
+interface Location {
+  id: string;
+  name: string;
+  facilityId: string;
+}
+
 interface DoctorFormData {
   name: string;
   specialty: string;
   facilityId: string;
+  primaryLocationId: string;
   npiNumber: string;
   credential: string;
   photo: string;
@@ -33,6 +40,7 @@ interface ExistingDoctor {
   name: string;
   specialty: string;
   facilityId: string;
+  primaryLocationId?: string | null;
   npiNumber?: string | null;
   credential?: string | null;
   photo?: string | null;
@@ -48,13 +56,14 @@ interface ExistingDoctor {
 interface Props {
   profileId: string;
   facilities: Facility[];
+  locations?: Location[];
   existingSpecialties?: string[];
   initial?: ExistingDoctor;
   onSuccess: (doctor: ExistingDoctor & { facility?: Facility | null }) => void;
   onCancel: () => void;
 }
 
-export function DoctorForm({ profileId, facilities, existingSpecialties = [], initial, onSuccess, onCancel }: Props) {
+export function DoctorForm({ profileId, facilities, locations = [], existingSpecialties = [], initial, onSuccess, onCancel }: Props) {
   const [step, setStep] = useState<"search" | "form">(initial ? "form" : "search");
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [npiLastSynced, setNpiLastSynced] = useState<Date | null>(
@@ -65,6 +74,7 @@ export function DoctorForm({ profileId, facilities, existingSpecialties = [], in
     name: initial?.name ?? "",
     specialty: initial?.specialty ?? "",
     facilityId: initial?.facilityId ?? "",
+    primaryLocationId: initial?.primaryLocationId ?? "",
     npiNumber: initial?.npiNumber ?? "",
     credential: initial?.credential ?? "",
     photo: initial?.photo ?? "",
@@ -84,13 +94,21 @@ export function DoctorForm({ profileId, facilities, existingSpecialties = [], in
 
   function handleFacilityChange(facilityId: string) {
     const facility = facilities.find((f) => f.id === facilityId);
-    setForm((f) => ({
-      ...f,
-      facilityId,
-      websiteUrl: f.websiteUrl || facility?.websiteUrl || "",
-      portalUrl: f.portalUrl || facility?.portalUrl || "",
-    }));
+    setForm((f) => {
+      const stillValid = locations.some(
+        (l) => l.id === f.primaryLocationId && l.facilityId === facilityId
+      );
+      return {
+        ...f,
+        facilityId,
+        primaryLocationId: stillValid ? f.primaryLocationId : "",
+        websiteUrl: f.websiteUrl || facility?.websiteUrl || "",
+        portalUrl: f.portalUrl || facility?.portalUrl || "",
+      };
+    });
   }
+
+  const facilityLocations = locations.filter((l) => l.facilityId === form.facilityId);
 
   function handleNpiSelect(result: NpiResult) {
     if (result.type !== "individual") return;
@@ -121,6 +139,7 @@ export function DoctorForm({ profileId, facilities, existingSpecialties = [], in
       name: form.name,
       specialty: form.specialty || undefined,
       facilityId: form.facilityId || undefined,
+      primaryLocationId: form.primaryLocationId || undefined,
       npiNumber: form.npiNumber || undefined,
       credential: form.credential || undefined,
       photo: form.photo || undefined,
@@ -249,6 +268,22 @@ export function DoctorForm({ profileId, facilities, existingSpecialties = [], in
               ))}
             </select>
           </div>
+
+          {facilityLocations.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Primary Location</label>
+              <select
+                value={form.primaryLocationId}
+                onChange={(e) => set("primaryLocationId", e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">— None —</option>
+                {facilityLocations.map((l) => (
+                  <option key={l.id} value={l.id}>{l.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>

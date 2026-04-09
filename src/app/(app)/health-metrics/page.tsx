@@ -6,6 +6,7 @@ import { TableSkeleton } from "@/components/ui/Skeleton";
 import { Toast } from "@/components/ui/Toast";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { COMMON_METRIC_TYPES } from "@/lib/validation";
+import { getMetricReference } from "@/lib/health-metrics-reference";
 import {
   LineChart,
   Line,
@@ -371,6 +372,12 @@ export default function HealthMetricsPage() {
     );
   }, [currentProfile]);
 
+  // Reference info for the currently filtered metric type
+  const metricRef = useMemo(
+    () => (activeType ? getMetricReference(activeType) : undefined),
+    [activeType]
+  );
+
   useEffect(() => {
     if (!activeProfileId) return;
     setLoading(true);
@@ -573,6 +580,14 @@ export default function HealthMetricsPage() {
               Clear
             </button>
           )}
+        </div>
+      )}
+
+      {/* About this metric */}
+      {metricRef?.description && (
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">About this metric</h2>
+          <p className="text-sm text-gray-700 leading-relaxed">{metricRef.description}</p>
         </div>
       )}
 

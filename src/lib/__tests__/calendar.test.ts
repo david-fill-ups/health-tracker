@@ -18,13 +18,14 @@ function makeVisit(overrides: Partial<VisitWithRelations> = {}): VisitWithRelati
     dueMonth: null,
     type: "ROUTINE",
     notes: null,
+    reason: null,
     status: "SCHEDULED",
     createdAt: new Date(),
     updatedAt: new Date(),
     doctor: null,
     facility: null,
     ...overrides,
-  };
+  } as VisitWithRelations;
 }
 
 describe("generateCalendarFeed", () => {
@@ -46,7 +47,7 @@ describe("generateCalendarFeed", () => {
 
   it("uses doctor name as provider when available", () => {
     const visit = makeVisit({
-      doctor: { id: "d1", name: "Dr. Smith", specialty: null, facilityId: null, npiNumber: null, credential: null, photo: null, npiLastSynced: null, rating: null, websiteUrl: null, portalUrl: null, phone: null, notes: null, active: true, profileId: "profile-1", createdAt: new Date(), updatedAt: new Date() },
+      doctor: { id: "d1", name: "Dr. Smith", specialty: null, facilityId: null, primaryLocationId: null, npiNumber: null, credential: null, photo: null, npiLastSynced: null, rating: null, websiteUrl: null, portalUrl: null, phone: null, notes: null, active: true, profileId: "profile-1", createdAt: new Date(), updatedAt: new Date() },
     });
     const result = generateCalendarFeed("Jane", [visit]);
     expect(result).toContain("Dr. Smith");

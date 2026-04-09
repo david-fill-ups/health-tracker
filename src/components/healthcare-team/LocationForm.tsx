@@ -11,7 +11,6 @@ interface LocationData {
   state: string;
   zip: string;
   phone: string;
-  active: boolean;
 }
 
 interface Props {
@@ -30,7 +29,6 @@ export function LocationForm({ facilityId, initial, onSuccess, onCancel }: Props
     state: initial?.state ?? "",
     zip: initial?.zip ?? "",
     phone: initial?.phone ?? "",
-    active: initial?.active ?? true,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +50,6 @@ export function LocationForm({ facilityId, initial, onSuccess, onCancel }: Props
       state: form.state || null,
       zip: form.zip || null,
       phone: form.phone || null,
-      active: form.active,
     };
 
     try {
@@ -175,17 +172,6 @@ export function LocationForm({ facilityId, initial, onSuccess, onCancel }: Props
           />
         </div>
 
-        <div className="sm:col-span-2 flex items-center gap-2">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.active}
-              onChange={(e) => set("active", e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-            />
-            <span className="text-sm text-gray-700">Active</span>
-          </label>
-        </div>
       </div>
 
       <div className="flex justify-end gap-2">

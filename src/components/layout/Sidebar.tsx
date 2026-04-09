@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { label: "Family History", href: "/family-history", icon: "🧬" },
   { label: "Allergies", href: "/allergies", icon: "🌿" },
   { label: "Vaccinations", href: "/vaccinations", icon: "💉" },
+  { label: "Insurance", href: "/insurance", icon: "🪪" },
 ];
 
 export function Sidebar() {

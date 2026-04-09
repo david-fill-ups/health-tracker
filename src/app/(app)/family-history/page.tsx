@@ -45,6 +45,9 @@ interface FamilyMember {
   name: string;
   relationship: FamilyRelationship;
   side: FamilySide | null;
+  dateOfBirth: string | null;
+  dateOfDeath: string | null;
+  causeOfDeath: string | null;
   notes: string | null;
   conditions: FamilyCondition[];
 }
@@ -54,6 +57,9 @@ interface InheritedFamilyMember {
   name: string;
   relationship: FamilyRelationship;
   side: FamilySide | null;
+  dateOfBirth: string | null;
+  dateOfDeath: string | null;
+  causeOfDeath: string | null;
   notes: string | null;
   conditions: FamilyCondition[];
 }
@@ -233,16 +239,34 @@ function ConditionPills({ conditions, maxVisible = 5 }: { conditions: Array<{ na
   );
 }
 
+function longevityLabel(dob: string | null, dod: string | null): string | null {
+  if (!dob && !dod) return null;
+  const birthYear = dob ? new Date(dob).getFullYear() : null;
+  const deathYear = dod ? new Date(dod).getFullYear() : null;
+  if (dob && dod) {
+    const age = Math.floor((new Date(dod).getTime() - new Date(dob).getTime()) / (365.25 * 24 * 3600 * 1000));
+    return `${birthYear}–${deathYear} · ${age} yrs`;
+  }
+  if (dob && !dod) {
+    const age = Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 3600 * 1000));
+    return `b. ${birthYear} · age ${age}`;
+  }
+  return `d. ${deathYear}`;
+}
+
 function ChartCard({ member }: { member: FamilyMember }) {
   const badge = MANUAL_BADGE[member.relationship];
   const [expanded, setExpanded] = useState(false);
   const MAX_CONDITIONS = 4;
   const visible = expanded ? member.conditions : member.conditions.slice(0, MAX_CONDITIONS);
   const extra = member.conditions.length - MAX_CONDITIONS;
+  const lifespan = longevityLabel(member.dateOfBirth, member.dateOfDeath);
   return (
     <div className="w-44 shrink-0 rounded-xl border border-gray-200 bg-white p-3 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all">
       <Link href={`/family-history/${member.id}/edit`} className="block mb-1.5">
         <div className="font-semibold text-gray-900 text-sm leading-tight hover:text-indigo-600">{member.name}</div>
+        {lifespan && <div className="text-xs text-gray-400 mt-0.5">{lifespan}</div>}
+        {member.causeOfDeath && <div className="text-xs text-gray-400 truncate" title={member.causeOfDeath}>{member.causeOfDeath}</div>}
       </Link>
       <div className="flex flex-wrap gap-1 mb-2">
         <span className={`rounded-full px-1.5 py-0.5 text-xs font-medium ${badge.classes}`}>

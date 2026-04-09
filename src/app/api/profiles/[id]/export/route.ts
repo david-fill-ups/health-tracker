@@ -79,7 +79,6 @@ export async function GET(_req: Request, { params }: Params) {
           state: l.state ?? null,
           zip: l.zip ?? null,
           phone: l.phone ?? null,
-          active: l.active,
         })),
       })),
       doctors: doctors.map((d) => ({

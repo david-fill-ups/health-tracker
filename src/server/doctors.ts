@@ -6,7 +6,7 @@ export async function getDoctorsForProfile(userId: string, profileId: string) {
   await assertProfileAccess(userId, profileId);
   return prisma.doctor.findMany({
     where: { profileId },
-    include: { facility: true },
+    include: { facility: true, primaryLocation: true },
     orderBy: [{ active: "desc" }, { name: "asc" }],
   });
 }
@@ -15,6 +15,7 @@ export interface CreateDoctorInput {
   name: string;
   specialty?: string | null;
   facilityId?: string;
+  primaryLocationId?: string;
   npiNumber?: string | null;
   credential?: string | null;
   photo?: string | null;
@@ -33,8 +34,8 @@ export async function createDoctor(
   input: CreateDoctorInput
 ) {
   await assertProfileAccess(userId, profileId, "WRITE");
-  const { name, specialty, facilityId, npiNumber, credential, photo, npiLastSynced, rating, websiteUrl, portalUrl, phone, notes, active } = input;
-  const doctor = await prisma.doctor.create({ data: { name, specialty, facilityId, npiNumber, credential, photo, npiLastSynced, rating, websiteUrl, portalUrl, phone, notes, active, profileId } });
+  const { name, specialty, facilityId, primaryLocationId, npiNumber, credential, photo, npiLastSynced, rating, websiteUrl, portalUrl, phone, notes, active } = input;
+  const doctor = await prisma.doctor.create({ data: { name, specialty, facilityId, primaryLocationId, npiNumber, credential, photo, npiLastSynced, rating, websiteUrl, portalUrl, phone, notes, active, profileId } });
   await logAudit(userId, profileId, "CREATE_DOCTOR", "Doctor", doctor.id, { name: doctor.name });
   return doctor;
 }
@@ -46,8 +47,8 @@ export async function updateDoctor(
   input: Partial<CreateDoctorInput>
 ) {
   await assertProfileAccess(userId, profileId, "WRITE");
-  const { name, specialty, facilityId, npiNumber, credential, photo, npiLastSynced, rating, websiteUrl, portalUrl, phone, notes, active } = input;
-  const doctor = await prisma.doctor.update({ where: { id: doctorId, profileId }, data: { name, specialty, facilityId, npiNumber, credential, photo, npiLastSynced, rating, websiteUrl, portalUrl, phone, notes, active } });
+  const { name, specialty, facilityId, primaryLocationId, npiNumber, credential, photo, npiLastSynced, rating, websiteUrl, portalUrl, phone, notes, active } = input;
+  const doctor = await prisma.doctor.update({ where: { id: doctorId, profileId }, data: { name, specialty, facilityId, primaryLocationId, npiNumber, credential, photo, npiLastSynced, rating, websiteUrl, portalUrl, phone, notes, active } });
   await logAudit(userId, profileId, "UPDATE_DOCTOR", "Doctor", doctorId);
   return doctor;
 }

@@ -24,6 +24,9 @@ export default function NewFamilyMemberPage() {
   const [name, setName] = useState("");
   const [relationship, setRelationship] = useState<FamilyRelationship | "">("");
   const [side, setSide] = useState<FamilySide | "">("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [dateOfDeath, setDateOfDeath] = useState("");
+  const [causeOfDeath, setCauseOfDeath] = useState("");
   const [notes, setNotes] = useState("");
 
   const [existingMembers, setExistingMembers] = useState<ExistingMember[]>([]);
@@ -99,6 +102,9 @@ export default function NewFamilyMemberPage() {
           name,
           relationship,
           side: side || undefined,
+          dateOfBirth: dateOfBirth || undefined,
+          dateOfDeath: dateOfDeath || undefined,
+          causeOfDeath: causeOfDeath || undefined,
           notes: notes || undefined,
         }),
       });
@@ -215,6 +221,49 @@ export default function NewFamilyMemberPage() {
                   Paternal{disabledSides.has("PATERNAL") ? " (already added)" : ""}
                 </option>
               </select>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 mb-1">
+                Date of Birth <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                id="dateOfBirth"
+                type="date"
+                value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label htmlFor="dateOfDeath" className="block text-sm font-medium text-gray-700 mb-1">
+                Date of Death <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                id="dateOfDeath"
+                type="date"
+                value={dateOfDeath}
+                onChange={(e) => setDateOfDeath(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+            </div>
+          </div>
+
+          {dateOfDeath && (
+            <div>
+              <label htmlFor="causeOfDeath" className="block text-sm font-medium text-gray-700 mb-1">
+                Cause of Death <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                id="causeOfDeath"
+                type="text"
+                value={causeOfDeath}
+                onChange={(e) => setCauseOfDeath(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                placeholder="e.g. Heart disease"
+              />
             </div>
           )}
 

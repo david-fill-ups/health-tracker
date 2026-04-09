@@ -11,18 +11,26 @@ interface Facility {
   name: string;
   websiteUrl?: string | null;
   portalUrl?: string | null;
+  locations?: { id: string; name: string }[];
 }
 
 export default function NewProviderPage() {
   const { activeProfileId } = useProfile();
   const router = useRouter();
   const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [allLocations, setAllLocations] = useState<{ id: string; name: string; facilityId: string }[]>([]);
 
   useEffect(() => {
     if (!activeProfileId) return;
     fetch(`/api/facilities?profileId=${activeProfileId}`)
       .then((r) => r.json())
-      .then((data) => setFacilities(Array.isArray(data) ? data : []))
+      .then((data: Facility[]) => {
+        if (!Array.isArray(data)) return;
+        setFacilities(data);
+        setAllLocations(
+          data.flatMap((f) => (f.locations ?? []).map((l) => ({ ...l, facilityId: f.id })))
+        );
+      })
       .catch(() => {});
   }, [activeProfileId]);
 
@@ -43,6 +51,7 @@ export default function NewProviderPage() {
         <DoctorForm
           profileId={activeProfileId}
           facilities={facilities}
+          locations={allLocations}
           onSuccess={() => router.push("/healthcare-team")}
           onCancel={() => router.push("/healthcare-team")}
         />

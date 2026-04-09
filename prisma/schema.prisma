@@ -206,6 +206,7 @@ model Profile {
   familyMembers          FamilyMember[]
   outgoingRelationships  ProfileRelationship[] @relation("RelationshipsFrom")
   incomingRelationships  ProfileRelationship[] @relation("RelationshipsTo")
+  insuranceCards         InsuranceCard[]
 }
 
 model ProfileAccess {
@@ -274,42 +275,45 @@ model Location {
   state      String?
   zip        String?
   phone      String?
-  active     Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  facility Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
-  visits   Visit[]
+  facility       Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  visits         Visit[]
+  primaryDoctors Doctor[]
 
   @@index([facilityId])
 }
 
 model Doctor {
-  id            String    @id @default(cuid())
-  profileId     String
-  name          String
-  specialty     String?
-  facilityId    String?
-  npiNumber     String?
-  credential    String?
-  photo         String?
-  npiLastSynced DateTime?
-  rating        Float?
-  websiteUrl    String?
-  portalUrl     String?
-  phone         String?
-  notes         String?
-  active        Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  profileId         String
+  name              String
+  specialty         String?
+  facilityId        String?
+  primaryLocationId String?
+  npiNumber         String?
+  credential        String?
+  photo             String?
+  npiLastSynced     DateTime?
+  rating            Float?
+  websiteUrl        String?
+  portalUrl         String?
+  phone             String?
+  notes             String?
+  active            Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  profile     Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  facility    Facility?    @relation(fields: [facilityId], references: [id])
-  visits      Visit[]
-  medications Medication[]
+  profile         Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  facility        Facility?    @relation(fields: [facilityId], references: [id])
+  primaryLocation Location?    @relation(fields: [primaryLocationId], references: [id], onDelete: SetNull)
+  visits          Visit[]
+  medications     Medication[]
 
   @@index([profileId])
   @@index([facilityId])
+  @@index([primaryLocationId])
 }
 
 // ─── Visits / Appointments ────────────────────────────────────────────────────
@@ -568,6 +572,9 @@ model FamilyMember {
   name         String
   relationship FamilyRelationship
   side         FamilySide?
+  dateOfBirth  DateTime?
+  dateOfDeath  DateTime?
+  causeOfDeath String?
   notes        String?
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
@@ -604,6 +611,70 @@ model ProfileRelationship {
 
   @@unique([fromProfileId, toProfileId])
   @@index([fromProfileId])
+}
+
+// ─── Insurance Cards ──────────────────────────────────────────────────────────
+
+enum InsuranceCardType {
+  HEALTH
+  DENTAL
+  VISION
+  PRESCRIPTION
+  HSA
+  FSA
+  HRA
+  OTHER
+}
+
+enum InsuranceCardStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+}
+
+model InsuranceCard {
+  id             String              @id @default(cuid())
+  profileId      String
+  type           InsuranceCardType   @default(HEALTH)
+  status         InsuranceCardStatus @default(ACTIVE)
+
+  // Insurance fields
+  insurerName    String?
+  planName       String?
+  policyHolder   String?
+  memberId       String?
+  groupNumber    String?
+
+  // Pharmacy / Rx fields (PRESCRIPTION / GoodRx-style cards)
+  rxBIN          String?
+  rxPCN          String?
+  rxGroup        String?
+
+  // Payment card fields (HSA / FSA / HRA)
+  cardLastFour   String?
+  cardNetwork    String?
+
+  // Contact
+  phone          String?
+  website        String?
+
+  // Dates
+  effectiveDate  DateTime?
+  expirationDate DateTime?
+
+  // Card images stored as base64 data URLs
+  frontImageData String?             @db.Text
+  backImageData  String?             @db.Text
+
+  notes          String?             @db.Text
+
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  profile        Profile             @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@index([profileId, status])
 }
 
 // ─── Audit Log ────────────────────────────────────────────────────────────────
