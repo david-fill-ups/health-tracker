@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { Toast } from "@/components/ui/Toast";
 import { COMMON_METRIC_TYPES } from "@/lib/validation";
+import { formatMetricLabel } from "@/lib/format-metric-label";
 
 const NEW_OPTION = "__new__";
 
@@ -23,6 +24,7 @@ function nowLocalDatetimeLocal() {
 
 export default function NewHealthMetricPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { activeProfileId } = useProfile();
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -32,9 +34,15 @@ export default function NewHealthMetricPage() {
   const [metricInfo, setMetricInfo] = useState<MetricInfo>({});
   const [loadingInfo, setLoadingInfo] = useState(false);
 
+  // ?type= param from URL (slug format, e.g. "blood-pressure-systolic")
+  const typeParam = searchParams.get("type") ?? "";
+  // Convert slug back to spaced normalized form for matching
+  const typeParamNorm = typeParam.replace(/-/g, " ");
+
   // Metric type state
   const [metricTypeSelection, setMetricTypeSelection] = useState(""); // dropdown value
   const [customMetricType, setCustomMetricType] = useState(""); // only if NEW_OPTION
+  const didPreFill = useRef(false);
 
   // Unit state
   const [unitSelection, setUnitSelection] = useState(""); // dropdown value
@@ -59,6 +67,20 @@ export default function NewHealthMetricPage() {
   const dbMetricTypes = Object.keys(metricInfo).sort();
   const extraCommon = COMMON_METRIC_TYPES.filter((t) => !metricInfo[t]);
   const allMetricTypeOptions = [...dbMetricTypes, ...extraCommon];
+
+  // Pre-fill metric type from ?type= URL param once options are loaded
+  useEffect(() => {
+    if (didPreFill.current || !typeParamNorm || allMetricTypeOptions.length === 0) return;
+    // Find exact or normalized match in available options
+    const match = allMetricTypeOptions.find(
+      (t) => t.toLowerCase().replace(/_/g, " ") === typeParamNorm
+    );
+    if (match) {
+      didPreFill.current = true;
+      handleMetricTypeChange(match);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allMetricTypeOptions, typeParamNorm]);
 
   // Units available for the selected metric type
   const selectedMetricType = metricTypeSelection === NEW_OPTION ? customMetricType : metricTypeSelection;
@@ -158,7 +180,7 @@ export default function NewHealthMetricPage() {
           >
             <option value="" disabled>Select a metric type…</option>
             {allMetricTypeOptions.map((t) => (
-              <option key={t} value={t}>{t}</option>
+              <option key={t} value={t}>{formatMetricLabel(t)}</option>
             ))}
             <option value={NEW_OPTION}>+ Add new metric type</option>
           </select>

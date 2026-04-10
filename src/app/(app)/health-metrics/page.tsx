@@ -2,11 +2,24 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { TableSkeleton } from "@/components/ui/Skeleton";
 import { Toast } from "@/components/ui/Toast";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { COMMON_METRIC_TYPES } from "@/lib/validation";
 import { getMetricReference } from "@/lib/health-metrics-reference";
+import { formatMetricLabel, metricTypeToSlug } from "@/lib/format-metric-label";
+import {
+  normalizeType,
+  normalizeUnit,
+  getReferenceRange,
+  getValueStatus,
+  BADGE_STYLES,
+  VALUE_STYLES,
+  type ReferenceRange,
+  type ReferenceZone,
+  type ValueStatus,
+} from "@/lib/health-metrics-ranges";
 import {
   LineChart,
   Line,
@@ -27,36 +40,6 @@ interface HealthMetric {
   notes?: string | null;
 }
 
-interface ReferenceZone {
-  min: number;
-  max: number;
-  label: string;
-  color: string;
-}
-
-interface ReferenceRange {
-  min: number;
-  max: number;
-  label?: string;
-  unit?: string; // if set, status coloring is skipped when stored unit doesn't match
-  zones?: ReferenceZone[];
-}
-
-// Normalize metric type string for lookup: lowercase, underscores → spaces, collapse whitespace
-function normalizeType(type: string): string {
-  return type.toLowerCase().replace(/_/g, " ").replace(/\s+/g, " ").trim();
-}
-
-// Normalize unit string for comparison: lowercase, no whitespace, µ/μ → u
-function normalizeUnit(u: string): string {
-  return u
-    .toLowerCase()
-    .replace(/\s/g, "")
-    .replace(/[µμ]/g, "u")
-    .replace(/×10[e^]?3/gi, "k")
-    .replace(/x10e3/gi, "k");
-}
-
 // Returns "stale"/"old" label when reading is over a year old, null otherwise
 function getReadingAgeLabel(iso: string): { text: string; old: boolean } | null {
   const days = (Date.now() - new Date(iso).getTime()) / 86_400_000;
@@ -68,219 +51,7 @@ function getReadingAgeLabel(iso: string): { text: string; old: boolean } | null 
   return null;
 }
 
-// Known medical abbreviations that should be ALL CAPS
-const MEDICAL_ABBREVIATIONS = new Set([
-  "tsh", "t3", "t4",
-  "alt", "ast", "alp", "ggt",
-  "ldl", "hdl", "vldl",
-  "bmi", "bun", "crp", "esr", "psa",
-  "wbc", "rbc", "cbc", "hgb", "hct", "mcv", "mch", "mchc",
-  "fsh", "lh", "dhea", "dheas", "tpo",
-  "ige", "igg", "iga", "igm",
-  "dna", "rna", "pcr", "hiv",
-  "covid", "bnp",
-]);
-
-// Words with special mixed-case formatting
-const SPECIAL_CASE_WORDS: Record<string, string> = {
-  "spo2": "SpO2",
-  "egfr": "eGFR",
-  "hba1c": "HbA1c",
-  "a1c": "A1C",
-};
-
-function formatWord(word: string): string {
-  const lower = word.toLowerCase();
-  if (SPECIAL_CASE_WORDS[lower]) return SPECIAL_CASE_WORDS[lower];
-  if (MEDICAL_ABBREVIATIONS.has(lower)) return lower.toUpperCase();
-  return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-}
-
-// Convert any metric type string to a readable label
-function formatMetricLabel(type: string): string {
-  return type
-    .replace(/_/g, " ")
-    .split(" ")
-    .map((word) => {
-      const m = word.match(/^(\()(.+?)(\))$/);
-      if (m) return `(${formatWord(m[2])})`;
-      return formatWord(word);
-    })
-    .join(" ");
-}
-
-// Reference ranges keyed by normalized type (lowercase, spaces)
-const REFERENCE_RANGES: Record<string, ReferenceRange> = {
-  // ── Vitals ───────────────────────────────────────────────
-  "blood pressure systolic":  { min: 90,   max: 120,  label: "Normal" },
-  "blood pressure diastolic": { min: 60,   max: 80,   label: "Normal" },
-  "blood sugar (fasting)":    { min: 70,   max: 100,  label: "Normal" },
-  "blood sugar fasting":      { min: 70,   max: 100,  label: "Normal" },
-  "blood sugar (post-meal)":  { min: 70,   max: 140,  label: "Normal (2hr)" },
-  "heart rate":               { min: 60,   max: 100,  label: "Normal resting" },
-  "blood oxygen (spo2)":      { min: 95,   max: 100,  label: "Normal" },
-  "bmi": {
-    min: 18.5, max: 24.9, label: "Normal",
-    zones: [
-      { min: 10,   max: 18.5, label: "Underweight", color: "#3b82f6" },
-      { min: 18.5, max: 24.9, label: "Normal",      color: "#10b981" },
-      { min: 24.9, max: 29.9, label: "Overweight",  color: "#f59e0b" },
-      { min: 29.9, max: 50,   label: "Obese",       color: "#ef4444" },
-    ],
-  },
-
-  // ── CBC (absolute counts) ─────────────────────────────────
-  "wbc":         { min: 4.5,  max: 11.0, label: "Normal",       unit: "k/ul" },
-  "rbc":         { min: 4.5,  max: 5.9,  label: "Normal (male)" },
-  "hemoglobin":  { min: 13.5, max: 17.5, label: "Normal (male)", unit: "g/dl" },
-  "hematocrit":  { min: 41,   max: 53,   label: "Normal (male)", unit: "%" },
-  "mcv":         { min: 80,   max: 100,  label: "Normal" },
-  "mch":         { min: 27,   max: 33,   label: "Normal" },
-  "mchc":        { min: 32,   max: 36,   label: "Normal" },
-  "platelets":   { min: 150,  max: 400,  label: "Normal",        unit: "k/ul" },
-  "neutrophils": { min: 1.8,  max: 7.7,  label: "Normal",        unit: "k/ul" },
-  "lymphocytes": { min: 1.0,  max: 4.8,  label: "Normal",        unit: "k/ul" },
-  "monocytes":   { min: 0.2,  max: 0.95, label: "Normal",        unit: "k/ul" },
-  "eosinophils": { min: 0.0,  max: 0.5,  label: "Normal",        unit: "k/ul" },
-  "basophils":   { min: 0.0,  max: 0.1,  label: "Normal",        unit: "k/ul" },
-
-  // ── CBC differentials (percentage) ────────────────────────
-  "neutrophils (%)": { min: 40, max: 75, label: "Normal", unit: "%" },
-  "lymphocytes (%)": { min: 20, max: 45, label: "Normal", unit: "%" },
-  "monocytes (%)":   { min: 2,  max: 10, label: "Normal", unit: "%" },
-  "eosinophils (%)": { min: 1,  max: 6,  label: "Normal", unit: "%" },
-  "basophils (%)":   { min: 0,  max: 1,  label: "Normal", unit: "%" },
-
-  // ── CMP / Metabolic ──────────────────────────────────────
-  "glucose":        { min: 70,  max: 100,  label: "Normal (fasting)", unit: "mg/dl" },
-  "bun":            { min: 7,   max: 25,   label: "Normal",           unit: "mg/dl" },
-  "creatinine":     { min: 0.7, max: 1.3,  label: "Normal",           unit: "mg/dl" },
-  "egfr":           { min: 60,  max: 120,  label: "Normal" },
-  "sodium":         { min: 136, max: 145,  label: "Normal",           unit: "mmol/l" },
-  "potassium":      { min: 3.5, max: 5.1,  label: "Normal",           unit: "mmol/l" },
-  "chloride":       { min: 98,  max: 106,  label: "Normal",           unit: "mmol/l" },
-  "bicarbonate":    { min: 22,  max: 29,   label: "Normal",           unit: "mmol/l" },
-  "calcium":        { min: 8.5, max: 10.5, label: "Normal",           unit: "mg/dl" },
-  "albumin":        { min: 3.5, max: 5.0,  label: "Normal",           unit: "g/dl" },
-  "total protein":  { min: 6.3, max: 8.2,  label: "Normal",           unit: "g/dl" },
-  "bilirubin total":{ min: 0.1, max: 1.2,  label: "Normal",           unit: "mg/dl" },
-  "alp":            { min: 44,  max: 147,  label: "Normal",           unit: "iu/l" },
-  "alt":            { min: 7,   max: 40,   label: "Normal",           unit: "iu/l" },
-  "ast":            { min: 10,  max: 40,   label: "Normal",           unit: "iu/l" },
-  "ggt":            { min: 8,   max: 61,   label: "Normal",           unit: "iu/l" },
-  "uric acid":      { min: 3.4, max: 7.0,  label: "Normal (male)",    unit: "mg/dl" },
-  "phosphorus":     { min: 2.5, max: 4.5,  label: "Normal",           unit: "mg/dl" },
-  "magnesium":      { min: 1.7, max: 2.2,  label: "Normal",           unit: "mg/dl" },
-
-  // ── Lipids ───────────────────────────────────────────────
-  "total cholesterol": { min: 0,   max: 200, label: "Desirable", unit: "mg/dl" },
-  "ldl":               { min: 0,   max: 100, label: "Optimal",   unit: "mg/dl" },
-  "hdl":               { min: 40,  max: 80,  label: "Normal",    unit: "mg/dl" },
-  "triglycerides":     { min: 0,   max: 150, label: "Normal",    unit: "mg/dl" },
-  "vldl":              { min: 2,   max: 30,  label: "Normal",    unit: "mg/dl" },
-
-  // ── Diabetes ─────────────────────────────────────────────
-  "hemoglobin a1c": { min: 4.0, max: 5.6, label: "Normal" },
-  "a1c":            { min: 4.0, max: 5.6, label: "Normal" },
-  "insulin":        { min: 2.6, max: 24.9, label: "Fasting" },
-
-  // ── Thyroid ──────────────────────────────────────────────
-  "tsh":                   { min: 0.4,  max: 4.0,  label: "Normal" },
-  "free t3":               { min: 2.3,  max: 4.2,  label: "Normal" },
-  "free t4":               { min: 0.8,  max: 1.8,  label: "Normal" },
-  "t3":                    { min: 2.3,  max: 4.2,  label: "Normal (free)" },
-  "t4":                    { min: 0.8,  max: 1.8,  label: "Normal (free)" },
-  "total t3":              { min: 80,   max: 200,  label: "Normal" },
-  "total t4":              { min: 5.0,  max: 12.0, label: "Normal" },
-  "thyroglobulin":         { min: 0,    max: 55,   label: "Normal" },
-  "thyroglobulin antibody":{ min: 0,    max: 1,    label: "Normal" },
-  "tpo antibodies":        { min: 0,    max: 35,   label: "Normal" },
-
-  // ── Hormones ─────────────────────────────────────────────
-  "testosterone":       { min: 300,  max: 1000, label: "Normal (male)" },
-  "free testosterone":  { min: 9,    max: 30,   label: "Normal (male)" },
-  "estradiol":          { min: 10,   max: 40,   label: "Normal (male)" },
-  "shbg":               { min: 10,   max: 80,   label: "Normal" },
-  "dheas":              { min: 80,   max: 560,  label: "Normal" },
-  "dhea s":             { min: 80,   max: 560,  label: "Normal" },
-  "prolactin":          { min: 2,    max: 18,   label: "Normal (male)" },
-  "cortisol":           { min: 6,    max: 23,   label: "Normal (AM)" },
-  "fsh":                { min: 1.5,  max: 12.4, label: "Normal (male)" },
-  "lh":                 { min: 1.7,  max: 8.6,  label: "Normal (male)" },
-  "igf 1":              { min: 115,  max: 307,  label: "Normal" },
-  "igf-1":              { min: 115,  max: 307,  label: "Normal" },
-
-  // ── Vitamins / Minerals ──────────────────────────────────
-  "vitamin d":          { min: 30,  max: 100,  label: "Sufficient", unit: "ng/ml" },
-  "vitamin d (25-oh)":  { min: 30,  max: 100,  label: "Sufficient", unit: "ng/ml" },
-  "vitamin d 25 oh":    { min: 30,  max: 100,  label: "Sufficient", unit: "ng/ml" },
-  "b12":                { min: 200, max: 900,  label: "Normal",     unit: "pg/ml" },
-  "vitamin b12":        { min: 200, max: 900,  label: "Normal",     unit: "pg/ml" },
-  "folate":             { min: 2.7, max: 17.0, label: "Normal",     unit: "ng/ml" },
-  "folic acid":         { min: 2.7, max: 17.0, label: "Normal",     unit: "ng/ml" },
-  "ferritin":           { min: 12,  max: 300,  label: "Normal",     unit: "ng/ml" },
-  "iron":               { min: 60,  max: 170,  label: "Normal",     unit: "ug/dl" },
-  "zinc":               { min: 70,  max: 120,  label: "Normal",     unit: "ug/dl" },
-
-  // ── Coagulation ──────────────────────────────────────────
-  "inr":          { min: 0.8, max: 1.2,  label: "Normal" },
-  "pt":           { min: 11,  max: 13.5, label: "Normal" },
-  "ptt":          { min: 25,  max: 35,   label: "Normal" },
-
-  // ── Inflammation / Other ─────────────────────────────────
-  "crp":          { min: 0,   max: 1.0,  label: "Normal" },
-  "hs crp":       { min: 0,   max: 3.0,  label: "Normal" },
-  "esr":          { min: 0,   max: 15,   label: "Normal (male)" },
-  "homocysteine": { min: 5,   max: 15,   label: "Normal" },
-  "psa":          { min: 0,   max: 4.0,  label: "Normal" },
-
-  // ── Extra aliases ─────────────────────────────────────────
-  "spo2":                     { min: 95,  max: 100, label: "Normal" },
-  "oxygen saturation":        { min: 95,  max: 100, label: "Normal" },
-  "blood sugar post meal":    { min: 70,  max: 140, label: "Normal (2hr)" },
-  "blood sugar postmeal":     { min: 70,  max: 140, label: "Normal (2hr)" },
-  "blood sugar (post meal)":  { min: 70,  max: 140, label: "Normal (2hr)" },
-  "postprandial glucose":     { min: 70,  max: 140, label: "Normal (2hr)" },
-  "fasting glucose":          { min: 70,  max: 100, label: "Normal" },
-  "fasting blood sugar":      { min: 70,  max: 100, label: "Normal" },
-  "ldl cholesterol":          { min: 0,   max: 100, label: "Optimal" },
-  "hdl cholesterol":          { min: 40,  max: 80,  label: "Normal" },
-  "total t3 (pg ml)":         { min: 2.3, max: 4.2, label: "Normal" },
-};
-
-// Get reference range for a metric type, with optional unit hint for % vs absolute CBC
-function getReferenceRange(type: string, unit?: string): ReferenceRange | undefined {
-  const key = normalizeType(type);
-  if (unit && normalizeUnit(unit) === "%") {
-    const pctKey = `${key} (%)`;
-    if (REFERENCE_RANGES[pctKey]) return REFERENCE_RANGES[pctKey];
-  }
-  return REFERENCE_RANGES[key];
-}
-
-type ValueStatus = "normal" | "borderline" | "abnormal";
-
-function getValueStatus(value: number, metricUnit: string, refRange: ReferenceRange): ValueStatus | null {
-  if (refRange.unit && normalizeUnit(metricUnit) !== normalizeUnit(refRange.unit)) return null;
-  if (value >= refRange.min && value <= refRange.max) return "normal";
-  const span = refRange.max - refRange.min;
-  const buffer = span > 0 ? span * 0.2 : refRange.max * 0.2 || 1;
-  if (value >= refRange.min - buffer && value <= refRange.max + buffer) return "borderline";
-  return "abnormal";
-}
-
-const BADGE_STYLES: Record<ValueStatus, string> = {
-  normal:     "text-emerald-600 bg-emerald-50",
-  borderline: "text-amber-600 bg-amber-50",
-  abnormal:   "text-red-600 bg-red-50",
-};
 const BADGE_NEUTRAL = "text-gray-500 bg-gray-100";
-
-const VALUE_STYLES: Record<ValueStatus, string> = {
-  normal:     "text-gray-900",
-  borderline: "text-amber-600",
-  abnormal:   "text-red-600",
-};
 
 function getYDomain(
   values: number[],
@@ -631,7 +402,12 @@ export default function HealthMetricsPage() {
               <div key={type} className="rounded-xl border border-gray-200 bg-white p-4">
                 <div className="mb-3 flex items-center gap-2">
                   <h3 className="text-sm font-semibold text-gray-700">
-                    {formatMetricLabel(type)}
+                    <Link
+                      href={`/health-metrics/${metricTypeToSlug(type)}`}
+                      className="hover:text-indigo-600"
+                    >
+                      {formatMetricLabel(type)}
+                    </Link>
                     <span className="ml-2 font-normal text-gray-400 text-xs">({unit})</span>
                   </h3>
                   {refRange && !effectiveZones && (
@@ -755,9 +531,12 @@ export default function HealthMetricsPage() {
                 >
                   <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{formatDateTime(m.measuredAt)}</td>
                   <td className="px-4 py-3">
-                    <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                    <Link
+                      href={`/health-metrics/${metricTypeToSlug(m.metricType)}`}
+                      className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                    >
                       {formatMetricLabel(m.metricType)}
-                    </span>
+                    </Link>
                   </td>
                   <td className="px-4 py-3 font-semibold text-gray-900">
                     {m.value} <span className="font-normal text-gray-500">{m.unit}</span>
@@ -828,7 +607,17 @@ function GroupedTable({
                 onClick={() => toggleGroup(groupKey)}
               >
                 <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <span className="font-semibold text-gray-800 text-sm truncate">{label}</span>
+                  {groupBy === "type" ? (
+                    <Link
+                      href={`/health-metrics/${metricTypeToSlug(groupKey)}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="font-semibold text-gray-800 text-sm truncate hover:text-indigo-600"
+                    >
+                      {label}
+                    </Link>
+                  ) : (
+                    <span className="font-semibold text-gray-800 text-sm truncate">{label}</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-3 shrink-0 ml-3">
                   {refRange && (
@@ -880,9 +669,12 @@ function GroupedTable({
                         </td>
                         {groupBy === "year" && (
                           <td className="px-4 py-2.5">
-                            <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                            <Link
+                              href={`/health-metrics/${metricTypeToSlug(m.metricType)}`}
+                              className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                            >
                               {formatMetricLabel(m.metricType)}
-                            </span>
+                            </Link>
                           </td>
                         )}
                         <td className="px-4 py-2.5 w-32">

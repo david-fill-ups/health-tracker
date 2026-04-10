@@ -10,7 +10,7 @@ const securityHeaders = [
   // Limit referrer data sent to third parties
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   // Disable browser features not needed by this app
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
+  { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=(), payment=()" },
   // Enable browser XSS auditor (legacy browsers)
   { key: "X-XSS-Protection", value: "1; mode=block" },
   // Content Security Policy

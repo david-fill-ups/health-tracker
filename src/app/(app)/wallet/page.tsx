@@ -83,9 +83,15 @@ export default function InsurancePage() {
     setToast({ message: "Card deleted" });
   }
 
-  function handleDeleteFromItem(cardId: string) {
-    setCards((prev) => prev.filter((c) => c.id !== cardId));
-    setToast({ message: "Card deleted" });
+  async function handleDeleteFromItem(cardId: string) {
+    if (!activeProfileId) return;
+    const res = await fetch(`/api/insurance/${cardId}?profileId=${activeProfileId}`, { method: "DELETE" });
+    if (res.ok) {
+      setCards((prev) => prev.filter((c) => c.id !== cardId));
+      setToast({ message: "Card deleted" });
+    } else {
+      setToast({ message: "Failed to delete card", type: "error" });
+    }
   }
 
   const activeCards = cards.filter((c) => c.status === "ACTIVE");
@@ -94,7 +100,7 @@ export default function InsurancePage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Insurance Cards</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Wallet</h1>
         {activeProfileId && (
           <button
             onClick={openAdd}
@@ -106,7 +112,7 @@ export default function InsurancePage() {
       </div>
 
       {!activeProfileId && (
-        <p className="text-sm text-gray-500">Select a profile to view insurance cards.</p>
+        <p className="text-sm text-gray-500">Select a profile to view your wallet.</p>
       )}
 
       {loading && <CardSkeleton count={3} />}
@@ -116,7 +122,7 @@ export default function InsurancePage() {
         <>
           {cards.length === 0 ? (
             <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
-              <p className="text-gray-500 mb-3">No insurance cards recorded.</p>
+              <p className="text-gray-500 mb-3">No cards recorded.</p>
               <button
                 onClick={openAdd}
                 className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"

@@ -1,10 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  INSURANCE_CARD_TYPE_LABELS,
-  INSURANCE_CARD_STATUS_LABELS,
-} from "@/lib/validation";
+import { INSURANCE_CARD_TYPE_LABELS, INSURANCE_CARD_STATUS_LABELS } from "@/lib/validation";
 import type { InsuranceCardListItem } from "@/server/insurance";
 
 interface InsuranceCardItemProps {
@@ -119,14 +116,6 @@ export function InsuranceCardItem({
     if (src) onImageClick(src);
   }
 
-  function handleDelete() {
-    if (!confirm(`Delete this ${INSURANCE_CARD_TYPE_LABELS[card.type as keyof typeof INSURANCE_CARD_TYPE_LABELS] ?? card.type} card?`)) return;
-    fetch(`/api/insurance/${card.id}?profileId=${profileId}`, { method: "DELETE" }).then(
-      (r) => {
-        if (r.ok) onDelete(card.id);
-      }
-    );
-  }
 
   const typeLabel =
     INSURANCE_CARD_TYPE_LABELS[card.type as keyof typeof INSURANCE_CARD_TYPE_LABELS] ?? card.type;
@@ -136,41 +125,37 @@ export function InsuranceCardItem({
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
       {/* Header row */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span
-            className={`rounded-full px-2 py-0.5 text-xs font-semibold ${TYPE_COLORS[card.type] ?? TYPE_COLORS.OTHER}`}
-          >
-            {typeLabel}
-          </span>
-          <span className="font-semibold text-gray-900">
-            {card.insurerName ?? "—"}
-          </span>
-          {card.planName && (
-            <span className="text-sm text-gray-500">· {card.planName}</span>
-          )}
-          <span
-            className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[card.status] ?? ""}`}
-          >
-            {statusLabel}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={() => onEdit(card.id)}
-            className="text-xs text-indigo-600 hover:text-indigo-800 underline"
-          >
-            Edit
-          </button>
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="text-xs text-red-500 hover:text-red-700 underline"
-          >
-            Delete
-          </button>
-        </div>
+      <div className="flex items-start justify-between gap-2">
+      <button
+        type="button"
+        onClick={() => onEdit(card.id)}
+        className="flex items-center gap-2 flex-wrap text-left hover:opacity-75 transition-opacity"
+      >
+        <span
+          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${TYPE_COLORS[card.type] ?? TYPE_COLORS.OTHER}`}
+        >
+          {typeLabel}
+        </span>
+        <span className="font-semibold text-gray-900 underline decoration-dotted">
+          {card.insurerName ?? "—"}
+        </span>
+        {card.planName && (
+          <span className="text-sm text-gray-500">· {card.planName}</span>
+        )}
+        <span
+          className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[card.status] ?? ""}`}
+        >
+          {statusLabel}
+        </span>
+      </button>
+      <button
+        type="button"
+        onClick={() => onDelete(card.id)}
+        className="shrink-0 text-gray-400 hover:text-red-500 transition-colors text-sm"
+        title="Delete card"
+      >
+        ✕
+      </button>
       </div>
 
       {/* Body */}
