@@ -132,7 +132,7 @@ export default function InsurancePage() {
             </div>
           ) : (
             <>
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {activeCards.map((card) => (
                   <InsuranceCardItem
                     key={card.id}
@@ -142,7 +142,6 @@ export default function InsurancePage() {
                     onReveal={(field) => reveal(card.id, field)}
                     onHide={(field) => hide(card.id, field)}
                     onEdit={openEdit}
-                    onDelete={handleDeleteFromItem}
                     onImageClick={(src) => setLightboxSrc(src)}
                   />
                 ))}
@@ -158,7 +157,7 @@ export default function InsurancePage() {
                     {inactiveCards.length})
                   </button>
                   {showInactive && (
-                    <div className="mt-3 space-y-3 opacity-70">
+                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 opacity-70">
                       {inactiveCards.map((card) => (
                         <InsuranceCardItem
                           key={card.id}
@@ -168,7 +167,6 @@ export default function InsurancePage() {
                           onReveal={(field) => reveal(card.id, field)}
                           onHide={(field) => hide(card.id, field)}
                           onEdit={openEdit}
-                          onDelete={handleDeleteFromItem}
                           onImageClick={(src) => setLightboxSrc(src)}
                         />
                       ))}

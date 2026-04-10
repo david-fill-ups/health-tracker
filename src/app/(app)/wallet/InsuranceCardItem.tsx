@@ -11,14 +11,12 @@ interface InsuranceCardItemProps {
   onReveal: (field: string) => void;
   onHide: (field: string) => void;
   onEdit: (cardId: string) => void;
-  onDelete: (cardId: string) => void;
   onImageClick: (src: string) => void;
 }
 
 function MaskedField({
   label,
   value,
-  fieldName,
   revealed,
   onReveal,
   onHide,
@@ -78,7 +76,6 @@ export function InsuranceCardItem({
   onReveal,
   onHide,
   onEdit,
-  onDelete,
   onImageClick,
 }: InsuranceCardItemProps) {
   const [loadingImages, setLoadingImages] = useState(false);
@@ -116,58 +113,49 @@ export function InsuranceCardItem({
     if (src) onImageClick(src);
   }
 
-
   const typeLabel =
     INSURANCE_CARD_TYPE_LABELS[card.type as keyof typeof INSURANCE_CARD_TYPE_LABELS] ?? card.type;
   const statusLabel =
     INSURANCE_CARD_STATUS_LABELS[card.status as keyof typeof INSURANCE_CARD_STATUS_LABELS] ?? card.status;
 
+  const hasImages = card.hasFrontImage || card.hasBackImage;
+  const hasContact = !!(card.phone || card.website);
+
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      {/* Header row */}
-      <div className="flex items-start justify-between gap-2">
+    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm flex flex-col gap-3">
+      {/* Top row: type badge + status badge */}
+      <div className="flex items-center justify-between gap-2">
+        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${TYPE_COLORS[card.type] ?? TYPE_COLORS.OTHER}`}>
+          {typeLabel}
+        </span>
+        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[card.status] ?? ""}`}>
+          {statusLabel}
+        </span>
+      </div>
+
+      {/* Name — clickable */}
       <button
         type="button"
         onClick={() => onEdit(card.id)}
-        className="flex items-center gap-2 flex-wrap text-left hover:opacity-75 transition-opacity"
+        className="text-left hover:opacity-75 transition-opacity"
       >
-        <span
-          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${TYPE_COLORS[card.type] ?? TYPE_COLORS.OTHER}`}
-        >
-          {typeLabel}
-        </span>
-        <span className="font-semibold text-gray-900 underline decoration-dotted">
+        <div className="font-semibold text-gray-900 underline decoration-dotted leading-snug">
           {card.insurerName ?? "—"}
-        </span>
+        </div>
         {card.planName && (
-          <span className="text-sm text-gray-500">· {card.planName}</span>
+          <div className="text-xs text-gray-500 mt-0.5">{card.planName}</div>
         )}
-        <span
-          className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[card.status] ?? ""}`}
-        >
-          {statusLabel}
-        </span>
       </button>
-      <button
-        type="button"
-        onClick={() => onDelete(card.id)}
-        className="shrink-0 text-gray-400 hover:text-red-500 transition-colors text-sm"
-        title="Delete card"
-      >
-        ✕
-      </button>
-      </div>
 
-      {/* Body */}
-      <div className="mt-3 space-y-1.5">
+      {/* Fields */}
+      <div className="space-y-1 text-sm">
         {card.policyHolder && (
-          <div className="text-sm text-gray-600">
-            Holder: <span className="text-gray-900">{card.policyHolder}</span>
+          <div className="text-gray-500">
+            Holder: <span className="text-gray-800">{card.policyHolder}</span>
           </div>
         )}
 
-        {/* Masked insurance fields */}
-        <div className="flex flex-wrap gap-x-6 gap-y-1">
+        <div className="flex flex-col gap-0.5">
           <MaskedField
             label="Member ID"
             value={card.memberId}
@@ -186,9 +174,8 @@ export function InsuranceCardItem({
           />
         </div>
 
-        {/* RX fields */}
         {isRx && (
-          <div className="flex flex-wrap gap-x-6 gap-y-1">
+          <div className="flex flex-col gap-0.5">
             <MaskedField
               label="BIN"
               value={card.rxBIN}
@@ -216,9 +203,8 @@ export function InsuranceCardItem({
           </div>
         )}
 
-        {/* Payment card fields */}
         {isPaymentCard && (card.cardLastFour || card.cardNetwork) && (
-          <div className="flex flex-wrap gap-x-6 gap-y-1 items-center">
+          <div className="flex flex-col gap-0.5">
             <MaskedField
               label="Card #"
               value={card.cardLastFour}
@@ -228,77 +214,69 @@ export function InsuranceCardItem({
               onHide={() => onHide("cardLastFour")}
             />
             {card.cardNetwork && (
-              <span className="text-sm text-gray-500">
-                Network: <span className="text-gray-900">{card.cardNetwork}</span>
+              <span className="text-gray-500">
+                Network: <span className="text-gray-800">{card.cardNetwork}</span>
               </span>
-            )}
-          </div>
-        )}
-
-        {/* Contact & dates */}
-        {(card.phone || card.website) && (
-          <div className="flex flex-wrap gap-x-4 text-sm text-gray-500">
-            {card.phone && <span>📞 {card.phone}</span>}
-            {card.website && (
-              <a
-                href={card.website.startsWith("http") ? card.website : `https://${card.website}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-indigo-500 hover:underline"
-              >
-                🌐 {card.website}
-              </a>
             )}
           </div>
         )}
 
         {(card.effectiveDate || card.expirationDate) && (
-          <div className="flex flex-wrap gap-x-4 text-xs text-gray-400">
+          <div className="flex flex-wrap gap-x-3 text-xs text-gray-400 pt-0.5">
             {card.effectiveDate && (
-              <span>Effective: {new Date(card.effectiveDate).toLocaleDateString()}</span>
+              <span>Eff: {new Date(card.effectiveDate).toLocaleDateString()}</span>
             )}
             {card.expirationDate && (
-              <span
-                className={
-                  card.status === "EXPIRED" ? "text-red-500 font-medium" : ""
-                }
-              >
-                Expires: {new Date(card.expirationDate).toLocaleDateString()}
+              <span className={card.status === "EXPIRED" ? "text-red-500 font-medium" : ""}>
+                Exp: {new Date(card.expirationDate).toLocaleDateString()}
               </span>
             )}
           </div>
         )}
 
-        {/* Image thumbnails */}
-        {(card.hasFrontImage || card.hasBackImage) && (
-          <div className="flex gap-3 mt-1">
-            {card.hasFrontImage && (
-              <button
-                type="button"
-                onClick={() => handleImageClick("front")}
-                disabled={loadingImages}
-                className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-500 hover:border-indigo-300 hover:text-indigo-600 transition-colors"
-              >
-                🪪 Front
-              </button>
-            )}
-            {card.hasBackImage && (
-              <button
-                type="button"
-                onClick={() => handleImageClick("back")}
-                disabled={loadingImages}
-                className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-500 hover:border-indigo-300 hover:text-indigo-600 transition-colors"
-              >
-                🪪 Back
-              </button>
-            )}
-          </div>
-        )}
-
         {card.notes && (
-          <p className="text-sm text-gray-500 mt-1">{card.notes}</p>
+          <p className="text-xs text-gray-400 pt-0.5">{card.notes}</p>
         )}
       </div>
+
+      {/* Footer: images + contact */}
+      {(hasImages || hasContact) && (
+        <div className="mt-auto pt-2 border-t border-gray-100 flex flex-wrap items-center gap-x-3 gap-y-1">
+          {card.hasFrontImage && (
+            <button
+              type="button"
+              onClick={() => handleImageClick("front")}
+              disabled={loadingImages}
+              className="flex items-center gap-1 rounded border border-gray-200 px-2 py-0.5 text-xs text-gray-500 hover:border-indigo-300 hover:text-indigo-600 transition-colors"
+            >
+              🪪 Front
+            </button>
+          )}
+          {card.hasBackImage && (
+            <button
+              type="button"
+              onClick={() => handleImageClick("back")}
+              disabled={loadingImages}
+              className="flex items-center gap-1 rounded border border-gray-200 px-2 py-0.5 text-xs text-gray-500 hover:border-indigo-300 hover:text-indigo-600 transition-colors"
+            >
+              🪪 Back
+            </button>
+          )}
+          {card.phone && (
+            <span className="text-xs text-gray-500">📞 {card.phone}</span>
+          )}
+          {card.website && (
+            <a
+              href={card.website.startsWith("http") ? card.website : `https://${card.website}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-indigo-500 hover:underline"
+            >
+              🌐 {card.website}
+            </a>
+          )}
+        </div>
+      )}
     </div>
   );
 }

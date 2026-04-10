@@ -345,7 +345,7 @@ export function InsuranceCardForm({
             <legend className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Payment Card Details</legend>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={labelCls}>Card Number (last 4)</label>
+                <label className={labelCls}>Card Number</label>
                 <input
                   type="text"
                   value={fields.cardLastFour}
