@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { StarRating } from "@/components/ui/StarRating";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import {
   VisitCard, type Visit,
@@ -443,67 +444,185 @@ function VisitsPageInner() {
                   );
                 }
 
-                // Named-entity groups: summary card showing the last visit
-                const lastVisit = groupVisits[0];
-                const rest = groupVisits.slice(1);
-                const isFacilityFallback = groupBy === "doctor" && !lastVisit.doctor && !!lastVisit.facility;
-                const lastVisitDateLabel = lastVisit.date
-                  ? formatDate(lastVisit.date)
-                  : lastVisit.dueMonth
-                  ? `Due ${formatDueMonth(lastVisit.dueMonth)}`
-                  : "No date";
+                // Named-entity groups (doctor, facility, specialty, type)
+                const rep = groupVisits[0];
+                const isFacilityFallback = groupBy === "doctor" && !rep.doctor && !!rep.facility;
+
+                // Entity navigation link
+                const doctorId = !isFacilityFallback && groupBy === "doctor" ? rep.doctor?.id ?? null : null;
+                const facilityId = (groupBy === "facility" || isFacilityFallback) ? rep.facility?.id ?? null : null;
+                const entityHref = doctorId
+                  ? `/healthcare-team/provider/${doctorId}`
+                  : facilityId
+                  ? `/healthcare-team/facility/${facilityId}`
+                  : null;
+
+                // Doctor enrichment (only for non-fallback doctor groups)
+                const photo = !isFacilityFallback && groupBy === "doctor" ? rep.doctor?.photo ?? null : null;
+                const rating = !isFacilityFallback && groupBy === "doctor" ? rep.doctor?.rating ?? null : null;
+                const isInactive = !isFacilityFallback && groupBy === "doctor" && rep.doctor?.active === false;
+
+                // Smart date labels: find next upcoming and most recent past
+                const todayStr = new Date().toISOString().slice(0, 10);
+                let nextVisit: typeof rep | null = null;
+                let nextDateStr: string | null = null;
+                let lastDisplayVisit: typeof rep | null = null;
+                let lastDateStr: string | null = null;
+                for (const v of groupVisits) {
+                  const d = effectiveDate(v);
+                  if (d && d >= todayStr && (v.status === "PENDING" || v.status === "SCHEDULED")) {
+                    if (!nextDateStr || d < nextDateStr) { nextVisit = v; nextDateStr = d; }
+                  } else if (d && (d < todayStr || v.status === "COMPLETED" || v.status === "CANCELLED")) {
+                    if (!lastDateStr || d > lastDateStr) { lastDisplayVisit = v; lastDateStr = d; }
+                  }
+                }
+
+                // Partition visits for expanded view: upcoming vs past
+                const upcomingVisits = groupVisits.filter(v => {
+                  const d = effectiveDate(v);
+                  return (v.status === "PENDING" || v.status === "SCHEDULED") && (!d || d >= todayStr);
+                });
+                const upcomingIds = new Set(upcomingVisits.map(v => v.id));
+                const pastVisits = groupVisits.filter(v => !upcomingIds.has(v.id));
 
                 return (
-                  <section key={groupName} className="space-y-3">
+                  <section key={groupName} className="space-y-2">
+                    {/* Group header — click anywhere to expand/collapse */}
                     <div
-                      onClick={() => router.push(`/visits/${lastVisit.id}`)}
-                      className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => toggleGroup(groupName)}
+                      className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm hover:bg-gray-50 transition-colors cursor-pointer select-none"
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 space-y-1 flex-1">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1 space-y-1">
+                          {/* Name row */}
                           <div className="flex items-center gap-2 flex-wrap">
                             {isFacilityFallback && (
-                              <span className="text-xs font-medium text-indigo-500 bg-indigo-50 border border-indigo-100 rounded px-1.5 py-0.5 shrink-0">Facility</span>
-                            )}
-                            <span className="font-semibold text-gray-900">{groupName}</span>
-                          </div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm text-gray-500">Last Visit: {lastVisitDateLabel}</span>
-                            {groupBy !== "type" && (
-                              <span className="bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 text-xs font-medium shrink-0">
-                                {VISIT_TYPE_LABELS[lastVisit.type]}
+                              <span className="text-xs font-medium text-indigo-500 bg-indigo-50 border border-indigo-100 rounded px-1.5 py-0.5 shrink-0">
+                                Facility
                               </span>
                             )}
-                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium shrink-0 ${STATUS_STYLES[lastVisit.status]}`}>
-                              {STATUS_LABELS[lastVisit.status]}
-                            </span>
+                            {entityHref ? (
+                              <Link
+                                href={entityHref}
+                                onClick={(e) => e.stopPropagation()}
+                                className="font-semibold text-gray-900 hover:text-indigo-600 hover:underline select-text"
+                              >
+                                {groupName}
+                              </Link>
+                            ) : (
+                              <span className="font-semibold text-gray-900">{groupName}</span>
+                            )}
+                            {rating != null && (
+                              <span onClick={(e) => e.stopPropagation()}>
+                                <StarRating value={rating} readonly size="sm" />
+                              </span>
+                            )}
+                            {isInactive && (
+                              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 shrink-0">
+                                Inactive
+                              </span>
+                            )}
                           </div>
+
+                          {/* Context: doctor/facility/specialty info */}
                           <div className="flex flex-wrap gap-x-3 text-sm text-gray-500">
-                            {groupBy !== "doctor" && !isFacilityFallback && lastVisit.doctor && (
-                              <span>{lastVisit.doctor.name}</span>
+                            {groupBy !== "doctor" && !isFacilityFallback && rep.doctor && (
+                              <span>{rep.doctor.name}</span>
                             )}
-                            {groupBy !== "facility" && !isFacilityFallback && lastVisit.facility && (
-                              <span>{lastVisit.facility.name}</span>
+                            {groupBy !== "facility" && !isFacilityFallback && rep.facility && (
+                              <span>{rep.facility.name}</span>
                             )}
-                            {groupBy !== "specialty" && lastVisit.specialty && (
-                              <span>{lastVisit.specialty}</span>
+                            {groupBy !== "specialty" && rep.specialty && (
+                              <span>{rep.specialty}</span>
+                            )}
+                          </div>
+
+                          {/* Next / Last date summary */}
+                          <div className="flex items-center gap-3 text-xs">
+                            {nextVisit && (
+                              <span className="text-gray-500">
+                                <span className="text-indigo-500 font-medium">Next:</span>{" "}
+                                {nextVisit.date
+                                  ? formatDate(nextVisit.date)
+                                  : nextVisit.dueMonth
+                                  ? formatDueMonth(nextVisit.dueMonth)
+                                  : "TBD"}
+                              </span>
+                            )}
+                            {lastDisplayVisit && (
+                              <span className="text-gray-500">
+                                <span className="font-medium text-gray-600">Last:</span>{" "}
+                                {lastDisplayVisit.date
+                                  ? formatDate(lastDisplayVisit.date)
+                                  : lastDisplayVisit.dueMonth
+                                  ? formatDueMonth(lastDisplayVisit.dueMonth)
+                                  : ""}
+                              </span>
+                            )}
+                            {!nextVisit && !lastDisplayVisit && (
+                              <span className="text-gray-400">
+                                {groupVisits.some(v => v.status === "PENDING") ? "Scheduling pending" : "No dates recorded"}
+                              </span>
                             )}
                           </div>
                         </div>
-                        {rest.length > 0 && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); toggleGroup(groupName); }}
-                            className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors shrink-0 mt-0.5"
-                          >
-                            {isExpanded ? "Show less" : `+${rest.length} more`}
-                            <span className="text-sm">{isExpanded ? "▴" : "▾"}</span>
-                          </button>
-                        )}
+
+                        {/* Right side: photo + count + chevron */}
+                        <div className="flex items-center gap-3 shrink-0">
+                          <div className="text-right">
+                            <div className="text-xs text-gray-400">
+                              {groupVisits.length} visit{groupVisits.length !== 1 ? "s" : ""}
+                            </div>
+                            <div className="text-gray-400 text-sm mt-0.5 text-right">
+                              {isExpanded ? "▴" : "▾"}
+                            </div>
+                          </div>
+                          {photo && (
+                            <div onClick={(e) => e.stopPropagation()}>
+                              {entityHref ? (
+                                <Link href={entityHref}>
+                                  <img
+                                    src={photo}
+                                    alt={groupName}
+                                    className="w-12 h-12 rounded-full object-cover ring-2 ring-gray-100 hover:ring-indigo-200 transition-all"
+                                  />
+                                </Link>
+                              ) : (
+                                <img
+                                  src={photo}
+                                  alt={groupName}
+                                  className="w-12 h-12 rounded-full object-cover ring-2 ring-gray-100"
+                                />
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    {isExpanded && rest.map((v) => (
-                      <VisitCard key={v.id} visit={v} />
-                    ))}
+
+                    {/* Expanded visits — nested with left border */}
+                    {isExpanded && (
+                      <div className="ml-4 border-l-2 border-indigo-100 pl-3 space-y-2">
+                        {upcomingVisits.length > 0 && (
+                          <>
+                            {pastVisits.length > 0 && (
+                              <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500 px-1 pt-1">
+                                Upcoming
+                              </p>
+                            )}
+                            {upcomingVisits.map((v) => <VisitCard key={v.id} visit={v} />)}
+                          </>
+                        )}
+                        {upcomingVisits.length > 0 && pastVisits.length > 0 && (
+                          <div className="flex items-center gap-2 py-1">
+                            <div className="flex-1 h-px bg-gray-200" />
+                            <span className="text-xs text-gray-400 uppercase tracking-wide font-medium">Past</span>
+                            <div className="flex-1 h-px bg-gray-200" />
+                          </div>
+                        )}
+                        {pastVisits.map((v) => <VisitCard key={v.id} visit={v} />)}
+                      </div>
+                    )}
                   </section>
                 );
               })}

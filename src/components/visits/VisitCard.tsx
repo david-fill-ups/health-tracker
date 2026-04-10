@@ -6,6 +6,9 @@ import type { VisitStatus, VisitType } from "@/generated/prisma/enums";
 interface Doctor {
   id: string;
   name: string;
+  rating?: number | null;
+  active?: boolean;
+  photo?: string | null;
 }
 
 interface Facility {
@@ -84,7 +87,7 @@ export function VisitCard({ visit }: Props) {
   const dateLabel = visit.date
     ? formatDate(visit.date)
     : visit.dueMonth
-    ? `Due ${formatDueMonth(visit.dueMonth)}`
+    ? formatDueMonth(visit.dueMonth)
     : "No date";
 
   return (

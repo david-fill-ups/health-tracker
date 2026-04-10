@@ -215,38 +215,22 @@ function HealthcareTeamContent() {
 
   const activeFacilities = facilities.filter((f) => f.active);
   const inactiveFacilities = facilities.filter((f) => !f.active);
-  const inactiveDoctors = doctors.filter((d) => !d.active);
 
-  // Active facilities that have at least one inactive doctor (show in both sections)
-  const activeFacilitiesWithInactiveDoctors = activeFacilities.filter(
-    (f) => inactiveDoctors.some((d) => d.facilityId === f.id)
-  );
-
-  // Group active doctors by facilityId
-  const activeDoctorsByFacility = new Map<string, Doctor[]>();
+  // Map facilityId → all doctors (active + inactive)
+  const allDoctorsByFacility = new Map<string, Doctor[]>();
   const independentDoctors: Doctor[] = [];
-  for (const d of doctors.filter((d) => d.active)) {
+  for (const d of doctors) {
     if (d.facilityId) {
-      const arr = activeDoctorsByFacility.get(d.facilityId) ?? [];
+      const arr = allDoctorsByFacility.get(d.facilityId) ?? [];
       arr.push(d);
-      activeDoctorsByFacility.set(d.facilityId, arr);
+      allDoctorsByFacility.set(d.facilityId, arr);
     } else {
       independentDoctors.push(d);
     }
   }
 
-  // Inactive grouped
-  const inactiveDoctorsByFacility = new Map<string, Doctor[]>();
-  const inactiveIndependentDoctors: Doctor[] = [];
-  for (const d of inactiveDoctors) {
-    if (d.facilityId) {
-      const arr = inactiveDoctorsByFacility.get(d.facilityId) ?? [];
-      arr.push(d);
-      inactiveDoctorsByFacility.set(d.facilityId, arr);
-    } else {
-      inactiveIndependentDoctors.push(d);
-    }
-  }
+  const independentActiveDoctors = independentDoctors.filter((d) => d.active);
+  const independentInactiveDoctors = independentDoctors.filter((d) => !d.active);
 
   function toDoctorCardProps(d: Doctor) {
     return { ...d, visitCount: d._count?.visits, lastVisit: d.visits?.[0]?.date ?? null };
@@ -284,46 +268,37 @@ function HealthcareTeamContent() {
     return doctorMatchesSearch(d) && doctorMatchesSpecialty(d);
   }
 
-  // Derived: what's visible in the active section
+  // Active facilities (include if facility name matches OR any of its doctors match)
   const visibleActiveFacilities = showFilter !== "providers"
     ? sortFacilities(
         activeFacilities.filter((f) =>
-          facilityMatchesSearch(f) || (activeDoctorsByFacility.get(f.id) ?? []).some(doctorMatches)
+          facilityMatchesSearch(f) || (allDoctorsByFacility.get(f.id) ?? []).some(doctorMatches)
         ),
         sortBy,
         sortDir,
       )
     : [];
 
-  const visibleIndependentDoctors = showFilter !== "facilities"
-    ? sortDoctors(independentDoctors.filter(doctorMatches), sortBy, sortDir)
+  // Independent active doctors
+  const visibleIndependentActiveDoctors = showFilter !== "facilities"
+    ? sortDoctors(independentActiveDoctors.filter(doctorMatches), sortBy, sortDir)
     : [];
 
-  // In "providers" mode: flat list of all active matching doctors
+  // Providers-only flat mode (active)
   const flatProviders = showFilter === "providers"
     ? sortDoctors(doctors.filter((d) => d.active && doctorMatches(d)), sortBy, sortDir)
     : [];
 
-  // In "providers" mode: flat list of all inactive matching doctors
+  // Providers-only flat mode (inactive)
   const flatInactiveProviders = showFilter === "providers"
-    ? sortDoctors(inactiveDoctors.filter(doctorMatches), sortBy, sortDir)
+    ? sortDoctors(doctors.filter((d) => !d.active && doctorMatches(d)), sortBy, sortDir)
     : [];
 
-  // Derived: what's visible in the inactive section
+  // Inactive section: only inactive facilities + independent inactive doctors
   const visibleInactiveFacilities = showFilter !== "providers"
     ? sortFacilities(
         inactiveFacilities.filter((f) =>
-          facilityMatchesSearch(f) || (inactiveDoctorsByFacility.get(f.id) ?? []).some(doctorMatches)
-        ),
-        sortBy,
-        sortDir,
-      )
-    : [];
-
-  const visibleActiveFacilitiesWithInactiveDoctors = showFilter !== "providers"
-    ? sortFacilities(
-        activeFacilitiesWithInactiveDoctors.filter((f) =>
-          facilityMatchesSearch(f) || (inactiveDoctorsByFacility.get(f.id) ?? []).some(doctorMatches)
+          facilityMatchesSearch(f) || (allDoctorsByFacility.get(f.id) ?? []).some(doctorMatches)
         ),
         sortBy,
         sortDir,
@@ -331,12 +306,15 @@ function HealthcareTeamContent() {
     : [];
 
   const visibleInactiveIndependentDoctors = showFilter !== "facilities"
-    ? sortDoctors(inactiveIndependentDoctors.filter(doctorMatches), sortBy, sortDir)
+    ? sortDoctors(independentInactiveDoctors.filter(doctorMatches), sortBy, sortDir)
     : [];
 
   const filteredInactiveCount =
-    (showFilter !== "providers" ? visibleInactiveFacilities.length : 0) +
-    (showFilter !== "facilities" ? inactiveDoctors.filter(doctorMatches).length : 0);
+    showFilter === "providers"
+      ? flatInactiveProviders.length
+      : showFilter === "facilities"
+      ? visibleInactiveFacilities.length
+      : visibleInactiveFacilities.length + visibleInactiveIndependentDoctors.length;
 
   const loading = loadingFacilities || loadingDoctors;
 
@@ -450,7 +428,7 @@ function HealthcareTeamContent() {
         <p className="text-sm text-gray-400">Loading…</p>
       ) : (
         <div className="space-y-4">
-          {visibleActiveFacilities.length === 0 && visibleIndependentDoctors.length === 0 && flatProviders.length === 0 && (
+          {visibleActiveFacilities.length === 0 && visibleIndependentActiveDoctors.length === 0 && flatProviders.length === 0 && (
             <p className="text-sm text-gray-400">
               {search || showFilter !== "all" || specialty
                 ? "No results found."
@@ -459,37 +437,46 @@ function HealthcareTeamContent() {
           )}
 
           {/* Providers-only flat mode */}
-          {showFilter === "providers" && flatProviders.map((d) => (
-            <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} />
-          ))}
+          {showFilter === "providers" && flatProviders.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {flatProviders.map((d) => (
+                <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} mini />
+              ))}
+            </div>
+          )}
 
-          {/* Facilities with their doctors */}
+          {/* Facilities with their doctors as mini cards */}
           {showFilter !== "providers" && visibleActiveFacilities.map((f) => {
             const facilityDoctors = showFilter === "facilities"
               ? []
-              : sortDoctors((activeDoctorsByFacility.get(f.id) ?? []).filter(doctorMatches), sortBy, sortDir);
+              : sortDoctors(
+                  (allDoctorsByFacility.get(f.id) ?? []).filter(doctorMatches),
+                  sortBy,
+                  sortDir,
+                );
             return (
-              <div key={f.id} className="space-y-1">
+              <div key={f.id} className="space-y-2">
                 <FacilityCard facility={toFacilityCardProps(f)} />
                 {facilityDoctors.length > 0 && (
-                  <div className="ml-6 space-y-1 border-l-2 border-indigo-100 pl-4">
+                  <div className="flex flex-wrap gap-2 pl-3">
                     {facilityDoctors.map((d) => (
-                      <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} />
+                      <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} mini />
                     ))}
                   </div>
                 )}
               </div>
             );
           })}
-          {/* Independent providers — not shown in providers mode since flatProviders already covers them */}
-          {showFilter !== "providers" && visibleIndependentDoctors.length > 0 && (
-            <div className="space-y-1">
+
+          {/* Independent active providers */}
+          {showFilter !== "providers" && visibleIndependentActiveDoctors.length > 0 && (
+            <div className="space-y-2">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">
                 Independent Providers
               </h2>
-              <div className="space-y-1">
-                {visibleIndependentDoctors.map((d) => (
-                  <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} />
+              <div className="flex flex-wrap gap-2">
+                {visibleIndependentActiveDoctors.map((d) => (
+                  <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} mini />
                 ))}
               </div>
             </div>
@@ -508,55 +495,49 @@ function HealthcareTeamContent() {
               </button>
               {inactiveOpen && (
                 <div className="mt-3 space-y-4">
+                  {/* Inactive facilities with all their doctors */}
                   {visibleInactiveFacilities.map((f) => {
                     const facilityDoctors = showFilter === "facilities"
                       ? []
-                      : sortDoctors((inactiveDoctorsByFacility.get(f.id) ?? []).filter(doctorMatches), sortBy, sortDir);
+                      : sortDoctors(
+                          (allDoctorsByFacility.get(f.id) ?? []).filter(doctorMatches),
+                          sortBy,
+                          sortDir,
+                        );
                     return (
-                      <div key={f.id} className="space-y-1">
+                      <div key={f.id} className="space-y-2">
                         <FacilityCard facility={toFacilityCardProps(f)} />
                         {facilityDoctors.length > 0 && (
-                          <div className="ml-6 space-y-1 border-l-2 border-gray-100 pl-4">
+                          <div className="flex flex-wrap gap-2 pl-3">
                             {facilityDoctors.map((d) => (
-                              <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} />
+                              <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} mini />
                             ))}
                           </div>
                         )}
                       </div>
                     );
                   })}
-                  {/* Active facilities with some inactive providers — skip when filter=facilities since doctors are hidden anyway */}
-                  {showFilter !== "facilities" && visibleActiveFacilitiesWithInactiveDoctors.map((f) => {
-                    const facilityDoctors = sortDoctors(
-                      (inactiveDoctorsByFacility.get(f.id) ?? []).filter(doctorMatches),
-                      sortBy,
-                      sortDir,
-                    );
-                    return (
-                      <div key={f.id} className="space-y-1">
-                        <FacilityCard facility={toFacilityCardProps(f)} />
-                        {facilityDoctors.length > 0 && (
-                          <div className="ml-6 space-y-1 border-l-2 border-gray-100 pl-4">
-                            {facilityDoctors.map((d) => (
-                              <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                  {/* Providers mode: flat list of all inactive doctors */}
-                  {showFilter === "providers" && flatInactiveProviders.map((d) => (
-                    <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} />
-                  ))}
+
+                  {/* Providers mode: flat inactive list */}
+                  {showFilter === "providers" && flatInactiveProviders.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {flatInactiveProviders.map((d) => (
+                        <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} mini />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Independent inactive providers */}
                   {showFilter !== "providers" && visibleInactiveIndependentDoctors.length > 0 && (
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">
                         Independent Providers
                       </h2>
-                      {visibleInactiveIndependentDoctors.map((d) => (
-                        <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} />
-                      ))}
+                      <div className="flex flex-wrap gap-2">
+                        {visibleInactiveIndependentDoctors.map((d) => (
+                          <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} mini />
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
