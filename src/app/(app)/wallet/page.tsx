@@ -143,6 +143,8 @@ export default function InsurancePage() {
                     onHide={(field) => hide(card.id, field)}
                     onEdit={openEdit}
                     onImageClick={(src) => setLightboxSrc(src)}
+                    isShared={card.isShared}
+                    ownerName={card.ownerName}
                   />
                 ))}
               </div>
@@ -168,6 +170,8 @@ export default function InsurancePage() {
                           onHide={(field) => hide(card.id, field)}
                           onEdit={openEdit}
                           onImageClick={(src) => setLightboxSrc(src)}
+                          isShared={card.isShared}
+                          ownerName={card.ownerName}
                         />
                       ))}
                     </div>

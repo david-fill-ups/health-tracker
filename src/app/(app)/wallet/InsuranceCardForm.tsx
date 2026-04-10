@@ -60,6 +60,8 @@ export function InsuranceCardForm({
   onClose,
 }: InsuranceCardFormProps) {
   const [fields, setFields] = useState({ ...INITIAL_STATE });
+  const [memberProfileIds, setMemberProfileIds] = useState<string[]>([]);
+  const [otherProfiles, setOtherProfiles] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,9 +70,20 @@ export function InsuranceCardForm({
   const isPaymentCard = ["HSA", "FSA", "HRA"].includes(fields.type);
   const isRx = fields.type === "PRESCRIPTION";
 
+  // Fetch other accessible profiles for member selection
+  useEffect(() => {
+    fetch("/api/profiles")
+      .then((r) => r.json())
+      .then((data: { id: string; name: string }[]) => {
+        setOtherProfiles(data.filter((p) => p.id !== profileId));
+      })
+      .catch(() => {/* silently ignore — member selection just won't show */});
+  }, [profileId]);
+
   useEffect(() => {
     if (!cardId) {
       setFields({ ...INITIAL_STATE });
+      setMemberProfileIds([]);
       return;
     }
     setLoading(true);
@@ -99,6 +112,7 @@ export function InsuranceCardForm({
           backImageData: data.backImageData ?? null,
           notes: data.notes ?? "",
         });
+        setMemberProfileIds(data.memberProfileIds ?? []);
       })
       .catch(() => setError("Failed to load card"))
       .finally(() => setLoading(false));
@@ -110,6 +124,12 @@ export function InsuranceCardForm({
 
   function nullify(v: string): string | null {
     return v.trim() === "" ? null : v.trim();
+  }
+
+  function toggleMember(id: string) {
+    setMemberProfileIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -138,6 +158,7 @@ export function InsuranceCardForm({
       frontImageData: fields.frontImageData,
       backImageData: fields.backImageData,
       notes: nullify(fields.notes),
+      memberProfileIds,
     };
 
     const url = isEditing
@@ -452,6 +473,31 @@ export function InsuranceCardForm({
             className={`${inputCls} resize-none`}
           />
         </div>
+
+        {/* Family Members */}
+        {otherProfiles.length > 0 && (
+          <fieldset className="space-y-2">
+            <legend className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+              Also visible to
+            </legend>
+            <p className="text-xs text-gray-500">
+              Checked profiles will see this card in their wallet (read-only).
+            </p>
+            <div className="space-y-1.5">
+              {otherProfiles.map((profile) => (
+                <label key={profile.id} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={memberProfileIds.includes(profile.id)}
+                    onChange={() => toggleMember(profile.id)}
+                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span className="text-sm text-gray-800">{profile.name}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        )}
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 

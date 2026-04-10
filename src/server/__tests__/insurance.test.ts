@@ -7,7 +7,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     insuranceCard: {
       findMany: vi.fn(),
-      findUnique: vi.fn(),
+      findFirst: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
@@ -36,7 +36,7 @@ import {
 const mockAssertProfileAccess = assertProfileAccess as ReturnType<typeof vi.fn>;
 const mockLogAudit = logAudit as ReturnType<typeof vi.fn>;
 const mockFindMany = prisma.insuranceCard.findMany as ReturnType<typeof vi.fn>;
-const mockFindUnique = prisma.insuranceCard.findUnique as ReturnType<typeof vi.fn>;
+const mockFindFirst = prisma.insuranceCard.findFirst as ReturnType<typeof vi.fn>;
 const mockCreate = prisma.insuranceCard.create as ReturnType<typeof vi.fn>;
 const mockUpdate = prisma.insuranceCard.update as ReturnType<typeof vi.fn>;
 const mockDelete = prisma.insuranceCard.delete as ReturnType<typeof vi.fn>;
@@ -85,6 +85,8 @@ describe("getInsuranceCardsForProfile", () => {
       ...fakeCard,
       frontImageData: "data:image/jpeg;base64,abc",
       backImageData: null,
+      profile: { id: PROFILE_ID, name: "Test Profile" },
+      members: [],
     };
     mockFindMany.mockResolvedValue([cardWithImages]);
 
@@ -111,19 +113,19 @@ describe("getInsuranceCardsForProfile", () => {
 
 describe("getInsuranceCardById", () => {
   it("returns the full card record including image data", async () => {
-    mockFindUnique.mockResolvedValue(fakeCard);
+    const cardWithMembers = { ...fakeCard, members: [] };
+    mockFindFirst.mockResolvedValue(cardWithMembers);
 
     const result = await getInsuranceCardById(USER_ID, PROFILE_ID, CARD_ID);
 
     expect(mockAssertProfileAccess).toHaveBeenCalledWith(USER_ID, PROFILE_ID);
-    expect(mockFindUnique).toHaveBeenCalledWith({
-      where: { id: CARD_ID, profileId: PROFILE_ID },
-    });
-    expect(result).toEqual(fakeCard);
+    expect(mockFindFirst).toHaveBeenCalled();
+    expect(result).toMatchObject({ id: CARD_ID, profileId: PROFILE_ID });
+    expect(result).toHaveProperty("memberProfileIds");
   });
 
   it("returns null when card does not exist", async () => {
-    mockFindUnique.mockResolvedValue(null);
+    mockFindFirst.mockResolvedValue(null);
 
     const result = await getInsuranceCardById(USER_ID, PROFILE_ID, CARD_ID);
 

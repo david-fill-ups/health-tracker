@@ -206,7 +206,8 @@ model Profile {
   familyMembers          FamilyMember[]
   outgoingRelationships  ProfileRelationship[] @relation("RelationshipsFrom")
   incomingRelationships  ProfileRelationship[] @relation("RelationshipsTo")
-  insuranceCards         InsuranceCard[]
+  insuranceCards              InsuranceCard[]
+  insuranceCardMemberships    InsuranceCardMember[]
 }
 
 model ProfileAccess {
@@ -672,9 +673,21 @@ model InsuranceCard {
   updatedAt      DateTime            @updatedAt
 
   profile        Profile             @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  members        InsuranceCardMember[]
 
   @@index([profileId])
   @@index([profileId, status])
+}
+
+model InsuranceCardMember {
+  insuranceCardId String
+  profileId       String
+
+  insuranceCard InsuranceCard @relation(fields: [insuranceCardId], references: [id], onDelete: Cascade)
+  profile       Profile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@id([insuranceCardId, profileId])
+  @@index([profileId])
 }
 
 // ─── Audit Log ────────────────────────────────────────────────────────────────

@@ -12,6 +12,8 @@ interface InsuranceCardItemProps {
   onHide: (field: string) => void;
   onEdit: (cardId: string) => void;
   onImageClick: (src: string) => void;
+  isShared?: boolean;
+  ownerName?: string;
 }
 
 function MaskedField({
@@ -77,6 +79,8 @@ export function InsuranceCardItem({
   onHide,
   onEdit,
   onImageClick,
+  isShared,
+  ownerName,
 }: InsuranceCardItemProps) {
   const [loadingImages, setLoadingImages] = useState(false);
   const [imageData, setImageData] = useState<{
@@ -124,28 +128,46 @@ export function InsuranceCardItem({
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm flex flex-col gap-3">
       {/* Top row: type badge + status badge */}
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${TYPE_COLORS[card.type] ?? TYPE_COLORS.OTHER}`}>
           {typeLabel}
         </span>
-        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[card.status] ?? ""}`}>
-          {statusLabel}
-        </span>
+        <div className="flex items-center gap-1.5">
+          {isShared && ownerName && (
+            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+              from {ownerName}
+            </span>
+          )}
+          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[card.status] ?? ""}`}>
+            {statusLabel}
+          </span>
+        </div>
       </div>
 
-      {/* Name — clickable */}
-      <button
-        type="button"
-        onClick={() => onEdit(card.id)}
-        className="text-left hover:opacity-75 transition-opacity"
-      >
-        <div className="font-semibold text-gray-900 underline decoration-dotted leading-snug">
-          {card.insurerName ?? "—"}
+      {/* Name — clickable for owned cards, static for shared */}
+      {isShared ? (
+        <div>
+          <div className="font-semibold text-gray-900 leading-snug">
+            {card.insurerName ?? "—"}
+          </div>
+          {card.planName && (
+            <div className="text-xs text-gray-500 mt-0.5">{card.planName}</div>
+          )}
         </div>
-        {card.planName && (
-          <div className="text-xs text-gray-500 mt-0.5">{card.planName}</div>
-        )}
-      </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => onEdit(card.id)}
+          className="text-left hover:opacity-75 transition-opacity"
+        >
+          <div className="font-semibold text-gray-900 underline decoration-dotted leading-snug">
+            {card.insurerName ?? "—"}
+          </div>
+          {card.planName && (
+            <div className="text-xs text-gray-500 mt-0.5">{card.planName}</div>
+          )}
+        </button>
+      )}
 
       {/* Fields */}
       <div className="space-y-1 text-sm">

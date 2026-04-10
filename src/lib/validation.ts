@@ -451,6 +451,7 @@ export const CreateInsuranceCardSchema = z.object({
   frontImageData: optBase64Image,
   backImageData: optBase64Image,
   notes: z.string().max(5000).nullish(),
+  memberProfileIds: z.string().array().optional(),
 });
 
 export const UpdateInsuranceCardSchema = CreateInsuranceCardSchema.omit({ profileId: true }).partial();
