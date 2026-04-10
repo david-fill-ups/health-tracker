@@ -145,6 +145,7 @@ export default function InsurancePage() {
                     onImageClick={(src) => setLightboxSrc(src)}
                     isShared={card.isShared}
                     ownerName={card.ownerName}
+                    memberNames={card.memberNames}
                   />
                 ))}
               </div>

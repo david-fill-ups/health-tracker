@@ -14,6 +14,7 @@ interface InsuranceCardItemProps {
   onImageClick: (src: string) => void;
   isShared?: boolean;
   ownerName?: string;
+  memberNames?: string[];
 }
 
 function MaskedField({
@@ -81,6 +82,7 @@ export function InsuranceCardItem({
   onImageClick,
   isShared,
   ownerName,
+  memberNames,
 }: InsuranceCardItemProps) {
   const [loadingImages, setLoadingImages] = useState(false);
   const [imageData, setImageData] = useState<{
@@ -132,15 +134,24 @@ export function InsuranceCardItem({
         <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${TYPE_COLORS[card.type] ?? TYPE_COLORS.OTHER}`}>
           {typeLabel}
         </span>
-        <div className="flex items-center gap-1.5">
-          {isShared && ownerName && (
-            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
-              from {ownerName}
+        <div className="flex flex-col items-end gap-0.5">
+          <div className="flex items-center gap-1.5">
+            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[card.status] ?? ""}`}>
+              {statusLabel}
             </span>
+          </div>
+          {isShared && ownerName && (
+            <span className="text-xs text-gray-400">From {ownerName}</span>
           )}
-          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[card.status] ?? ""}`}>
-            {statusLabel}
-          </span>
+          {!isShared && memberNames && memberNames.length > 0 && (
+            <div className="flex flex-col items-end gap-0.5 text-xs text-gray-400">
+              <span>Shared With:</span>
+              {memberNames.length <= 3
+                ? memberNames.map((name) => <span key={name}>{name}</span>)
+                : <span>{memberNames.length} profiles</span>
+              }
+            </div>
+          )}
         </div>
       </div>
 

@@ -66,6 +66,25 @@ export function ProfileCard({
           <div className="flex items-center gap-2">
             <code className="flex-1 truncate text-xs text-gray-600">{calUrl}</code>
             <CopyButton text={calUrl} />
+            <a
+              href={`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(calUrl)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Add to Google Calendar"
+              className="shrink-0 rounded-md bg-white border border-gray-200 p-1 hover:bg-gray-100 transition-colors flex items-center justify-center"
+            >
+              {/* Google Calendar icon */}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="2" fill="white" stroke="#dadce0" strokeWidth="1.5"/>
+                <rect x="3" y="5" width="18" height="6" rx="2" fill="#4285F4"/>
+                <rect x="3" y="8" width="18" height="3" fill="#4285F4"/>
+                <line x1="8" y1="3" x2="8" y2="7" stroke="#4285F4" strokeWidth="2" strokeLinecap="round"/>
+                <line x1="16" y1="3" x2="16" y2="7" stroke="#4285F4" strokeWidth="2" strokeLinecap="round"/>
+                <rect x="7" y="13" width="3" height="3" rx="0.5" fill="#4285F4"/>
+                <rect x="10.5" y="13" width="3" height="3" rx="0.5" fill="#FBBC04"/>
+                <rect x="14" y="13" width="3" height="3" rx="0.5" fill="#34A853"/>
+              </svg>
+            </a>
           </div>
         </div>
       )}

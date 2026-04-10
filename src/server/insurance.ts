@@ -25,7 +25,7 @@ export async function getInsuranceCardsForProfile(userId: string, profileId: str
     },
     include: {
       profile: { select: { id: true, name: true } },
-      members: { select: { profileId: true } },
+      members: { include: { profile: { select: { name: true } } } },
     },
     orderBy: [{ status: "asc" }, { expirationDate: "asc" }],
   });
@@ -36,6 +36,7 @@ export async function getInsuranceCardsForProfile(userId: string, profileId: str
     isShared: rest.profileId !== profileId,
     ownerName: profile.name,
     memberProfileIds: members.map((m) => m.profileId),
+    memberNames: members.map((m) => m.profile.name),
   }));
 }
 
