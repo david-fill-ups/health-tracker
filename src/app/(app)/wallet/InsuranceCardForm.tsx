@@ -8,7 +8,7 @@ import {
   INSURANCE_CARD_TYPE_LABELS,
   INSURANCE_CARD_STATUS_LABELS,
 } from "@/lib/validation";
-import { ImageUploadField } from "./ImageUploadField";
+import { ImageUploadField } from "@/components/ui/ImageUploadField";
 
 type CardType = z.infer<typeof InsuranceCardTypeEnum>;
 type CardStatus = z.infer<typeof InsuranceCardStatusEnum>;

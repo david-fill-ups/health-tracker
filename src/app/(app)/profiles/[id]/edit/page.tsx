@@ -25,6 +25,7 @@ export default async function EditProfilePage({ params }: Props) {
     state: profile.state ?? "",
     notes: profile.notes ?? "",
     timezone: profile.timezone,
+    imageData: profile.imageData ?? null,
   };
 
   return (

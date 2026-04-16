@@ -4,6 +4,8 @@ import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { Toast } from "@/components/ui/Toast";
+import { ImageUploadField } from "@/components/ui/ImageUploadField";
+import { ExpandableImage } from "@/components/ui/ExpandableImage";
 
 type FamilyRelationship = "PARENT" | "SIBLING" | "FATHER" | "MOTHER" | "BROTHER" | "SISTER" | "HALF_BROTHER" | "HALF_SISTER" | "GRANDFATHER" | "GRANDMOTHER" | "AUNT" | "UNCLE" | "SON" | "DAUGHTER";
 type FamilySide = "MATERNAL" | "PATERNAL";
@@ -25,6 +27,7 @@ interface FamilyMember {
   dateOfDeath: string | null;
   causeOfDeath: string | null;
   notes: string | null;
+  imageData: string | null;
   conditions: FamilyCondition[];
 }
 
@@ -44,6 +47,7 @@ export default function EditFamilyMemberPage({ params }: { params: Promise<{ id:
   const [dateOfDeath, setDateOfDeath] = useState("");
   const [causeOfDeath, setCauseOfDeath] = useState("");
   const [notes, setNotes] = useState("");
+  const [imageData, setImageData] = useState<string | null>(null);
 
   const showSide = SIDE_APPLICABLE.includes(relationship);
   const [savingMember, setSavingMember] = useState(false);
@@ -76,6 +80,7 @@ export default function EditFamilyMemberPage({ params }: { params: Promise<{ id:
         setDateOfDeath(data.dateOfDeath ? data.dateOfDeath.slice(0, 10) : "");
         setCauseOfDeath(data.causeOfDeath ?? "");
         setNotes(data.notes ?? "");
+        setImageData(data.imageData ?? null);
         setConditions(data.conditions);
       })
       .finally(() => setLoading(false));
@@ -97,6 +102,7 @@ export default function EditFamilyMemberPage({ params }: { params: Promise<{ id:
           dateOfDeath: dateOfDeath || undefined,
           causeOfDeath: causeOfDeath || undefined,
           notes: notes || undefined,
+          imageData: imageData ?? undefined,
         }),
       });
       if (!res.ok) {
@@ -222,6 +228,22 @@ export default function EditFamilyMemberPage({ params }: { params: Promise<{ id:
             {memberError}
           </div>
         )}
+
+        {/* Photo — prominent display when set */}
+        <div className="flex flex-col items-center gap-3">
+          {imageData && (
+            <ExpandableImage
+              src={imageData}
+              alt={name || "Family member"}
+              className="h-32 w-32 rounded-full object-cover border-4 border-indigo-100 shadow-md"
+            />
+          )}
+          <ImageUploadField
+            label={imageData ? "Change photo" : "Add photo"}
+            value={imageData}
+            onChange={setImageData}
+          />
+        </div>
 
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">

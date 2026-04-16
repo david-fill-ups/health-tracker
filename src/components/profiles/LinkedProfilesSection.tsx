@@ -7,7 +7,7 @@ interface Relationship {
   id: string;
   relationship: string;
   biological: boolean;
-  toProfile: { id: string; name: string };
+  toProfile: { id: string; name: string; imageData?: string | null };
 }
 
 interface Profile {
@@ -306,6 +306,19 @@ export function LinkedProfilesSection({
             ) : (
               <li key={rel.id} className="flex items-center justify-between gap-2 text-sm">
                 <div className="flex items-center gap-2 min-w-0">
+                  {rel.toProfile.imageData ? (
+                    <img
+                      src={rel.toProfile.imageData}
+                      alt={rel.toProfile.name}
+                      className="h-7 w-7 rounded-full object-cover border border-gray-200 shrink-0"
+                    />
+                  ) : (
+                    <div className="h-7 w-7 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
+                      <span className="text-xs font-semibold text-indigo-600">
+                        {rel.toProfile.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
                   <Link
                     href={`/profiles/${rel.toProfile.id}`}
                     className="font-medium text-indigo-600 hover:underline truncate"

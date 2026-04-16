@@ -12,6 +12,7 @@ interface Profile {
   sex: string;
   state: string | null;
   calendarToken?: string;
+  imageData?: string | null;
 }
 
 export default function ProfilesPage() {

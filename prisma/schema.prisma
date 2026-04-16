@@ -185,6 +185,7 @@ model Profile {
   state          String?
   heightIn       Int?
   notes          String?
+  imageData      String?  @db.Text
   calendarToken  String   @unique @default(cuid())
   timezone       String   @default("UTC")
   createdAt      DateTime @default(now())
@@ -577,6 +578,7 @@ model FamilyMember {
   dateOfDeath  DateTime?
   causeOfDeath String?
   notes        String?
+  imageData    String?  @db.Text
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 

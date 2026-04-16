@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { FacilityCard } from "@/components/healthcare-team/FacilityCard";
 import { DoctorCard } from "@/components/healthcare-team/DoctorCard";
+import { getFacilityCategory, CATEGORY_META, type FacilityCategory } from "@/lib/facility-categories";
 
 interface Doctor {
   id: string;
@@ -95,7 +96,6 @@ function HealthcareTeamContent() {
   const [loadingFacilities, setLoadingFacilities] = useState(false);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
-  const [inactiveOpen, setInactiveOpen] = useState(searchParams.get("inactive") === "1");
   const [search, setSearch] = useState(searchParams.get("q") ?? "");
   const [showFilter, setShowFilter] = useState<"all" | "facilities" | "providers">(
     (searchParams.get("filter") as "all" | "facilities" | "providers") ?? "all"
@@ -107,12 +107,26 @@ function HealthcareTeamContent() {
     (searchParams.get("dir") as SortDir) ?? "asc"
   );
   const [specialty, setSpecialty] = useState(searchParams.get("specialty") ?? "");
+  const [expandedCategories, setExpandedCategories] = useState<Record<FacilityCategory, boolean>>(
+    { providers: true, diagnostics: true, pharmacy: true }
+  );
+  const [inactiveCategoryOpen, setInactiveCategoryOpen] = useState<Record<FacilityCategory, boolean>>(
+    { providers: false, diagnostics: false, pharmacy: false }
+  );
+  const [inactiveProvidersOpen, setInactiveProvidersOpen] = useState(false);
   const addMenuRef = useRef<HTMLDivElement>(null);
+
+  function toggleCategory(cat: FacilityCategory) {
+    setExpandedCategories((prev) => ({ ...prev, [cat]: !prev[cat] }));
+  }
+
+  function toggleInactiveCategory(cat: FacilityCategory) {
+    setInactiveCategoryOpen((prev) => ({ ...prev, [cat]: !prev[cat] }));
+  }
 
   function syncToUrl(
     q: string,
     filter: "all" | "facilities" | "providers",
-    inactive: boolean,
     sort: SortBy,
     dir: SortDir,
     spec: string,
@@ -120,7 +134,6 @@ function HealthcareTeamContent() {
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     if (filter !== "all") params.set("filter", filter);
-    if (inactive) params.set("inactive", "1");
     if (sort !== "name") params.set("sort", sort);
     if (dir !== defaultSortDir[sort]) params.set("dir", dir);
     if (spec) params.set("specialty", spec);
@@ -130,36 +143,30 @@ function HealthcareTeamContent() {
 
   function handleSearchChange(value: string) {
     setSearch(value);
-    syncToUrl(value, showFilter, inactiveOpen, sortBy, sortDir, specialty);
+    syncToUrl(value, showFilter, sortBy, sortDir, specialty);
   }
 
   function handleFilterChange(value: "all" | "facilities" | "providers") {
     setShowFilter(value);
-    syncToUrl(search, value, inactiveOpen, sortBy, sortDir, specialty);
-  }
-
-  function handleInactiveToggle() {
-    const next = !inactiveOpen;
-    setInactiveOpen(next);
-    syncToUrl(search, showFilter, next, sortBy, sortDir, specialty);
+    syncToUrl(search, value, sortBy, sortDir, specialty);
   }
 
   function handleSortChange(value: SortBy) {
     if (value === sortBy) {
       const newDir: SortDir = sortDir === "asc" ? "desc" : "asc";
       setSortDir(newDir);
-      syncToUrl(search, showFilter, inactiveOpen, value, newDir, specialty);
+      syncToUrl(search, showFilter, value, newDir, specialty);
     } else {
       const newDir = defaultSortDir[value];
       setSortBy(value);
       setSortDir(newDir);
-      syncToUrl(search, showFilter, inactiveOpen, value, newDir, specialty);
+      syncToUrl(search, showFilter, value, newDir, specialty);
     }
   }
 
   function handleSpecialtyChange(value: string) {
     setSpecialty(value);
-    syncToUrl(search, showFilter, inactiveOpen, sortBy, sortDir, value);
+    syncToUrl(search, showFilter, sortBy, sortDir, value);
   }
 
   const fetchFacilities = useCallback(async () => {
@@ -309,13 +316,6 @@ function HealthcareTeamContent() {
     ? sortDoctors(independentInactiveDoctors.filter(doctorMatches), sortBy, sortDir)
     : [];
 
-  const filteredInactiveCount =
-    showFilter === "providers"
-      ? flatInactiveProviders.length
-      : showFilter === "facilities"
-      ? visibleInactiveFacilities.length
-      : visibleInactiveFacilities.length + visibleInactiveIndependentDoctors.length;
-
   const loading = loadingFacilities || loadingDoctors;
 
   const sortLabels: Record<SortBy, string> = {
@@ -437,115 +437,226 @@ function HealthcareTeamContent() {
           )}
 
           {/* Providers-only flat mode */}
-          {showFilter === "providers" && flatProviders.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {flatProviders.map((d) => (
-                <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} mini />
-              ))}
-            </div>
+          {showFilter === "providers" && (
+            <>
+              {flatProviders.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {flatProviders.map((d) => (
+                    <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} />
+                  ))}
+                </div>
+              )}
+              {flatInactiveProviders.length > 0 && (
+                <div className="pt-1">
+                  <button
+                    onClick={() => setInactiveProvidersOpen((v) => !v)}
+                    className="text-sm text-gray-400 hover:text-gray-600 flex items-center gap-1"
+                  >
+                    <span className="text-xs">{inactiveProvidersOpen ? "▾" : "▸"}</span>
+                    {inactiveProvidersOpen ? "Hide" : "Show"} inactive ({flatInactiveProviders.length})
+                  </button>
+                  <div className="mt-3 border-t border-gray-200" />
+                  {inactiveProvidersOpen && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
+                      {flatInactiveProviders.map((d) => (
+                        <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
           )}
 
-          {/* Facilities with their doctors as mini cards */}
-          {showFilter !== "providers" && visibleActiveFacilities.map((f) => {
-            const facilityDoctors = showFilter === "facilities"
-              ? []
-              : sortDoctors(
-                  (allDoctorsByFacility.get(f.id) ?? []).filter(doctorMatches),
-                  sortBy,
-                  sortDir,
-                );
-            return (
-              <div key={f.id} className="space-y-2">
-                <FacilityCard facility={toFacilityCardProps(f)} />
-                {facilityDoctors.length > 0 && (
-                  <div className="flex flex-wrap gap-2 pl-3">
-                    {facilityDoctors.map((d) => (
+          {/* Category-grouped facilities + providers */}
+          {showFilter !== "providers" && (
+            <CategoryGroups
+              visibleActiveFacilities={visibleActiveFacilities}
+              visibleIndependentActiveDoctors={visibleIndependentActiveDoctors}
+              visibleInactiveFacilities={visibleInactiveFacilities}
+              visibleInactiveIndependentDoctors={visibleInactiveIndependentDoctors}
+              allDoctorsByFacility={allDoctorsByFacility}
+              showFilter={showFilter}
+              sortBy={sortBy}
+              sortDir={sortDir}
+              doctorMatches={doctorMatches}
+              toDoctorCardProps={toDoctorCardProps}
+              toFacilityCardProps={toFacilityCardProps}
+              expandedCategories={expandedCategories}
+              toggleCategory={toggleCategory}
+              inactiveCategoryOpen={inactiveCategoryOpen}
+              toggleInactiveCategory={toggleInactiveCategory}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── CategoryGroups ──────────────────────────────────────────────────────────
+
+type DoctorCardData = Doctor & { visitCount: number | undefined; lastVisit: string | null };
+type FacilityCardData = Facility & { visitCount: number | undefined; lastVisit: string | null };
+
+interface CategoryGroupsProps {
+  visibleActiveFacilities: Facility[];
+  visibleIndependentActiveDoctors: Doctor[];
+  visibleInactiveFacilities: Facility[];
+  visibleInactiveIndependentDoctors: Doctor[];
+  allDoctorsByFacility: Map<string, Doctor[]>;
+  showFilter: "all" | "facilities" | "providers";
+  sortBy: SortBy;
+  sortDir: SortDir;
+  doctorMatches: (d: Doctor) => boolean;
+  toDoctorCardProps: (d: Doctor) => DoctorCardData;
+  toFacilityCardProps: (f: Facility) => FacilityCardData;
+  expandedCategories: Record<FacilityCategory, boolean>;
+  toggleCategory: (cat: FacilityCategory) => void;
+  inactiveCategoryOpen: Record<FacilityCategory, boolean>;
+  toggleInactiveCategory: (cat: FacilityCategory) => void;
+}
+
+function CategoryGroups({
+  visibleActiveFacilities,
+  visibleIndependentActiveDoctors,
+  visibleInactiveFacilities,
+  visibleInactiveIndependentDoctors,
+  allDoctorsByFacility,
+  showFilter,
+  sortBy,
+  sortDir,
+  doctorMatches,
+  toDoctorCardProps,
+  toFacilityCardProps,
+  expandedCategories,
+  toggleCategory,
+  inactiveCategoryOpen,
+  toggleInactiveCategory,
+}: CategoryGroupsProps) {
+  const cats: FacilityCategory[] = ["providers", "diagnostics", "pharmacy"];
+
+  const activeByCat = Object.fromEntries(
+    cats.map((cat) => [cat, visibleActiveFacilities.filter((f) => getFacilityCategory(f.type) === cat)])
+  ) as Record<FacilityCategory, Facility[]>;
+
+  const inactiveByCat = Object.fromEntries(
+    cats.map((cat) => [cat, visibleInactiveFacilities.filter((f) => getFacilityCategory(f.type) === cat)])
+  ) as Record<FacilityCategory, Facility[]>;
+
+  function getFacilityDoctors(facilityId: string): Doctor[] {
+    if (showFilter === "facilities") return [];
+    const sorted = sortDoctors(
+      (allDoctorsByFacility.get(facilityId) ?? []).filter(doctorMatches),
+      sortBy,
+      sortDir,
+    );
+    return [...sorted.filter((d) => d.active), ...sorted.filter((d) => !d.active)];
+  }
+
+  return (
+    <div className="space-y-6">
+      {cats.map((cat) => {
+        const catActive = activeByCat[cat];
+        const catInactive = inactiveByCat[cat];
+        const catIndependentActive = cat === "providers" ? visibleIndependentActiveDoctors : [];
+        const catIndependentInactive = cat === "providers" ? visibleInactiveIndependentDoctors : [];
+        const meta = CATEGORY_META[cat];
+
+        const inactiveCount = catInactive.length + catIndependentInactive.length;
+        const hasActiveContent = catActive.length > 0 || catIndependentActive.length > 0;
+        const hasAnyContent = hasActiveContent || inactiveCount > 0;
+        if (!hasAnyContent) return null;
+
+        const isExpanded = expandedCategories[cat];
+        const isInactiveOpen = inactiveCategoryOpen[cat];
+
+        return (
+          <div key={cat}>
+            <button
+              onClick={() => toggleCategory(cat)}
+              className="flex items-center gap-2 w-full text-left mb-3 group"
+            >
+              <span className="text-xs text-gray-400 group-hover:text-gray-600 leading-none">
+                {isExpanded ? "▾" : "▸"}
+              </span>
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 group-hover:text-gray-700">
+                {meta.label}
+              </h2>
+              <span className="text-xs text-gray-400 font-normal normal-case tracking-normal">
+                ({catActive.length + catIndependentActive.length})
+              </span>
+            </button>
+
+            {isExpanded && (
+              <div className="pl-1 space-y-4">
+                {/* Active items */}
+                {catActive.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {catActive.map((f) => {
+                      const facilityDoctors = getFacilityDoctors(f.id);
+                      return (
+                        <FacilityCard key={f.id} facility={toFacilityCardProps(f)}>
+                          {facilityDoctors.map((d) => (
+                            <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} mini />
+                          ))}
+                        </FacilityCard>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {catIndependentActive.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {catIndependentActive.map((d) => (
                       <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} mini />
                     ))}
                   </div>
                 )}
-              </div>
-            );
-          })}
 
-          {/* Independent active providers */}
-          {showFilter !== "providers" && visibleIndependentActiveDoctors.length > 0 && (
-            <div className="space-y-2">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">
-                Independent Providers
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                {visibleIndependentActiveDoctors.map((d) => (
-                  <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} mini />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Inactive section */}
-          {filteredInactiveCount > 0 && (
-            <div className="border-t border-gray-200 pt-4 mt-2">
-              <button
-                onClick={handleInactiveToggle}
-                className="text-sm text-gray-400 hover:text-gray-600 flex items-center gap-1"
-              >
-                <span className="text-xs">{inactiveOpen ? "▾" : "▸"}</span>
-                {inactiveOpen ? "Hide" : "Show"} inactive (
-                {filteredInactiveCount})
-              </button>
-              {inactiveOpen && (
-                <div className="mt-3 space-y-4">
-                  {/* Inactive facilities with all their doctors */}
-                  {visibleInactiveFacilities.map((f) => {
-                    const facilityDoctors = showFilter === "facilities"
-                      ? []
-                      : sortDoctors(
-                          (allDoctorsByFacility.get(f.id) ?? []).filter(doctorMatches),
-                          sortBy,
-                          sortDir,
-                        );
-                    return (
-                      <div key={f.id} className="space-y-2">
-                        <FacilityCard facility={toFacilityCardProps(f)} />
-                        {facilityDoctors.length > 0 && (
-                          <div className="flex flex-wrap gap-2 pl-3">
-                            {facilityDoctors.map((d) => (
+                {/* Per-category inactive toggle */}
+                {inactiveCount > 0 && (
+                  <div className="pt-1">
+                    <button
+                      onClick={() => toggleInactiveCategory(cat)}
+                      className="text-sm text-gray-400 hover:text-gray-600 flex items-center gap-1"
+                    >
+                      <span className="text-xs">{isInactiveOpen ? "▾" : "▸"}</span>
+                      {isInactiveOpen ? "Hide" : "Show"} inactive ({inactiveCount})
+                    </button>
+                    <div className="mt-3 border-t border-gray-100" />
+                    {isInactiveOpen && (
+                      <div className="mt-3 space-y-3">
+                        {catInactive.length > 0 && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {catInactive.map((f) => {
+                              const facilityDoctors = getFacilityDoctors(f.id);
+                              return (
+                                <FacilityCard key={f.id} facility={toFacilityCardProps(f)}>
+                                  {facilityDoctors.map((d) => (
+                                    <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} mini />
+                                  ))}
+                                </FacilityCard>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {catIndependentInactive.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {catIndependentInactive.map((d) => (
                               <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} mini />
                             ))}
                           </div>
                         )}
                       </div>
-                    );
-                  })}
-
-                  {/* Providers mode: flat inactive list */}
-                  {showFilter === "providers" && flatInactiveProviders.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {flatInactiveProviders.map((d) => (
-                        <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} mini />
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Independent inactive providers */}
-                  {showFilter !== "providers" && visibleInactiveIndependentDoctors.length > 0 && (
-                    <div className="space-y-2">
-                      <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">
-                        Independent Providers
-                      </h2>
-                      <div className="flex flex-wrap gap-2">
-                        {visibleInactiveIndependentDoctors.map((d) => (
-                          <DoctorCard key={d.id} doctor={toDoctorCardProps(d)} mini />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

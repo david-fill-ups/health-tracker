@@ -109,6 +109,14 @@ export function DoctorCard({ doctor, mini }: Props) {
             )}
           </div>
           <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-500">
+            {doctor.facility && (
+              <Link
+                href={`/healthcare-team/facility/${doctor.facility.id}`}
+                className="hover:text-indigo-600 hover:underline"
+              >
+                {doctor.facility.name}
+              </Link>
+            )}
             {doctor.phone && <span>{doctor.phone}</span>}
             {doctor.rating != null && (
               <span className="text-amber-500">

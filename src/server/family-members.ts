@@ -12,6 +12,7 @@ export interface CreateFamilyMemberInput {
   dateOfDeath?: Date | null;
   causeOfDeath?: string | null;
   notes?: string;
+  imageData?: string | null;
 }
 
 export interface CreateFamilyConditionInput {

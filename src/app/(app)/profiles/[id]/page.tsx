@@ -6,6 +6,7 @@ import { hasProfileAccess } from "@/lib/permissions";
 import { SharingSection } from "@/components/profiles/SharingSection";
 import { LinkedProfilesSection } from "@/components/profiles/LinkedProfilesSection";
 import { ProfileActions } from "@/components/profiles/ProfileActions";
+import { ExpandableImage } from "@/components/ui/ExpandableImage";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -34,6 +35,15 @@ export default async function ProfileDetailPage({ params }: Props) {
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-5">
+        {profile.imageData && (
+          <div className="flex justify-center">
+            <ExpandableImage
+              src={profile.imageData}
+              alt={profile.name}
+              className="h-36 w-36 rounded-full object-cover border-4 border-indigo-100 shadow-md"
+            />
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Name</p>

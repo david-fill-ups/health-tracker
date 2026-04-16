@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { VisitStatus, VisitType } from "@/generated/prisma/enums";
 
@@ -14,6 +15,7 @@ interface Doctor {
 interface Facility {
   id: string;
   name: string;
+  active?: boolean;
 }
 
 interface Location {
@@ -80,9 +82,12 @@ export function formatDueMonth(ym: string) {
 
 interface Props {
   visit: Visit;
+  pill?: boolean;
+  showDoctor?: boolean;
+  showFacility?: boolean;
 }
 
-export function VisitCard({ visit }: Props) {
+export function VisitCard({ visit, pill, showDoctor, showFacility }: Props) {
   const router = useRouter();
   const dateLabel = visit.date
     ? formatDate(visit.date)
@@ -90,10 +95,50 @@ export function VisitCard({ visit }: Props) {
     ? formatDueMonth(visit.dueMonth)
     : "No date";
 
+  const isInactive =
+    visit.doctor?.active === false || visit.facility?.active === false;
+
+  if (pill) {
+    const hasPhoto = showDoctor && !!visit.doctor;
+    return (
+      <button
+        onClick={() => router.push(`/visits/${visit.id}`)}
+        className={`inline-flex items-start gap-2 rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-left text-xs shadow-sm hover:bg-gray-50 transition-colors cursor-pointer w-[180px] shrink-0 ${isInactive ? "opacity-60" : ""}`}
+      >
+        {hasPhoto && (
+          <div className="shrink-0 mt-0.5">
+            {visit.doctor!.photo ? (
+              <img src={visit.doctor!.photo} alt={visit.doctor!.name} className="w-7 h-7 rounded-full object-cover" />
+            ) : (
+              <span className="text-base leading-none">🩺</span>
+            )}
+          </div>
+        )}
+        <div className="min-w-0 flex flex-col gap-0.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-medium text-gray-700">{dateLabel}</span>
+            <span className={`rounded-full px-1.5 py-0.5 text-xs font-medium ${STATUS_STYLES[visit.status]}`}>
+              {STATUS_LABELS[visit.status]}
+            </span>
+          </div>
+          {showDoctor && visit.doctor && (
+            <span className="text-gray-600 truncate">{visit.doctor.name}</span>
+          )}
+          {showFacility && visit.facility && (
+            <span className="text-gray-600 truncate">{visit.facility.name}</span>
+          )}
+          {visit.reason && (
+            <span className="text-gray-400 truncate">{visit.reason}</span>
+          )}
+        </div>
+      </button>
+    );
+  }
+
   return (
     <div
       onClick={() => router.push(`/visits/${visit.id}`)}
-      className="block rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:bg-gray-50 transition-colors cursor-pointer"
+      className={`block rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:bg-gray-50 transition-colors cursor-pointer ${isInactive ? "opacity-60" : ""}`}
     >
       <div className="flex-1 min-w-0 space-y-1">
         <div className="flex items-center gap-2 flex-wrap">
@@ -112,9 +157,18 @@ export function VisitCard({ visit }: Props) {
         </div>
 
         <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-sm text-gray-500">
-          {visit.doctor && <span>{visit.doctor.name}</span>}
-          {visit.facility && <span>{visit.facility.name}</span>}
-          {visit.location && <span className="text-gray-400">{visit.location.name}</span>}
+          {visit.facility && (
+            <Link
+              href={`/healthcare-team/facility/${visit.facility.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="hover:text-indigo-600 hover:underline"
+            >
+              {visit.facility.name}
+            </Link>
+          )}
+          {visit.location && (
+            <span className="text-gray-400">{visit.location.name}</span>
+          )}
         </div>
 
         {visit.notes && (
@@ -137,6 +191,23 @@ export function VisitCard({ visit }: Props) {
           </a>
         )}
       </div>
+
+      {visit.doctor && (
+        <div className="mt-3 pt-3 border-t border-gray-100">
+          <Link
+            href={`/healthcare-team/provider/${visit.doctor.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className={`inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs shadow-sm hover:border-indigo-300 hover:text-indigo-600 transition-colors ${visit.doctor.active === false ? "opacity-60" : ""}`}
+          >
+            {visit.doctor.photo ? (
+              <img src={visit.doctor.photo} alt={visit.doctor.name} className="w-4 h-4 rounded-full object-cover shrink-0" />
+            ) : (
+              <span className="shrink-0">🩺</span>
+            )}
+            <span className="font-medium">{visit.doctor.name}</span>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

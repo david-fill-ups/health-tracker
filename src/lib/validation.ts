@@ -61,6 +61,7 @@ export const CreateProfileSchema = z.object({
   heightIn: z.number().int().min(12).max(108).optional(),
   notes: z.string().max(5000).optional(),
   timezone: z.string().max(50).optional(),
+  imageData: z.string().max(1_400_000, "Image too large (max ~1 MB)").nullish(),
 });
 
 export const UpdateProfileSchema = CreateProfileSchema.partial();
@@ -355,6 +356,7 @@ export const CreateFamilyMemberSchema = z.object({
   dateOfDeath: optDate,
   causeOfDeath: z.string().max(500).nullish(),
   notes: z.string().max(5000).optional(),
+  imageData: z.string().max(1_400_000, "Image too large (max ~1 MB)").nullish(),
 });
 
 export const UpdateFamilyMemberSchema = CreateFamilyMemberSchema.omit({ profileId: true }).partial();

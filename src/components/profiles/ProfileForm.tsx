@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ImageUploadField } from "@/components/ui/ImageUploadField";
 
 type ImportMode = "append" | "skip_duplicates" | "replace";
 
@@ -25,6 +26,7 @@ interface Profile {
   heightIn?: number | null;
   notes: string;
   timezone?: string;
+  imageData?: string | null;
 }
 
 const TIMEZONES = [
@@ -124,6 +126,7 @@ export function ProfileForm({ profile }: { profile?: Profile }) {
     notes: profile?.notes ?? "",
     timezone: profile?.timezone ?? "UTC",
   });
+  const [imageData, setImageData] = useState<string | null>(profile?.imageData ?? null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -156,6 +159,7 @@ export function ProfileForm({ profile }: { profile?: Profile }) {
       heightIn: totalInches || undefined,
       notes: form.notes || undefined,
       timezone: form.timezone || undefined,
+      imageData: imageData ?? undefined,
     };
 
     const res = await fetch(url, {
@@ -346,6 +350,12 @@ export function ProfileForm({ profile }: { profile?: Profile }) {
         {error && (
           <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>
         )}
+
+        <ImageUploadField
+          label="Profile Photo"
+          value={imageData}
+          onChange={setImageData}
+        />
 
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700" htmlFor="name">

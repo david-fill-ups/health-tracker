@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 
 interface Facility {
@@ -21,12 +22,13 @@ function formatType(type: string): string {
 
 interface Props {
   facility: Facility;
+  children?: ReactNode;
 }
 
-export function FacilityCard({ facility }: Props) {
+export function FacilityCard({ facility, children }: Props) {
   return (
     <div
-      className={`rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-opacity ${
+      className={`rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-opacity flex flex-col ${
         facility.active ? "" : "opacity-50"
       }`}
     >
@@ -62,6 +64,11 @@ export function FacilityCard({ facility }: Props) {
           </div>
         </div>
       </div>
+      {children && (
+        <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap gap-2">
+          {children}
+        </div>
+      )}
     </div>
   );
 }

@@ -4,8 +4,9 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { CardSkeleton } from "@/components/ui/Skeleton";
+import { ExpandableImage } from "@/components/ui/ExpandableImage";
 
-type FamilyRelationship = "PARENT" | "SIBLING" | "FATHER" | "MOTHER" | "BROTHER" | "SISTER" | "HALF_BROTHER" | "HALF_SISTER" | "GRANDFATHER" | "GRANDMOTHER" | "AUNT" | "UNCLE";
+type FamilyRelationship = "PARENT" | "SIBLING" | "FATHER" | "MOTHER" | "BROTHER" | "SISTER" | "HALF_BROTHER" | "HALF_SISTER" | "GRANDFATHER" | "GRANDMOTHER" | "AUNT" | "UNCLE" | "SON" | "DAUGHTER";
 type FamilySide = "MATERNAL" | "PATERNAL";
 type ProfileRelationshipType =
   | "SPOUSE"
@@ -49,6 +50,7 @@ interface FamilyMember {
   dateOfDeath: string | null;
   causeOfDeath: string | null;
   notes: string | null;
+  imageData?: string | null;
   conditions: FamilyCondition[];
 }
 
@@ -61,6 +63,7 @@ interface InheritedFamilyMember {
   dateOfDeath: string | null;
   causeOfDeath: string | null;
   notes: string | null;
+  imageData?: string | null;
   conditions: FamilyCondition[];
 }
 
@@ -69,7 +72,7 @@ interface InheritedLinkedProfile {
   toProfileId: string;
   relationship: ProfileRelationshipType;
   biological: boolean;
-  toProfile: { id: string; name: string };
+  toProfile: { id: string; name: string; imageData?: string | null };
   conditions: LinkedCondition[];
 }
 
@@ -78,7 +81,7 @@ interface ProfileRelationship {
   toProfileId: string;
   relationship: ProfileRelationshipType;
   biological: boolean;
-  toProfile: { id: string; name: string };
+  toProfile: { id: string; name: string; imageData?: string | null };
   conditions: LinkedCondition[];
   inherited: {
     familyMembers: InheritedFamilyMember[];
@@ -106,6 +109,8 @@ const MANUAL_BADGE: Record<FamilyRelationship, { label: string; classes: string 
   GRANDMOTHER: { label: "Grandmother", classes: "bg-orange-100 text-orange-700" },
   AUNT:        { label: "Aunt",        classes: "bg-pink-100 text-pink-700" },
   UNCLE:       { label: "Uncle",       classes: "bg-teal-100 text-teal-700" },
+  SON:         { label: "Son",         classes: "bg-indigo-100 text-indigo-700" },
+  DAUGHTER:    { label: "Daughter",    classes: "bg-indigo-100 text-indigo-700" },
 };
 
 const PROFILE_BADGE: Record<ProfileRelationshipType, { label: string; classes: string }> = {
@@ -254,6 +259,167 @@ function longevityLabel(dob: string | null, dod: string | null): string | null {
   return `d. ${deathYear}`;
 }
 
+// ── List-view member card ─────────────────────────────────────────────────────
+
+function MemberCard({ member }: { member: FamilyMember }) {
+  const badge = MANUAL_BADGE[member.relationship];
+  const lifespan = longevityLabel(member.dateOfBirth, member.dateOfDeath);
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all flex flex-col gap-2">
+      <div className="flex flex-col items-center text-center gap-2">
+        {member.imageData ? (
+          <ExpandableImage
+            src={member.imageData}
+            alt={member.name}
+            className="h-16 w-16 rounded-full object-cover border-2 border-gray-200"
+          />
+        ) : (
+          <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center">
+            <span className="text-xl font-semibold text-gray-400">
+              {member.name.charAt(0).toUpperCase()}
+            </span>
+          </div>
+        )}
+        <div>
+          <Link
+            href={`/family-history/${member.id}/edit`}
+            className="font-semibold text-gray-900 hover:text-indigo-600 text-sm leading-tight block"
+          >
+            {member.name}
+          </Link>
+          {lifespan && <p className="text-xs text-gray-400 mt-0.5">{lifespan}</p>}
+          {member.causeOfDeath && (
+            <p className="text-xs text-gray-400 truncate" title={member.causeOfDeath}>{member.causeOfDeath}</p>
+          )}
+        </div>
+        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${badge?.classes ?? "bg-gray-100 text-gray-600"}`}>
+          {badge?.label ?? member.relationship}
+        </span>
+      </div>
+      {member.conditions.length > 0 && (
+        <div className="border-t border-gray-100 pt-2">
+          <ConditionPills conditions={member.conditions} maxVisible={3} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+const PARENTS_RELS: FamilyRelationship[] = ["FATHER", "MOTHER", "PARENT"];
+const SIBLING_RELS: FamilyRelationship[] = ["BROTHER", "SISTER", "HALF_BROTHER", "HALF_SISTER", "SIBLING"];
+const GP_RELS: FamilyRelationship[] = ["GRANDFATHER", "GRANDMOTHER"];
+const AU_RELS: FamilyRelationship[] = ["AUNT", "UNCLE"];
+const CHILD_RELS: FamilyRelationship[] = ["SON", "DAUGHTER"];
+
+function SidedSection({
+  members,
+  title,
+}: {
+  members: FamilyMember[];
+  title: string;
+}) {
+  const maternal = members.filter((m) => m.side === "MATERNAL");
+  const paternal = members.filter((m) => m.side === "PATERNAL");
+  const unknown = members.filter((m) => !m.side);
+  const hasSides = maternal.length > 0 || paternal.length > 0;
+
+  if (!hasSides) {
+    return (
+      <div>
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{title}</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {members.map((m) => <MemberCard key={m.id} member={m} />)}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{title}</p>
+      <div className="grid grid-cols-[1fr_1px_1fr] gap-0">
+        {/* Maternal */}
+        <div className="pr-4">
+          <p className="text-xs font-medium text-rose-400 mb-2">Maternal</p>
+          {maternal.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {maternal.map((m) => <MemberCard key={m.id} member={m} />)}
+            </div>
+          ) : (
+            <p className="text-xs text-gray-300 italic">None recorded</p>
+          )}
+        </div>
+        {/* Divider */}
+        <div className="bg-gray-200 mx-2" />
+        {/* Paternal */}
+        <div className="pl-4">
+          <p className="text-xs font-medium text-blue-400 mb-2">Paternal</p>
+          {paternal.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {paternal.map((m) => <MemberCard key={m.id} member={m} />)}
+            </div>
+          ) : (
+            <p className="text-xs text-gray-300 italic">None recorded</p>
+          )}
+        </div>
+      </div>
+      {unknown.length > 0 && (
+        <div className="mt-3">
+          <p className="text-xs font-medium text-gray-400 mb-2">Side unknown</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {unknown.map((m) => <MemberCard key={m.id} member={m} />)}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MemberCardGrid({ members, grouped }: { members: FamilyMember[]; grouped: boolean }) {
+  if (!grouped) {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        {members.map((m) => <MemberCard key={m.id} member={m} />)}
+      </div>
+    );
+  }
+
+  const parents = members.filter((m) => PARENTS_RELS.includes(m.relationship));
+  const siblings = members.filter((m) => SIBLING_RELS.includes(m.relationship));
+  const grandparents = members.filter((m) => GP_RELS.includes(m.relationship));
+  const auntsUncles = members.filter((m) => AU_RELS.includes(m.relationship));
+  const children = members.filter((m) => CHILD_RELS.includes(m.relationship));
+  const others = members.filter((m) =>
+    ![...PARENTS_RELS, ...SIBLING_RELS, ...GP_RELS, ...AU_RELS, ...CHILD_RELS].includes(m.relationship)
+  );
+
+  const sections = [
+    { key: "parents", title: "Parents", members: parents, sided: false },
+    { key: "siblings", title: "Siblings", members: siblings, sided: false },
+    { key: "grandparents", title: "Grandparents", members: grandparents, sided: true },
+    { key: "aunts", title: "Aunts & Uncles", members: auntsUncles, sided: true },
+    { key: "children", title: "Children", members: children, sided: false },
+    { key: "others", title: "Other", members: others, sided: false },
+  ].filter((s) => s.members.length > 0);
+
+  return (
+    <div className="space-y-6">
+      {sections.map((s) =>
+        s.sided ? (
+          <SidedSection key={s.key} members={s.members} title={s.title} />
+        ) : (
+          <div key={s.key}>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{s.title}</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {s.members.map((m) => <MemberCard key={m.id} member={m} />)}
+            </div>
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
 function ChartCard({ member }: { member: FamilyMember }) {
   const badge = MANUAL_BADGE[member.relationship];
   const [expanded, setExpanded] = useState(false);
@@ -263,6 +429,15 @@ function ChartCard({ member }: { member: FamilyMember }) {
   const lifespan = longevityLabel(member.dateOfBirth, member.dateOfDeath);
   return (
     <div className="w-44 shrink-0 rounded-xl border border-gray-200 bg-white p-3 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all">
+      {member.imageData && (
+        <div className="flex justify-center mb-2">
+          <ExpandableImage
+            src={member.imageData}
+            alt={member.name}
+            className="h-12 w-12 rounded-full object-cover border-2 border-gray-200"
+          />
+        </div>
+      )}
       <Link href={`/family-history/${member.id}/edit`} className="block mb-1.5">
         <div className="font-semibold text-gray-900 text-sm leading-tight hover:text-indigo-600">{member.name}</div>
         {lifespan && <div className="text-xs text-gray-400 mt-0.5">{lifespan}</div>}
@@ -332,6 +507,15 @@ function LinkedChartCard({ rel }: { rel: ProfileRelationship }) {
   const extra = rel.conditions.length - MAX_CONDITIONS;
   return (
     <div className="w-44 shrink-0 rounded-xl border border-indigo-200 bg-indigo-50/40 p-3 shadow-sm hover:border-indigo-400 hover:shadow-md transition-all">
+      {rel.toProfile.imageData && (
+        <div className="flex justify-center mb-2">
+          <ExpandableImage
+            src={rel.toProfile.imageData}
+            alt={rel.toProfile.name}
+            className="h-12 w-12 rounded-full object-cover border-2 border-indigo-200"
+          />
+        </div>
+      )}
       <Link href={`/profiles/${rel.toProfileId}`} className="block mb-1.5">
         <div className="font-semibold text-gray-900 text-sm leading-tight hover:text-indigo-600">{rel.toProfile.name}</div>
       </Link>
@@ -1103,35 +1287,7 @@ export default function FamilyHistoryPage() {
                 {filteredMembers.length === 0 ? (
                   <p className="text-sm text-gray-400 italic">No entries for this relationship type.</p>
                 ) : (
-                  <div className="space-y-3">
-                    {filteredMembers.map((member) => {
-                      const badge = MANUAL_BADGE[member.relationship];
-                      return (
-                        <div key={member.id} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Link
-                              href={`/family-history/${member.id}/edit`}
-                              className="font-semibold text-gray-900 hover:text-indigo-600 hover:underline"
-                            >
-                              {member.name}
-                            </Link>
-                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${badge.classes}`}>
-                              {badge.label}
-                            </span>
-                            {SIDE_APPLICABLE.includes(member.relationship) && member.side && (
-                              <span className="rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-600 border border-rose-200">
-                                {member.side === "MATERNAL" ? "Maternal" : "Paternal"}
-                              </span>
-                            )}
-                          </div>
-                          {member.notes && (
-                            <p className="mt-1 text-sm text-gray-500">{member.notes}</p>
-                          )}
-                          <ConditionPills conditions={member.conditions} />
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <MemberCardGrid members={filteredMembers} grouped={filter === "ALL" && sideFilter === "ALL"} />
                 )}
               </>
             )}

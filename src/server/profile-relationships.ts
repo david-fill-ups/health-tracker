@@ -91,7 +91,7 @@ async function getInheritedFamilyData(userId: string, linkedProfileId: string) {
         fromProfileId: linkedProfileId,
         relationship: { in: [...INHERITABLE_PROFILE_RELATIONSHIPS] as any[] },
       },
-      include: { toProfile: { select: { id: true, name: true } } },
+      include: { toProfile: { select: { id: true, name: true, imageData: true } } },
       orderBy: { relationship: "asc" },
     }),
   ]);
@@ -120,7 +120,7 @@ export async function getProfileRelationships(
   await assertProfileAccess(userId, fromProfileId);
   const relationships = await prisma.profileRelationship.findMany({
     where: { fromProfileId },
-    include: { toProfile: { select: { id: true, name: true } } },
+    include: { toProfile: { select: { id: true, name: true, imageData: true } } },
     orderBy: { relationship: "asc" },
   });
 
@@ -160,7 +160,7 @@ export async function createProfileRelationship(
       relationship: input.relationship,
       biological,
     },
-    include: { toProfile: { select: { id: true, name: true } } },
+    include: { toProfile: { select: { id: true, name: true, imageData: true } } },
   });
   await logAudit(userId, fromProfileId, "CREATE_PROFILE_RELATIONSHIP", "ProfileRelationship", rel.id, {
     linkedProfileId: input.linkedProfileId,
@@ -218,7 +218,7 @@ export async function updateProfileRelationship(
   const rel = await prisma.profileRelationship.update({
     where: { id: relId },
     data: input,
-    include: { toProfile: { select: { id: true, name: true } } },
+    include: { toProfile: { select: { id: true, name: true, imageData: true } } },
   });
   await logAudit(userId, fromProfileId, "UPDATE_PROFILE_RELATIONSHIP", "ProfileRelationship", relId);
   return rel;

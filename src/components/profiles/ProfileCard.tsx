@@ -13,6 +13,7 @@ interface Profile {
   sex: string;
   state: string | null;
   calendarToken?: string;
+  imageData?: string | null;
 }
 
 function calendarUrl(profileId: string, token: string) {
@@ -40,21 +41,36 @@ export function ProfileCard({
       }`}
     >
       <div className="flex items-start justify-between gap-2">
-        <div>
-          <Link
-            href={`/profiles/${profile.id}`}
-            className="text-base font-semibold text-gray-900 hover:text-indigo-600 transition-colors"
-          >
-            {profile.name}
-          </Link>
-          <p className="mt-0.5 text-sm text-gray-500">
-            Born {new Date(profile.birthDate).toLocaleDateString(undefined, { timeZone: "UTC" })} &middot;{" "}
-            {profile.sex.replace(/_/g, " ").toLowerCase()}{" "}
-            {profile.state && <>&middot; {profile.state}</>}
-          </p>
+        <div className="flex items-center gap-3 min-w-0">
+          {profile.imageData ? (
+            <img
+              src={profile.imageData}
+              alt={profile.name}
+              className="h-12 w-12 rounded-full object-cover border-2 border-gray-200 shrink-0"
+            />
+          ) : (
+            <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
+              <span className="text-lg font-semibold text-indigo-600">
+                {profile.name.charAt(0).toUpperCase()}
+              </span>
+            </div>
+          )}
+          <div className="min-w-0">
+            <Link
+              href={`/profiles/${profile.id}`}
+              className="text-base font-semibold text-gray-900 hover:text-indigo-600 transition-colors"
+            >
+              {profile.name}
+            </Link>
+            <p className="mt-0.5 text-sm text-gray-500">
+              Born {new Date(profile.birthDate).toLocaleDateString(undefined, { timeZone: "UTC" })} &middot;{" "}
+              {profile.sex.replace(/_/g, " ").toLowerCase()}{" "}
+              {profile.state && <>&middot; {profile.state}</>}
+            </p>
+          </div>
         </div>
         {isActive && (
-          <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700">
+          <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700 shrink-0">
             Active
           </span>
         )}

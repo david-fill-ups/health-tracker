@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { CardSkeleton } from "@/components/ui/Skeleton";
 
@@ -14,31 +15,27 @@ interface Allergy {
   notes: string | null;
 }
 
-function AllergyCard({ allergy }: { allergy: Allergy }) {
+function AllergyPill({ allergy }: { allergy: Allergy }) {
+  const router = useRouter();
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <div className="flex items-center gap-2 flex-wrap">
-        <Link
-          href={`/allergies/${allergy.id}/edit`}
-          className="font-semibold text-gray-900 hover:text-indigo-600 hover:underline"
-        >
-          {allergy.allergen}
-        </Link>
-        {allergy.category && (
-          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-            {allergy.category}
-          </span>
-        )}
-      </div>
-      <div className="mt-1 flex gap-4 text-xs text-gray-400">
-        {allergy.diagnosisDate && (
-          <span>Diagnosed {new Date(allergy.diagnosisDate).toLocaleDateString()}</span>
-        )}
-      </div>
-      {allergy.notes && (
-        <p className="mt-1 text-sm text-gray-500">{allergy.notes}</p>
+    <button
+      onClick={() => router.push(`/allergies/${allergy.id}/edit`)}
+      className="inline-flex flex-col items-start rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-xs shadow-sm hover:bg-gray-50 hover:border-indigo-300 transition-colors cursor-pointer"
+    >
+      <span className="font-medium text-gray-800">{allergy.allergen}</span>
+      {(allergy.diagnosisDate || allergy.whealSize != null) && (
+        <span className="text-gray-400 mt-0.5">
+          {allergy.diagnosisDate && (
+            <>Dx {new Date(allergy.diagnosisDate).toLocaleDateString(undefined, { year: "numeric", month: "short", timeZone: "UTC" })}</>
+          )}
+          {allergy.diagnosisDate && allergy.whealSize != null && " · "}
+          {allergy.whealSize != null && <>Wheal {allergy.whealSize}mm</>}
+        </span>
       )}
-    </div>
+      {allergy.notes && (
+        <span className="text-gray-400 mt-0.5 max-w-[180px] truncate">{allergy.notes}</span>
+      )}
+    </button>
   );
 }
 
@@ -58,6 +55,21 @@ export default function AllergiesPage() {
       .catch(() => setError("Failed to load allergies"))
       .finally(() => setLoading(false));
   }, [activeProfileId]);
+
+  // Group by category; null/empty → "Uncategorized" at end
+  const groups = useMemo(() => {
+    const map = new Map<string, Allergy[]>();
+    for (const a of allergies) {
+      const key = a.category?.trim() || "Uncategorized";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(a);
+    }
+    return Array.from(map.entries()).sort(([a], [b]) => {
+      if (a === "Uncategorized") return 1;
+      if (b === "Uncategorized") return -1;
+      return a.localeCompare(b);
+    });
+  }, [allergies]);
 
   return (
     <div className="space-y-6">
@@ -91,9 +103,22 @@ export default function AllergiesPage() {
               </Link>
             </div>
           ) : (
-            <div className="space-y-3">
-              {allergies.map((a) => (
-                <AllergyCard key={a.id} allergy={a} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {groups.map(([category, items]) => (
+                <div
+                  key={category}
+                  className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="font-semibold text-gray-900">{category}</h2>
+                    <span className="text-xs text-gray-400">{items.length} {items.length === 1 ? "allergen" : "allergens"}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {items.map((a) => (
+                      <AllergyPill key={a.id} allergy={a} />
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           )}
