@@ -39,7 +39,7 @@ function ConditionCard({ condition }: { condition: Condition }) {
       </div>
       {condition.diagnosisDate && (
         <p className="mt-0.5 text-sm text-gray-500">
-          Diagnosed {new Date(condition.diagnosisDate).toLocaleDateString()}
+          Diagnosed {new Date(condition.diagnosisDate).toLocaleDateString(undefined, { timeZone: "UTC" })}
         </p>
       )}
       {condition.notes && (

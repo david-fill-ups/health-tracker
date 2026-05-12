@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useProfile } from "@/components/layout/ProfileProvider";
 import { DocumentImportModal } from "@/components/import/DocumentImportModal";
+import { formatTime } from "@/components/visits/VisitCard";
 import type { VisitStatus, VisitType } from "@/generated/prisma/enums";
 
 const VISIT_TYPE_LABELS: Record<VisitType, string> = {
@@ -121,6 +122,9 @@ export default function VisitDetailPage() {
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
             <p className="text-lg font-semibold text-gray-900">{dateLabel}</p>
+            {visit.date && formatTime(visit.date) && (
+              <p className="text-sm text-gray-500">{formatTime(visit.date)}</p>
+            )}
             <div className="flex gap-2 flex-wrap">
               <span className="bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 text-xs font-medium">
                 {VISIT_TYPE_LABELS[visit.type]}

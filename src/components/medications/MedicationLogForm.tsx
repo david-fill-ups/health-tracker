@@ -51,7 +51,6 @@ export function MedicationLogForm({ medicationId, profileId, medicationDosage, m
     if (parsed.unit) setUnit(parsed.unit);
   }, [medicationDosage]);
   const [injectionSite, setInjectionSite] = useState("");
-  const [weight, setWeight] = useState("");
   const [notes, setNotes] = useState("");
 
   async function handleSubmit(e: FormEvent) {
@@ -65,7 +64,6 @@ export function MedicationLogForm({ medicationId, profileId, medicationDosage, m
       dosage: dosage ? parseFloat(dosage) : undefined,
       unit: unit || undefined,
       injectionSite: injectionSite || undefined,
-      weight: weight ? parseFloat(weight) : undefined,
       notes: notes || undefined,
     };
 
@@ -98,7 +96,7 @@ export function MedicationLogForm({ medicationId, profileId, medicationDosage, m
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-gray-900 mb-1">
           Date &amp; time <span className="text-red-500">*</span>
         </label>
         <input
@@ -106,14 +104,14 @@ export function MedicationLogForm({ medicationId, profileId, medicationDosage, m
           required
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
       </div>
 
       {!isDevice && (
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Dosage</label>
+            <label className="block text-sm font-medium text-gray-900 mb-1">Dosage</label>
             <input
               type="number"
               step="any"
@@ -121,18 +119,18 @@ export function MedicationLogForm({ medicationId, profileId, medicationDosage, m
               value={dosage}
               onChange={(e) => setDosage(e.target.value)}
               placeholder="e.g. 2.5"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+            <label className="block text-sm font-medium text-gray-900 mb-1">Unit</label>
             <input
               type="text"
               list="unit-suggestions"
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
               placeholder="mg, mL, units…"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
             <datalist id="unit-suggestions">
               <option value="mg" />
@@ -147,11 +145,11 @@ export function MedicationLogForm({ medicationId, profileId, medicationDosage, m
 
       {isInjectable && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Injection site</label>
+          <label className="block text-sm font-medium text-gray-900 mb-1">Injection site</label>
           <select
             value={injectionSite}
             onChange={(e) => setInjectionSite(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           >
             <option value="">— Select site —</option>
             {INJECTION_SITES.map((s) => (
@@ -164,27 +162,12 @@ export function MedicationLogForm({ medicationId, profileId, medicationDosage, m
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Weight today (lbs)
-        </label>
-        <input
-          type="number"
-          step="0.1"
-          min="0"
-          value={weight}
-          onChange={(e) => setWeight(e.target.value)}
-          placeholder="Optional"
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+        <label className="block text-sm font-medium text-gray-900 mb-1">Notes</label>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={3}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           placeholder="Any observations, side effects, etc."
         />
       </div>

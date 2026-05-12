@@ -64,7 +64,6 @@ export interface CreateLogInput {
   dosage?: number;
   unit?: string | null;
   injectionSite?: string | null;
-  weight?: number;
   notes?: string;
 }
 
@@ -105,9 +104,9 @@ export async function createMedicationLog(
     select: { id: true },
   });
   if (!medication) throw new PermissionError("FORBIDDEN", 403);
-  const { date, dosage, unit, injectionSite, weight, notes } = input;
+  const { date, dosage, unit, injectionSite, notes } = input;
   const log = await prisma.medicationLog.create({
-    data: { date, dosage, unit, injectionSite, weight, notes, medicationId },
+    data: { date, dosage, unit, injectionSite, notes, medicationId },
   });
   await logAudit(userId, profileId, "CREATE_MEDICATION_LOG", "MedicationLog", log.id, { medicationId });
   return log;
@@ -125,10 +124,10 @@ export async function updateMedicationLog(
     where: { id: logId, medicationId, medication: { profileId } },
   });
   if (!existing) throw new PermissionError("FORBIDDEN", 403);
-  const { date, dosage, unit, injectionSite, weight, notes } = input;
+  const { date, dosage, unit, injectionSite, notes } = input;
   const log = await prisma.medicationLog.update({
     where: { id: logId },
-    data: { date, dosage, unit, injectionSite, weight, notes },
+    data: { date, dosage, unit, injectionSite, notes },
   });
   await logAudit(userId, profileId, "UPDATE_MEDICATION_LOG", "MedicationLog", logId, { medicationId });
   return log;

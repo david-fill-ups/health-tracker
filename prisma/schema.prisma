@@ -407,7 +407,6 @@ model MedicationLog {
   dosage        Float?
   unit          String?
   injectionSite String?
-  weight        Float?
   notes         String?
   createdAt     DateTime @default(now())
 

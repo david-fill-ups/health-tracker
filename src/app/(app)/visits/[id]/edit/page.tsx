@@ -43,7 +43,7 @@ export default function EditVisitPage() {
           if (v.date) {
             const d = new Date(v.date);
             const pad = (n: number) => String(n).padStart(2, "0");
-            dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            dateStr = `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
           }
           setInitial({
             id: v.id,

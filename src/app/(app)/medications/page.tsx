@@ -12,7 +12,6 @@ interface MedicationLog {
   dosage: number;
   unit: string;
   injectionSite: string | null;
-  weight: number | null;
 }
 
 interface Medication {

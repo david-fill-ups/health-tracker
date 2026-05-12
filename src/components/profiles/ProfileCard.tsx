@@ -69,10 +69,17 @@ export function ProfileCard({
             </p>
           </div>
         </div>
-        {isActive && (
+        {isActive ? (
           <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700 shrink-0">
             Active
           </span>
+        ) : (
+          <button
+            onClick={() => setActiveProfileId(profile.id)}
+            className="rounded-md px-2 py-1 text-xs font-medium text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors shrink-0"
+          >
+            Switch
+          </button>
         )}
       </div>
 
@@ -106,32 +113,17 @@ export function ProfileCard({
       )}
 
       <div className="mt-4 flex items-center gap-2 flex-wrap">
-        <Link
-          href={`/profiles/${profile.id}`}
-          className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-        >
-          Manage
-        </Link>
-        {calUrl && (
-          <Link
-            href={`/profiles/${profile.id}/edit`}
-            className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            Edit
-          </Link>
-        )}
         <button
           onClick={() => setImportOpen(true)}
-          className="rounded-lg border border-indigo-200 px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
+          className="flex items-center gap-1.5 rounded-lg border border-indigo-200 px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
         >
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="12" y1="18" x2="12" y2="12"/>
+            <polyline points="9 15 12 12 15 15"/>
+          </svg>
           Import Documents
-        </button>
-        <button
-          onClick={() => setActiveProfileId(profile.id)}
-          disabled={isActive}
-          className="rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-50 disabled:text-gray-400 border-indigo-200 text-indigo-600 hover:bg-indigo-50"
-        >
-          {isActive ? "Active" : "Switch to this"}
         </button>
       </div>
 

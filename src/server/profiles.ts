@@ -83,10 +83,15 @@ export async function createProfile(
   return profile;
 }
 
+type UpdateProfileInput = Partial<Omit<CreateProfileInput, "heightIn" | "notes">> & {
+  heightIn?: number | null;
+  notes?: string | null;
+};
+
 export async function updateProfile(
   userId: string,
   profileId: string,
-  input: Partial<CreateProfileInput>
+  input: UpdateProfileInput
 ) {
   await assertProfileAccess(userId, profileId, "WRITE");
   // Explicitly enumerate allowed fields — prevents mass assignment of system

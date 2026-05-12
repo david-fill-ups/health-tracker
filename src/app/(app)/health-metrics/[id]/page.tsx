@@ -182,7 +182,7 @@ export default function MetricTypePage() {
           (a, b) => new Date(a.measuredAt).getTime() - new Date(b.measuredAt).getTime()
         );
         const chartData = sorted.map((m) => ({
-          date: new Date(m.measuredAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "2-digit" }),
+          date: new Date(m.measuredAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "2-digit", timeZone: "UTC" }),
           value: m.value,
         }));
         const values = sorted.map((m) => m.value);

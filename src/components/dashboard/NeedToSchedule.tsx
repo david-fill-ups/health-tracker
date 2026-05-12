@@ -81,7 +81,7 @@ export function NeedToSchedule({ activeProfileId }: { activeProfileId: string | 
         <ul className="space-y-3">
           {items.map((v) => {
             const label = v.doctor?.name ?? v.facility?.name ?? "Unknown";
-            const due = v.dueMonth ?? "When available";
+            const due = v.dueMonth ? `Due: ${v.dueMonth}` : "When available";
             const type = v.type?.replace(/_/g, " ") ?? "";
             return (
               <li key={v.id}>

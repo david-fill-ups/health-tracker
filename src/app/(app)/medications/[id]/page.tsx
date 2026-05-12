@@ -10,7 +10,6 @@ interface MedicationLog {
   dosage: number | null;
   unit: string | null;
   injectionSite: string | null;
-  weight: number | null;
   notes: string | null;
 }
 
@@ -31,15 +30,14 @@ interface LogEditForm {
   dosage: string;
   unit: string;
   injectionSite: string;
-  weight: string;
   notes: string;
 }
 
 function toISOLocal(dateStr: string) {
-  // Convert ISO string to datetime-local input value
+  // Convert ISO string to datetime-local input value (use UTC to match storage convention)
   const d = new Date(dateStr);
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
 }
 
 export default function MedicationDetailPage({
@@ -94,7 +92,6 @@ export default function MedicationDetailPage({
       dosage: log.dosage != null ? String(log.dosage) : "",
       unit: log.unit ?? "",
       injectionSite: log.injectionSite ?? "",
-      weight: log.weight != null ? String(log.weight) : "",
       notes: log.notes ?? "",
     });
   }
@@ -116,7 +113,6 @@ export default function MedicationDetailPage({
       if (editForm.dosage) body.dosage = parseFloat(editForm.dosage);
       if (editForm.unit) body.unit = editForm.unit;
       if (editForm.injectionSite) body.injectionSite = editForm.injectionSite;
-      if (editForm.weight) body.weight = parseFloat(editForm.weight);
       if (editForm.notes) body.notes = editForm.notes;
 
       const res = await fetch(
@@ -185,7 +181,7 @@ export default function MedicationDetailPage({
         </div>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-2 text-sm">
+      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-2 text-sm text-gray-900">
         {medication.prescribingDoctor && (
           <p>
             <span className="font-medium text-gray-600">Prescribed by:</span>{" "}
@@ -251,16 +247,15 @@ export default function MedicationDetailPage({
                   {medication.medicationType === "INJECTABLE" && (
                     <th className="px-4 py-3 text-left">Site</th>
                   )}
-                  <th className="px-4 py-3 text-left">Weight (lbs)</th>
                   <th className="px-4 py-3 text-left">Notes</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-100 text-gray-900">
                 {logs.map((log) =>
                   editingLogId === log.id && editForm ? (
                     <tr key={log.id} className="bg-indigo-50/40">
                       <td colSpan={
-                        4
+                        3
                         + (medication.medicationType !== "DEVICE" ? 1 : 0)
                         + (medication.medicationType === "INJECTABLE" ? 1 : 0)
                       } className="px-4 py-3">
@@ -270,65 +265,55 @@ export default function MedicationDetailPage({
                           )}
                           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                             <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Date & time</label>
+                              <label className="block text-xs font-medium text-gray-900 mb-1">Date & time</label>
                               <input
                                 type="datetime-local"
                                 value={editForm.date}
                                 onChange={(e) => setEditForm((f) => f && { ...f, date: e.target.value })}
-                                className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                               />
                             </div>
                             {medication.medicationType !== "DEVICE" && (
                               <>
                                 <div>
-                                  <label className="block text-xs font-medium text-gray-600 mb-1">Dosage</label>
+                                  <label className="block text-xs font-medium text-gray-900 mb-1">Dosage</label>
                                   <input
                                     type="number"
                                     step="any"
                                     value={editForm.dosage}
                                     onChange={(e) => setEditForm((f) => f && { ...f, dosage: e.target.value })}
-                                    className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                   />
                                 </div>
                                 <div>
-                                  <label className="block text-xs font-medium text-gray-600 mb-1">Unit</label>
+                                  <label className="block text-xs font-medium text-gray-900 mb-1">Unit</label>
                                   <input
                                     type="text"
                                     value={editForm.unit}
                                     onChange={(e) => setEditForm((f) => f && { ...f, unit: e.target.value })}
-                                    className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                   />
                                 </div>
                               </>
                             )}
                             {medication.medicationType === "INJECTABLE" && (
                               <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">Injection site</label>
+                                <label className="block text-xs font-medium text-gray-900 mb-1">Injection site</label>
                                 <input
                                   type="text"
                                   value={editForm.injectionSite}
                                   onChange={(e) => setEditForm((f) => f && { ...f, injectionSite: e.target.value })}
-                                  className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                  className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                 />
                               </div>
                             )}
                             <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Weight (lbs)</label>
-                              <input
-                                type="number"
-                                step="any"
-                                value={editForm.weight}
-                                onChange={(e) => setEditForm((f) => f && { ...f, weight: e.target.value })}
-                                className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+                              <label className="block text-xs font-medium text-gray-900 mb-1">Notes</label>
                               <input
                                 type="text"
                                 value={editForm.notes}
                                 onChange={(e) => setEditForm((f) => f && { ...f, notes: e.target.value })}
-                                className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                               />
                             </div>
                           </div>
@@ -371,7 +356,6 @@ export default function MedicationDetailPage({
                       {medication.medicationType === "INJECTABLE" && (
                         <td className="px-4 py-3">{log.injectionSite ?? "—"}</td>
                       )}
-                      <td className="px-4 py-3">{log.weight ?? "—"}</td>
                       <td className="px-4 py-3 max-w-xs truncate">{log.notes ?? "—"}</td>
                     </tr>
                   )

@@ -64,7 +64,11 @@ export const CreateProfileSchema = z.object({
   imageData: z.string().max(1_400_000, "Image too large (max ~1 MB)").nullish(),
 });
 
-export const UpdateProfileSchema = CreateProfileSchema.partial();
+export const UpdateProfileSchema = CreateProfileSchema.partial().extend({
+  // Allow null to explicitly clear optional fields
+  heightIn: z.number().int().min(12).max(108).nullish(),
+  notes: z.string().max(5000).nullish(),
+});
 
 // ── Onboarding ─────────────────────────────────────────────────────────────────
 
@@ -195,7 +199,6 @@ export const CreateMedicationLogSchema = z.object({
   dosage: z.number().positive().optional(),
   unit: optStr255,
   injectionSite: optStr255,
-  weight: z.number().positive().optional(),
   notes: z.string().max(1000).optional(),
 });
 

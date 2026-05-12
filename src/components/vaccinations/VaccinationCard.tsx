@@ -57,7 +57,7 @@ export function VaccinationCard({ vaccination, onDelete, compact }: VaccinationC
       <div className="min-w-0">
         <p className="font-semibold text-gray-900">{vaccination.name}</p>
         <p className="mt-0.5 text-sm text-gray-500">
-          {new Date(vaccination.date).toLocaleDateString()}
+          {new Date(vaccination.date).toLocaleDateString(undefined, { timeZone: "UTC" })}
           {vaccination.facility ? ` · ${vaccination.facility.name}` : ""}
         </p>
         {vaccination.lotNumber && (

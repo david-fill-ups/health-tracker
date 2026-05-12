@@ -53,9 +53,11 @@ export function ActiveConditions({ activeProfileId }: { activeProfileId: string 
             <li key={c.id}>
               <Link href={`/conditions/${c.id}/edit`} className="flex items-center justify-between gap-2 hover:bg-gray-50 -mx-2 px-2 py-0.5 rounded-lg transition-colors">
                 <p className="text-sm font-medium text-gray-800">{c.name}</p>
-                <span className="shrink-0 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
-                  Active
-                </span>
+                {c.diagnosisDate && (
+                  <span className="shrink-0 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
+                    Diagnosed: {new Date(c.diagnosisDate).toLocaleDateString(undefined, { timeZone: "UTC" })}
+                  </span>
+                )}
               </Link>
             </li>
           ))}

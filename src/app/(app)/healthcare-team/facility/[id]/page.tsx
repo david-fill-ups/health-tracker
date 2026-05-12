@@ -153,8 +153,8 @@ export default function FacilityDetailPage({ params }: { params: Promise<{ id: s
   if (notFound || !facility) return <p className="text-sm text-gray-500">Facility not found.</p>;
 
   const visitDates = facility.visits.filter((v) => v.date).map((v) => new Date(v.date!).getTime());
-  const firstSeen = visitDates.length ? new Date(Math.min(...visitDates)).toLocaleDateString() : null;
-  const lastSeen = visitDates.length ? new Date(Math.max(...visitDates)).toLocaleDateString() : null;
+  const firstSeen = visitDates.length ? new Date(Math.min(...visitDates)).toLocaleDateString(undefined, { timeZone: "UTC" }) : null;
+  const lastSeen = visitDates.length ? new Date(Math.max(...visitDates)).toLocaleDateString(undefined, { timeZone: "UTC" }) : null;
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -401,7 +401,7 @@ export default function FacilityDetailPage({ params }: { params: Promise<{ id: s
               >
                 <div className="flex items-center gap-2 flex-wrap text-sm">
                   <span className="font-medium text-gray-900">
-                    {v.date ? new Date(v.date).toLocaleDateString() : "No date"}
+                    {v.date ? new Date(v.date).toLocaleDateString(undefined, { timeZone: "UTC" }) : "No date"}
                   </span>
                   <span className="rounded-full bg-blue-100 text-blue-700 px-2 py-0.5 text-xs font-medium">
                     {VISIT_TYPE_LABELS[v.type]}

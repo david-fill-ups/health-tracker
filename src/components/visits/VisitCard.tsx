@@ -80,6 +80,16 @@ export function formatDueMonth(ym: string) {
   });
 }
 
+export function formatTime(iso: string): string | null {
+  const d = new Date(iso);
+  if (d.getUTCHours() === 0 && d.getUTCMinutes() === 0) return null;
+  return d.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "UTC",
+  });
+}
+
 interface Props {
   visit: Visit;
   pill?: boolean;
@@ -121,6 +131,9 @@ export function VisitCard({ visit, pill, showDoctor, showFacility }: Props) {
               {STATUS_LABELS[visit.status]}
             </span>
           </div>
+          {visit.status === "SCHEDULED" && visit.date && formatTime(visit.date) && (
+            <span className="text-gray-500">{formatTime(visit.date)}</span>
+          )}
           {showDoctor && visit.doctor && (
             <span className="text-gray-600 truncate">{visit.doctor.name}</span>
           )}

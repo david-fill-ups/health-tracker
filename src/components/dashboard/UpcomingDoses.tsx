@@ -12,28 +12,9 @@ interface Medication {
   id: string;
   name: string;
   active: boolean;
-  instructions: string | null;
+  dosage: string | null;
+  frequency: string | null;
   recentLog: MedicationLog | null;
-}
-
-const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
-
-function getDoseStatus(med: Medication): { label: string; color: string } | null {
-  if (!med.recentLog) {
-    return null;
-  }
-  const lastDate = new Date(med.recentLog.date);
-  const msSinceLast = Date.now() - lastDate.getTime();
-  if (msSinceLast > SEVEN_DAYS_MS) {
-    return {
-      label: `Last: ${lastDate.toLocaleDateString()}`,
-      color: "bg-red-100 text-red-700",
-    };
-  }
-  return {
-    label: `Last: ${lastDate.toLocaleDateString()}`,
-    color: "bg-green-100 text-green-700",
-  };
 }
 
 export function UpcomingDoses({ activeProfileId }: { activeProfileId: string | null }) {
@@ -76,18 +57,14 @@ export function UpcomingDoses({ activeProfileId }: { activeProfileId: string | n
       {!loading && meds.length > 0 && (
         <ul className="space-y-3">
           {meds.map((m) => {
-            const status = getDoseStatus(m);
+            const detail = [m.dosage, m.frequency].filter(Boolean).join(" · ");
             return (
               <li key={m.id}>
                 <Link href={`/medications/${m.id}`} className="flex items-start justify-between gap-2 hover:bg-gray-50 -mx-2 px-2 py-0.5 rounded-lg transition-colors">
                   <div>
                     <p className="text-sm font-medium text-gray-800">{m.name}</p>
+                    {detail && <p className="text-xs text-gray-500">{detail}</p>}
                   </div>
-                  {status && (
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${status.color}`}>
-                      {status.label}
-                    </span>
-                  )}
                 </Link>
               </li>
             );

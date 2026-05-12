@@ -149,15 +149,15 @@ export function ProfileForm({ profile }: { profile?: Profile }) {
 
     const totalInches = (form.heightFt || form.heightInPart)
       ? (parseInt(form.heightFt || "0") * 12) + parseInt(form.heightInPart || "0")
-      : undefined;
+      : null;
 
     const body = {
       name: form.name,
       birthDate: form.birthDate,
       sex: form.sex,
       state: form.state || undefined,
-      heightIn: totalInches || undefined,
-      notes: form.notes || undefined,
+      heightIn: totalInches,
+      notes: form.notes,
       timezone: form.timezone || undefined,
       imageData: imageData ?? undefined,
     };

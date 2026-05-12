@@ -8,7 +8,6 @@ interface MedicationLog {
   dosage: number;
   unit: string;
   injectionSite: string | null;
-  weight: number | null;
 }
 
 interface Medication {
@@ -31,7 +30,7 @@ interface MedicationCardProps {
 
 function fmt(dateStr: string | null) {
   if (!dateStr) return null;
-  return new Date(dateStr).toLocaleDateString();
+  return new Date(dateStr).toLocaleDateString(undefined, { timeZone: "UTC" });
 }
 
 export function MedicationCard({ medication }: MedicationCardProps) {
@@ -83,7 +82,6 @@ export function MedicationCard({ medication }: MedicationCardProps) {
                 <p className="text-gray-500">
                   {log.dosage} {log.unit}
                   {log.injectionSite ? ` · ${log.injectionSite}` : ""}
-                  {log.weight ? ` · ${log.weight} lbs` : ""}
                 </p>
               </div>
             </div>

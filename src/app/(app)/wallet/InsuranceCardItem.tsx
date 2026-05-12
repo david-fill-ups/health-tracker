@@ -257,11 +257,11 @@ export function InsuranceCardItem({
         {(card.effectiveDate || card.expirationDate) && (
           <div className="flex flex-wrap gap-x-3 text-xs text-gray-400 pt-0.5">
             {card.effectiveDate && (
-              <span>Eff: {new Date(card.effectiveDate).toLocaleDateString()}</span>
+              <span>Eff: {new Date(card.effectiveDate).toLocaleDateString(undefined, { timeZone: "UTC" })}</span>
             )}
             {card.expirationDate && (
               <span className={card.status === "EXPIRED" ? "text-red-500 font-medium" : ""}>
-                Exp: {new Date(card.expirationDate).toLocaleDateString()}
+                Exp: {new Date(card.expirationDate).toLocaleDateString(undefined, { timeZone: "UTC" })}
               </span>
             )}
           </div>

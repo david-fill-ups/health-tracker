@@ -17,6 +17,7 @@ interface Visit {
   id: string;
   date: string | null;
   type: string | null;
+  reason: string | null;
   status: string;
   doctor: Doctor | null;
   facility: Facility | null;
@@ -67,19 +68,34 @@ export function UpcomingVisits({ activeProfileId }: { activeProfileId: string | 
       {!loading && visits.length > 0 && (
         <ul className="space-y-3">
           {visits.map((v) => {
-            const label = v.doctor?.name ?? v.facility?.name ?? "Unknown";
-            const date = v.date ? new Date(v.date).toLocaleDateString() : "—";
+            const doctor = v.doctor?.name ?? null;
+            const facility = v.facility?.name ?? null;
+            const label = doctor ?? facility ?? "Unknown";
+            const d = v.date ? new Date(v.date) : null;
+            const date = d ? d.toLocaleDateString(undefined, { timeZone: "UTC" }) : "—";
+            const time = d
+              ? d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", timeZone: "UTC" })
+              : null;
             const type = v.type?.replace(/_/g, " ") ?? "";
+            const subtitle = [type, v.reason].filter(Boolean).join(" - ");
             return (
               <li key={v.id}>
                 <Link href={`/visits/${v.id}`} className="flex items-start justify-between gap-2 hover:bg-gray-50 -mx-2 px-2 py-0.5 rounded-lg transition-colors">
                   <div>
                     <p className="text-sm font-medium text-gray-800">{label}</p>
-                    {type && <p className="text-xs text-gray-500">{type}</p>}
+                    {doctor && facility && (
+                      <p className="text-xs text-gray-500">{facility}</p>
+                    )}
+                    {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
                   </div>
-                  <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                    {date}
-                  </span>
+                  <div className="flex flex-col items-end gap-0.5 shrink-0">
+                    <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                      {date}
+                    </span>
+                    {time && (
+                      <span className="text-xs text-gray-400">{time}</span>
+                    )}
+                  </div>
                 </Link>
               </li>
             );

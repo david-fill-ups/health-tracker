@@ -5,7 +5,6 @@ import { getProfileById } from "@/server/profiles";
 import { hasProfileAccess } from "@/lib/permissions";
 import { SharingSection } from "@/components/profiles/SharingSection";
 import { LinkedProfilesSection } from "@/components/profiles/LinkedProfilesSection";
-import { ProfileActions } from "@/components/profiles/ProfileActions";
 import { ExpandableImage } from "@/components/ui/ExpandableImage";
 
 type Props = { params: Promise<{ id: string }> };
@@ -17,9 +16,8 @@ export default async function ProfileDetailPage({ params }: Props) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const [profile, isOwner, canWrite] = await Promise.all([
+  const [profile, canWrite] = await Promise.all([
     getProfileById(session.user.id, id),
-    hasProfileAccess(session.user.id, id, "OWNER"),
     hasProfileAccess(session.user.id, id, "WRITE"),
   ]);
   if (!profile) notFound();
@@ -32,6 +30,14 @@ export default async function ProfileDetailPage({ params }: Props) {
         </Link>
         <span className="text-gray-300">/</span>
         <h1 className="text-xl font-bold text-gray-900">{profile.name}</h1>
+        {canWrite && (
+          <Link
+            href={`/profiles/${id}/edit`}
+            className="ml-auto rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            Edit
+          </Link>
+        )}
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-5">
@@ -63,6 +69,18 @@ export default async function ProfileDetailPage({ params }: Props) {
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">State</p>
             <p className="mt-1 text-gray-800">{profile.state ?? "—"}</p>
           </div>
+          {profile.heightIn != null && (
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Height</p>
+              <p className="mt-1 text-gray-800">
+                {Math.floor(profile.heightIn / 12)} ft {profile.heightIn % 12} in
+              </p>
+            </div>
+          )}
+          <div>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Timezone</p>
+            <p className="mt-1 text-gray-800">{profile.timezone}</p>
+          </div>
           {profile.notes && (
             <div className="col-span-2">
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Notes</p>
@@ -74,8 +92,6 @@ export default async function ProfileDetailPage({ params }: Props) {
         <LinkedProfilesSection profileId={id} profileName={profile.name} isOwner={canWrite} />
 
         <SharingSection profileId={id} currentUserId={session.user.id} isOwnerProfile={profile.isOwnerProfile} />
-
-        <ProfileActions profileId={id} profileName={profile.name} isOwner={isOwner} />
       </div>
     </div>
   );
