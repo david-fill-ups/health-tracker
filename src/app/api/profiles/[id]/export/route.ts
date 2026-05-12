@@ -124,7 +124,6 @@ export async function GET(_req: Request, { params }: Params) {
           dosage: l.dosage ?? null,
           unit: l.unit ?? null,
           injectionSite: l.injectionSite ?? null,
-          weight: l.weight ?? null,
           notes: l.notes ?? null,
         })),
       })),

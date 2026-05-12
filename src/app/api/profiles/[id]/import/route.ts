@@ -369,7 +369,6 @@ export async function POST(req: Request, { params }: Params) {
               dosage: log.dosage != null ? Number(log.dosage) : undefined,
               unit: log.unit ?? undefined,
               injectionSite: log.injectionSite ?? undefined,
-              weight: log.weight != null ? Number(log.weight) : undefined,
               notes: log.notes ?? undefined,
             },
           });
